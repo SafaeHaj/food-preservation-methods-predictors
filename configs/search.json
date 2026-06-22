@@ -1,0 +1,54 @@
+{
+  "meat": {
+    "keywords": [
+      "shelf life",
+      "meat",
+      "chicken",
+      "beef",
+      "fish",
+      "shrimp",
+      "lamb",
+      "pork",
+      "turkey",
+      "veal",
+      "venison",
+      "goat",
+      "storage",
+      "total microbial count",
+      "TVBN",
+      "TMAN",
+      "peroxide value",
+      "antimicrobial ingredients",
+      "antioxidant ingredients"
+    ],
+    "query_templates": [
+      "{keyword} preservation antimicrobial",
+      "{keyword} shelf life microbial count storage",
+      "{keyword} essential oil antimicrobial packaging"
+    ],
+    "retrieval_params": {
+      "source": "semantic_scholar",
+      "fallback_source": "pubmed",
+      "open_access_only": true,
+      "max_results_per_query": 20,
+      "min_year": 2010,
+      "fields_of_study": ["Biology", "Agricultural and Food Sciences", "Chemistry"],
+      "semantic_scholar": {
+        "base_url": "https://api.semanticscholar.org/graph/v1",
+        "paper_search_endpoint": "/paper/search",
+        "fields": "title,authors,year,externalIds,openAccessPdf,fieldsOfStudy",
+        "rate_limit_delay_seconds": 1.0
+      },
+      "pubmed": {
+        "db": "pubmed",
+        "retmax": 20,
+        "sort": "relevance"
+      },
+      "download": {
+        "timeout_seconds": 30,
+        "retry_attempts": 2,
+        "chunk_size_bytes": 8192
+      }
+    }
+  }
+}

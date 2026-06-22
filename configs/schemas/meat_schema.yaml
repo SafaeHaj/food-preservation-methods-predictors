@@ -1,0 +1,166 @@
+# configs/schemas/meat_schema.yaml
+type: object
+description: "Schema for extracting food preservation data from scientific text."
+
+# 1. FIELDS ENTRUSTED TO THE LLM EXTRACTION AGENT
+properties:
+  ingredient:
+    type: string
+    description: "Name of the antimicrobial or preservative ingredient used (e.g., rosemary extract)."
+  concentration:
+    type: number
+    description: "The raw numerical concentration value of the ingredient applied."
+  unit_of_concentration:
+    type: string
+    description: "The raw unit for the concentration (e.g., g/L, %, ppm, mg/kg)."
+  chemical_composition:
+    type: string
+    description: "The chemical compound family or category (e.g., essential oil, polyphenol, mineral)."
+  source:
+    type: string
+    description: "Source/origin of the ingredient (e.g., plant extract, synthesized, commercial brand)."
+  immersion_time:
+    type: [string, "null"]
+    description: "Duration of dipping/immersion. Set to null if another treatment type (like spraying) was used."
+  packaging_condition:
+    type: string
+    description: "Type of packaging environment used (e.g., vacuum, aerobic, modified atmosphere packaging)."
+  storage_condition_celsius:
+    type: number
+    description: "The storage temperature in degrees Celsius."
+  meat_type:
+    type: string
+    description: "Type of meat matrix evaluated (e.g., beef, pork, chicken, fish)."
+  part_of_product:
+    type: string
+    description: "The specific cut or state of the meat (e.g., skinless carp fillets, ground patties)."
+  treatment:
+    type: string
+    description: "The specific experimental treatment description or group identification."
+  indicators:
+    type: string
+    description: "The specific parameter or microorganism being measured (e.g., TVC, Pseudomonas, TBARS)."
+  type_of_indicator:
+    type: string
+    enum: ["microbiological", "chemical", "sensory"]
+    description: "The high-level category of the shelf-life indicator."
+  lower_level_threshold_log_cfu:
+    type: number
+    description: "Lower critical limit or threshold value if specified in log CFU/g or unit equivalent."
+  upper_level_threshold_log_cfu:
+    type: number
+    description: "Upper critical spoilage limit or threshold value if specified."
+  unit:
+    type: string
+    description: "Unit of measurement for counts (e.g., log CFU/g)."
+  initial_count:
+    type: number
+    description: "The baseline microbial or chemical count at day 0."
+  pre_threshold_day:
+    type: integer
+    description: "The closest day recorded where counts remain below the lower threshold."
+  pre_threshold_count:
+    type: number
+    description: "The actual count matching the pre-threshold day."
+  post_threshold_day:
+    type: integer
+    description: "The first day recorded where counts cross above the upper threshold."
+  post_threshold_count:
+    type: number
+    description: "The actual count matching the post-threshold day."
+
+required:
+  - ingredient
+  - concentration
+  - unit_of_concentration
+  - meat_type
+  - indicators
+  - initial_count
+
+additionalProperties: false
+
+system_computed_fields:
+  - experiment_id
+  - normalized_concentration_percent
+  - initial_inhibition_factor
+  - post_inhibition_factor
+  - post_threshold_proximity_index
+
+aliases:
+  ingredient:                    "preservative ingredient name"
+  concentration:                 "ingredient concentration value"
+  unit_of_concentration:         "concentration unit"
+  chemical_composition:          "chemical compound family"
+  source:                        "ingredient origin or source"
+  immersion_time:                "immersion or dipping duration"
+  packaging_condition:           "packaging environment type"
+  storage_condition_celsius:     "storage temperature celsius"
+  meat_type:                     "meat matrix type"
+  part_of_product:               "meat cut or product state"
+  treatment:                     "experimental treatment description"
+  indicators:                    "shelf life indicator or microorganism"
+  type_of_indicator:             "indicator category"
+  lower_level_threshold_log_cfu: "lower spoilage threshold log CFU"
+  upper_level_threshold_log_cfu: "upper spoilage threshold log CFU"
+  unit:                          "measurement unit for counts"
+  initial_count:                 "baseline count at day zero"
+  pre_threshold_day:             "last day count below threshold"
+  pre_threshold_count:           "count value on pre-threshold day"
+  post_threshold_day:            "first day count crosses threshold"
+  post_threshold_count:          "count value on post-threshold day"
+
+anchor_concepts:
+  - group: "meat_matrix"
+    required: true
+    terms:
+      - "beef"
+      - "pork"
+      - "chicken"
+      - "poultry"
+      - "fish"
+      - "shrimp"
+      - "lamb"
+      - "turkey"
+      - "veal"
+      - "goat"
+      - "meat"
+      - "fillet"
+      - "patties"
+  - group: "preservation_agent"
+    required: true
+    terms:
+      - "essential oil"
+      - "extract"
+      - "antimicrobial"
+      - "antioxidant"
+      - "preservative"
+      - "bacteriocin"
+      - "nisin"
+      - "thymol"
+      - "carvacrol"
+      - "rosemary"
+      - "chitosan"
+  - group: "microbial_or_chemical_indicator"
+    required: true
+    terms:
+      - "total viable count"
+      - "TVC"
+      - "total plate count"
+      - "TPC"
+      - "log CFU"
+      - "CFU/g"
+      - "pseudomonas"
+      - "enterobacteriaceae"
+      - "TBARS"
+      - "TVBN"
+      - "peroxide value"
+      - "shelf.?life"
+  - group: "storage_experiment"
+    required: false
+    terms:
+      - "storage"
+      - "refrigerat"
+      - "day \\d"
+      - "\\d+ days"
+      - "°C"
+      - "celsius"

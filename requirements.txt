@@ -5,3 +5,10 @@ seaborn
 scipy
 statsmodels
 scikit-learn
+requests
+pydantic>=2.0
+pyyaml
+python-dotenv
+litellm
+docling
+biopython
