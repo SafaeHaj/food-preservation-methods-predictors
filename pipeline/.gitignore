@@ -1,0 +1,23 @@
+# Environment / secrets — NEVER commit
+backend/.env
+backend/*.db
+backend/food_research.db
+
+# Python
+backend/venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/**/*.pyc
+backend/.pytest_cache/
+
+# Uploads (user data)
+backend/uploads/
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# OS
+.DS_Store
+Thumbs.db
