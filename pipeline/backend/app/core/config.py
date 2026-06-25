@@ -9,16 +9,29 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str = "sqlite:///./food_research.db"
 
-    # AI provider: "openai" or "anthropic"
-    AI_PROVIDER: str = "openai"
+    # AI provider — pick ONE:
+    #   vertexai  : Vertex AI (ADC + GCP project must have aiplatform.user IAM role)
+    #   google_ai : Google AI Studio API key (free key from aistudio.google.com)
+    #   openai    : OpenAI API key
+    #   anthropic : Anthropic API key
+    AI_PROVIDER: str = "vertexai"
 
-    # OpenAI — key lives here ONLY, never returned to frontend
+    # --- Vertex AI (ADC / service account) ---
+    VERTEX_PROJECT: str = "joinagent"
+    VERTEX_LOCATION: str = "us-central1"
+    VERTEX_MODEL: str = "gemini-2.0-flash"
+
+    # --- Google AI Studio (free API key, no GCP IAM needed) ---
+    GOOGLE_API_KEY: str = ""
+    GOOGLE_AI_MODEL: str = "gemini-2.0-flash"
+
+    # --- OpenAI ---
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-4o-mini"
 
-    # Anthropic (fallback / alternative)
+    # --- Anthropic ---
     ANTHROPIC_API_KEY: str = ""
-    AI_MODEL: str = "gpt-4o-mini"
+
     AI_MAX_TOKENS: int = 4096
 
     MAX_UPLOAD_SIZE_MB: int = 50
