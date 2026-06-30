@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     # --- Vertex AI (ADC / service account) ---
     VERTEX_PROJECT: str = "joinagent"
     VERTEX_LOCATION: str = "us-central1"
-    VERTEX_MODEL: str = "gemini-2.0-flash"
+    VERTEX_MODEL: str = "gemini-2.5-flash"
 
     # --- Google AI Studio (free API key, no GCP IAM needed) ---
     GOOGLE_API_KEY: str = ""
@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     # --- Anthropic ---
     ANTHROPIC_API_KEY: str = ""
 
-    AI_MAX_TOKENS: int = 4096
+    AI_MAX_TOKENS: int = 16384
 
     MAX_UPLOAD_SIZE_MB: int = 50
     MAX_PAPERS_PER_UPLOAD: int = 10
