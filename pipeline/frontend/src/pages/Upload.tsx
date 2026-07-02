@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useDropzone } from 'react-dropzone'
-import { Upload as UploadIcon, FileText, X, CheckCircle, ArrowLeft } from 'lucide-react'
+import { Upload as UploadIcon, FileText, X, ArrowLeft, CloudUpload } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { papersApi } from '../services/api'
 
@@ -18,8 +18,7 @@ export default function Upload() {
     if (pdfs.length !== accepted.length) toast.error('Only PDF files are accepted')
     setFiles((prev) => {
       const existing = new Set(prev.map((f) => f.name))
-      const newFiles = pdfs.filter((f) => !existing.has(f.name))
-      return [...prev, ...newFiles].slice(0, 10)
+      return [...prev, ...pdfs.filter((f) => !existing.has(f.name))].slice(0, 10)
     })
   }, [])
 
@@ -37,7 +36,7 @@ export default function Upload() {
     setUploading(true)
     try {
       await papersApi.upload(pid, files)
-      toast.success(`${files.length} paper${files.length > 1 ? 's' : ''} uploaded successfully`)
+      toast.success(`${files.length} paper${files.length > 1 ? 's' : ''} uploaded`)
       navigate(`/projects/${pid}`)
     } catch (err: any) {
       toast.error(err.response?.data?.detail || 'Upload failed')
@@ -50,71 +49,90 @@ export default function Upload() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
+      {/* Header */}
       <div className="flex items-center gap-3">
-        <Link to={`/projects/${pid}`} className="text-slate-500 hover:text-slate-300">
+        <Link to={`/projects/${pid}`} className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
           <ArrowLeft size={18} />
         </Link>
-        <h1 className="text-xl font-bold">Upload Papers</h1>
+        <div>
+          <h1 className="page-title">Upload Papers</h1>
+          <p className="muted">Upload PDF scientific papers for AI extraction</p>
+        </div>
       </div>
 
       {/* Drop zone */}
       <div
         {...getRootProps()}
-        className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-colors ${
+        className={`border-2 border-dashed rounded-2xl p-14 text-center cursor-pointer transition-all duration-200 ${
           isDragActive
-            ? 'border-blue-500 bg-blue-950/20'
-            : 'border-slate-700 hover:border-slate-600 bg-slate-900/40'
+            ? 'border-blue-400 bg-blue-50 scale-[1.01]'
+            : 'border-slate-300 hover:border-blue-300 hover:bg-slate-50 bg-white'
         }`}
       >
         <input {...getInputProps()} />
-        <UploadIcon
-          size={40}
-          className={`mx-auto mb-4 ${isDragActive ? 'text-blue-400' : 'text-slate-600'}`}
-        />
+        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 transition-colors ${
+          isDragActive ? 'bg-blue-100' : 'bg-slate-100'
+        }`}>
+          <CloudUpload size={26} className={isDragActive ? 'text-blue-500' : 'text-slate-400'} />
+        </div>
         {isDragActive ? (
-          <p className="text-blue-400 font-medium">Drop your PDFs here</p>
+          <p className="text-blue-600 font-semibold text-base">Drop your PDFs here</p>
         ) : (
           <>
-            <p className="text-slate-300 font-medium mb-1">Drag & drop PDF files here</p>
-            <p className="text-slate-500 text-sm">or click to browse — up to 10 files, 50 MB each</p>
+            <p className="text-slate-800 font-semibold text-base mb-1">Drag & drop PDF files here</p>
+            <p className="text-slate-400 text-sm">or <span className="text-blue-600 hover:underline">click to browse</span></p>
+            <p className="text-slate-400 text-xs mt-3">Up to 10 files · 50 MB each</p>
           </>
         )}
       </div>
 
       {/* File list */}
       {files.length > 0 && (
-        <div className="card space-y-2">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="font-medium text-sm text-slate-300">
-              {files.length} file{files.length > 1 ? 's' : ''} selected ({totalMB.toFixed(1)} MB)
-            </h3>
-            <button onClick={() => setFiles([])} className="text-xs text-slate-500 hover:text-slate-300">
+        <div className="card">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-semibold text-slate-700">
+              {files.length} file{files.length > 1 ? 's' : ''} selected
+              <span className="text-slate-400 font-normal ml-1.5">({totalMB.toFixed(1)} MB total)</span>
+            </p>
+            <button onClick={() => setFiles([])} className="text-xs text-slate-400 hover:text-slate-600 transition-colors">
               Clear all
             </button>
           </div>
-          {files.map((file) => (
-            <div key={file.name} className="flex items-center gap-3 bg-slate-800 rounded-lg px-3 py-2">
-              <FileText size={14} className="text-blue-400 shrink-0" />
-              <span className="text-sm text-slate-300 flex-1 truncate">{file.name}</span>
-              <span className="text-xs text-slate-500 shrink-0">
-                {(file.size / (1024 * 1024)).toFixed(1)} MB
-              </span>
-              <button onClick={() => remove(file.name)} className="text-slate-600 hover:text-red-400">
-                <X size={14} />
-              </button>
-            </div>
-          ))}
+          <div className="space-y-2">
+            {files.map((file) => (
+              <div key={file.name} className="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-lg px-3 py-2.5">
+                <div className="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center shrink-0">
+                  <FileText size={13} className="text-blue-500" />
+                </div>
+                <span className="text-sm text-slate-700 flex-1 truncate font-medium">{file.name}</span>
+                <span className="text-xs text-slate-400 shrink-0">
+                  {(file.size / (1024 * 1024)).toFixed(1)} MB
+                </span>
+                <button
+                  onClick={() => remove(file.name)}
+                  className="p-1 text-slate-300 hover:text-red-400 hover:bg-red-50 rounded transition-colors"
+                >
+                  <X size={13} />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
+      {/* Actions */}
       <div className="flex gap-3 justify-end">
         <Link to={`/projects/${pid}`} className="btn-secondary">Cancel</Link>
         <button
           onClick={handleUpload}
           disabled={!files.length || uploading}
-          className="btn-primary"
+          className="btn-primary min-w-32 justify-center"
         >
-          {uploading ? 'Uploading...' : `Upload ${files.length || ''} PDF${files.length !== 1 ? 's' : ''}`}
+          {uploading ? (
+            <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Uploading…</>
+          ) : (
+            <><UploadIcon size={14} /> Upload {files.length || ''} PDF{files.length !== 1 ? 's' : ''}</>
+          )}
         </button>
       </div>
     </div>

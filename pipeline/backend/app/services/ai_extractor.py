@@ -56,20 +56,29 @@ def _parse_response(content: str) -> List[Dict]:
 
 
 # ---------------------------------------------------------------------------
-# Vertex AI  (google-cloud-aiplatform, ADC)
+# Vertex AI  (google-genai SDK with vertexai=True, ADC)
 # ---------------------------------------------------------------------------
 def _extract_with_vertexai(paper_text: str, schema_fields: List[Dict]) -> List[Dict]:
     try:
-        import vertexai
-        from vertexai.generative_models import GenerativeModel, GenerationConfig
+        from google import genai
+        from google.genai import types
     except ImportError:
-        raise RuntimeError("Run: pip install google-cloud-aiplatform")
+        raise RuntimeError("Run: pip install google-genai")
 
-    vertexai.init(project=settings.VERTEX_PROJECT, location=settings.VERTEX_LOCATION)
-    model = GenerativeModel(settings.VERTEX_MODEL)
-    config = GenerationConfig(max_output_tokens=settings.AI_MAX_TOKENS, temperature=0.1)
-    response = model.generate_content(_build_prompt(paper_text, schema_fields),
-                                      generation_config=config)
+    client = genai.Client(
+        vertexai=True,
+        project=settings.VERTEX_PROJECT,
+        location=settings.VERTEX_LOCATION,
+    )
+    config = types.GenerateContentConfig(
+        max_output_tokens=settings.AI_MAX_TOKENS,
+        temperature=0.1,
+    )
+    response = client.models.generate_content(
+        model=settings.VERTEX_MODEL,
+        contents=_build_prompt(paper_text, schema_fields),
+        config=config,
+    )
     return _parse_response(response.text)
 
 

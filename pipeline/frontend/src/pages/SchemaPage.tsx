@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Plus, Trash2, Upload, Save } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, Upload, Save, Info } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { projectsApi, schemaApi } from '../services/api'
 import { SchemaField, Project } from '../types'
@@ -31,9 +31,8 @@ export default function SchemaPage() {
     }).catch(() => toast.error('Failed to load project'))
   }, [pid])
 
-  const update = (i: number, patch: Partial<SchemaField>) => {
+  const update = (i: number, patch: Partial<SchemaField>) =>
     setFields((prev) => prev.map((f, idx) => idx === i ? { ...f, ...patch } : f))
-  }
 
   const add = () => setFields((prev) => [...prev, emptyField()])
   const remove = (i: number) => setFields((prev) => prev.filter((_, idx) => idx !== i))
@@ -44,7 +43,7 @@ export default function SchemaPage() {
     setSaving(true)
     try {
       await projectsApi.update(pid, { schema_fields: fields })
-      toast.success('Schema saved')
+      toast.success('Schema saved successfully')
     } catch {
       toast.error('Failed to save schema')
     } finally {
@@ -69,15 +68,16 @@ export default function SchemaPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6">
+      {/* Header */}
       <div className="flex items-center gap-3 justify-between flex-wrap">
         <div className="flex items-center gap-3">
-          <Link to={`/projects/${pid}`} className="text-slate-500 hover:text-slate-300">
+          <Link to={`/projects/${pid}`} className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-xl font-bold">Schema Editor</h1>
-            <p className="text-slate-500 text-sm">{project?.name}</p>
+            <h1 className="page-title">Schema Editor</h1>
+            <p className="muted">{project?.name}</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -88,42 +88,61 @@ export default function SchemaPage() {
             className="hidden"
             onChange={handleInferFromExcel}
           />
-          <button
-            onClick={() => fileRef.current?.click()}
-            className="btn-secondary"
-            disabled={inferring}
-          >
-            <Upload size={15} />
-            {inferring ? 'Inferring...' : 'Infer from Excel'}
+          <button onClick={() => fileRef.current?.click()} className="btn-secondary" disabled={inferring}>
+            <Upload size={14} />
+            {inferring ? 'Inferring…' : 'Infer from Excel'}
           </button>
           <button onClick={add} className="btn-secondary">
-            <Plus size={15} /> Add Field
+            <Plus size={14} /> Add Field
           </button>
           <button onClick={handleSave} className="btn-primary" disabled={saving}>
-            <Save size={15} />
-            {saving ? 'Saving...' : 'Save Schema'}
+            <Save size={14} />
+            {saving ? 'Saving…' : 'Save Schema'}
           </button>
         </div>
       </div>
 
-      <div className="card p-0 overflow-hidden">
-        <div className="px-5 py-3 border-b border-slate-800 grid grid-cols-12 gap-3 text-xs font-medium text-slate-500 uppercase tracking-wide">
+      {/* Info banner */}
+      <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-xl p-4">
+        <Info size={15} className="text-blue-500 mt-0.5 shrink-0" />
+        <p className="text-sm text-blue-700">
+          Define the fields you want the AI to extract from each paper.
+          <strong> field_name</strong> must be snake_case and unique. Label is shown in the UI.
+          Validation ranges are enforced during review.
+        </p>
+      </div>
+
+      {/* Schema table */}
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+        {/* Column headers */}
+        <div className="px-5 py-3 border-b border-slate-100 bg-slate-50 grid grid-cols-12 gap-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
           <span className="col-span-3">Field Name</span>
-          <span className="col-span-3">Label</span>
+          <span className="col-span-3">Display Label</span>
           <span className="col-span-2">Type</span>
           <span className="col-span-2">Unit</span>
-          <span className="col-span-1 text-center">Req.</span>
-          <span className="col-span-1"></span>
+          <span className="col-span-1 text-center">Required</span>
+          <span className="col-span-1" />
         </div>
 
         {fields.length === 0 ? (
-          <div className="text-center py-12 text-slate-500 text-sm">
-            No fields. Add one or infer from an Excel file.
+          <div className="text-center py-14">
+            <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+              <Plus size={18} className="text-slate-400" />
+            </div>
+            <p className="text-sm text-slate-500 mb-4">No fields defined yet</p>
+            <div className="flex items-center justify-center gap-2">
+              <button onClick={add} className="btn-primary text-xs">
+                <Plus size={13} /> Add Field
+              </button>
+              <button onClick={() => fileRef.current?.click()} className="btn-secondary text-xs">
+                <Upload size={13} /> Infer from Excel
+              </button>
+            </div>
           </div>
         ) : (
-          <div className="divide-y divide-slate-800/60">
+          <div className="divide-y divide-slate-100">
             {fields.map((field, i) => (
-              <div key={i} className="px-5 py-2.5 grid grid-cols-12 gap-3 items-center">
+              <div key={i} className="px-5 py-3 grid grid-cols-12 gap-3 items-center hover:bg-slate-50 transition-colors group">
                 <input
                   className="input col-span-3 py-1.5 font-mono text-xs"
                   placeholder="field_name"
@@ -132,7 +151,7 @@ export default function SchemaPage() {
                 />
                 <input
                   className="input col-span-3 py-1.5 text-xs"
-                  placeholder="Human Label"
+                  placeholder="Human Readable Label"
                   value={field.label}
                   onChange={(e) => update(i, { label: e.target.value })}
                 />
@@ -145,34 +164,42 @@ export default function SchemaPage() {
                 </select>
                 <input
                   className="input col-span-2 py-1.5 text-xs"
-                  placeholder="e.g. g/100g"
+                  placeholder="g/100g, pH…"
                   value={field.unit || ''}
                   onChange={(e) => update(i, { unit: e.target.value })}
                 />
                 <div className="col-span-1 flex justify-center">
                   <input
                     type="checkbox"
-                    className="w-4 h-4 accent-blue-500"
+                    className="w-4 h-4 accent-blue-600 rounded"
                     checked={field.required || false}
                     onChange={(e) => update(i, { required: e.target.checked })}
                   />
                 </div>
                 <div className="col-span-1 flex justify-end">
-                  <button onClick={() => remove(i)} className="text-slate-600 hover:text-red-400">
-                    <Trash2 size={14} />
+                  <button
+                    onClick={() => remove(i)}
+                    className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                  >
+                    <Trash2 size={13} />
                   </button>
                 </div>
               </div>
             ))}
           </div>
         )}
-      </div>
 
-      <p className="text-xs text-slate-600">
-        {fields.length} field{fields.length !== 1 ? 's' : ''} defined.
-        For select fields, options are set automatically during extraction.
-        Validation ranges (min/max) are applied during AI extraction and review.
-      </p>
+        {fields.length > 0 && (
+          <div className="px-5 py-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+            <p className="text-xs text-slate-500">
+              {fields.length} field{fields.length !== 1 ? 's' : ''} · For <code className="text-xs bg-slate-200 px-1 py-0.5 rounded">select</code> fields, options are populated automatically during AI extraction
+            </p>
+            <button onClick={add} className="btn-ghost text-xs text-blue-600 hover:bg-blue-50">
+              <Plus size={12} /> Add field
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

@@ -12,10 +12,14 @@ app = FastAPI(
     version="1.0.0",
 )
 
+import os as _os
+_allowed_origins_raw = _os.environ.get("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
+_wildcard = "*" in _allowed_origins_raw
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
-    allow_credentials=True,
+    allow_origins=["*"] if _wildcard else _allowed_origins_raw,
+    allow_credentials=False if _wildcard else True,
     allow_methods=["*"],
     allow_headers=["*"],
 )

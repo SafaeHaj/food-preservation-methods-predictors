@@ -1,6 +1,6 @@
 import { useState, useEffect, FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, FolderOpen, FileText, CheckSquare, Trash2, FlaskConical } from 'lucide-react'
+import { Plus, FolderOpen, FileText, CheckSquare, Trash2, FlaskConical, X, BarChart2, Eye } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { projectsApi } from '../services/api'
 import { Project } from '../types'
@@ -58,11 +58,12 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-100">Projects</h1>
-          <p className="text-slate-400 text-sm mt-0.5">Welcome back, {user?.full_name}</p>
+          <h1 className="page-title">My Projects</h1>
+          <p className="muted mt-1">Welcome back, <span className="font-medium text-slate-700">{user?.full_name}</span></p>
         </div>
         <button onClick={() => setShowCreate(true)} className="btn-primary">
           <Plus size={16} />
@@ -72,10 +73,15 @@ export default function Dashboard() {
 
       {/* Create Modal */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-          <div className="card w-full max-w-md">
-            <h2 className="text-lg font-semibold mb-4">New Research Project</h2>
-            <form onSubmit={handleCreate} className="space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-slate-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+              <h2 className="text-base font-semibold text-slate-900">New Research Project</h2>
+              <button onClick={() => setShowCreate(false)} className="btn-ghost p-1.5">
+                <X size={16} />
+              </button>
+            </div>
+            <form onSubmit={handleCreate} className="p-6 space-y-4">
               <div>
                 <label className="label">Project Name *</label>
                 <input
@@ -91,20 +97,20 @@ export default function Dashboard() {
                 <label className="label">Description</label>
                 <textarea
                   className="input resize-none h-20"
-                  placeholder="Brief description of this project..."
+                  placeholder="Brief description of this research project…"
                   value={desc}
                   onChange={(e) => setDesc(e.target.value)}
                 />
               </div>
-              <p className="text-xs text-slate-500">
-                A default food-preservation schema will be applied. You can customize it later.
+              <p className="text-xs text-slate-400">
+                A default food-preservation schema will be applied. You can customize it in Schema settings.
               </p>
-              <div className="flex gap-3 justify-end">
-                <button type="button" onClick={() => setShowCreate(false)} className="btn-secondary">
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setShowCreate(false)} className="btn-secondary flex-1 justify-center">
                   Cancel
                 </button>
-                <button type="submit" className="btn-primary" disabled={creating}>
-                  {creating ? 'Creating...' : 'Create Project'}
+                <button type="submit" className="btn-primary flex-1 justify-center" disabled={creating}>
+                  {creating ? 'Creating…' : 'Create Project'}
                 </button>
               </div>
             </form>
@@ -113,53 +119,72 @@ export default function Dashboard() {
       )}
 
       {loading ? (
-        <div className="text-center text-slate-500 py-20">Loading projects...</div>
+        <div className="flex items-center justify-center py-24">
+          <div className="text-center">
+            <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-sm text-slate-500">Loading projects…</p>
+          </div>
+        </div>
       ) : projects.length === 0 ? (
-        <div className="text-center py-20">
-          <FlaskConical size={48} className="text-slate-700 mx-auto mb-4" />
-          <h3 className="text-slate-400 font-medium mb-2">No projects yet</h3>
-          <p className="text-slate-600 text-sm">Create a project to start extracting data from scientific papers.</p>
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-5">
+            <FlaskConical size={28} className="text-blue-400" />
+          </div>
+          <h3 className="text-base font-semibold text-slate-900 mb-1">No projects yet</h3>
+          <p className="text-sm text-slate-500 mb-6 max-w-xs">Create your first project to start extracting structured data from scientific papers using AI.</p>
+          <button onClick={() => setShowCreate(true)} className="btn-primary">
+            <Plus size={16} /> Create First Project
+          </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {projects.map((p) => (
-            <div key={p.id} className="card hover:border-slate-700 transition-colors group">
-              <div className="flex items-start justify-between mb-3">
+            <div
+              key={p.id}
+              className="bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200 group flex flex-col"
+            >
+              <div className="p-5 flex-1">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="w-9 h-9 bg-blue-50 rounded-lg flex items-center justify-center shrink-0">
+                    <FolderOpen size={16} className="text-blue-600" />
+                  </div>
+                  <button
+                    onClick={() => handleDelete(p.id, p.name)}
+                    className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                    title="Delete project"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
                 <Link
                   to={`/projects/${p.id}`}
-                  className="font-semibold text-slate-100 hover:text-blue-400 transition-colors flex-1 min-w-0 pr-2 truncate"
+                  className="block font-semibold text-slate-900 hover:text-blue-600 transition-colors mt-2 mb-1 line-clamp-1"
                 >
                   {p.name}
                 </Link>
-                <button
-                  onClick={() => handleDelete(p.id, p.name)}
-                  className="opacity-0 group-hover:opacity-100 text-slate-600 hover:text-red-400 transition-all shrink-0"
-                >
-                  <Trash2 size={14} />
-                </button>
+                {p.description && (
+                  <p className="text-slate-500 text-xs line-clamp-2 mb-3">{p.description}</p>
+                )}
+                <div className="flex items-center gap-4 text-xs text-slate-400 mt-3 pt-3 border-t border-slate-100">
+                  <span className="flex items-center gap-1.5">
+                    <FileText size={12} />
+                    <span>{p.paper_count ?? 0} papers</span>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <CheckSquare size={12} />
+                    <span>{p.row_count ?? 0} rows</span>
+                  </span>
+                </div>
               </div>
-              {p.description && (
-                <p className="text-slate-500 text-sm mb-3 line-clamp-2">{p.description}</p>
-              )}
-              <div className="flex items-center gap-4 text-xs text-slate-500">
-                <span className="flex items-center gap-1">
-                  <FileText size={12} />
-                  {p.paper_count} papers
-                </span>
-                <span className="flex items-center gap-1">
-                  <CheckSquare size={12} />
-                  {p.row_count} rows
-                </span>
-              </div>
-              <div className="mt-4 flex gap-2">
-                <Link to={`/projects/${p.id}`} className="btn-primary text-xs py-1.5 px-3">
+              <div className="px-5 pb-4 flex gap-2">
+                <Link to={`/projects/${p.id}`} className="btn-primary text-xs py-1.5 px-3 flex-1 justify-center">
                   Open
                 </Link>
-                <Link to={`/projects/${p.id}/review`} className="btn-secondary text-xs py-1.5 px-3">
-                  Review
+                <Link to={`/projects/${p.id}/review`} className="btn-secondary text-xs py-1.5 px-3" title="Review">
+                  <Eye size={12} />
                 </Link>
-                <Link to={`/projects/${p.id}/analytics`} className="btn-secondary text-xs py-1.5 px-3">
-                  Analytics
+                <Link to={`/projects/${p.id}/analytics`} className="btn-secondary text-xs py-1.5 px-3" title="Analytics">
+                  <BarChart2 size={12} />
                 </Link>
               </div>
             </div>
