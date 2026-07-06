@@ -29,7 +29,6 @@ dist/
 htmlcov/
 
 # ML artifacts and experiment outputs
-data/
 datasets/
 models/
 checkpoints/
@@ -39,6 +38,7 @@ wandb/
 mlruns/
 
 # OS / editor files
+data/synthetic/
 .DS_Store
 Thumbs.db
 .vscode/
