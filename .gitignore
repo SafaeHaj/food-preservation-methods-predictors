@@ -42,3 +42,4 @@ mlruns/
 .DS_Store
 Thumbs.db
 .vscode/
+.claude/
