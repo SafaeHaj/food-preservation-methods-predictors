@@ -8,3 +8,5 @@ sdv
 scikit-learn
 rapidfuzz
 sentence-transformers
+PyMuPDF
+plotdigitizer
