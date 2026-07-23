@@ -81,6 +81,12 @@ def update_row(
 
     db.commit()
     db.refresh(row)
+
+    # Trigger canonical promotion when a row is individually approved
+    if body.status == "approved":
+        from app.services.canonical_promoter import promote_paper_to_canonical
+        promote_paper_to_canonical(row.paper_id, row.project_id, db)
+
     return _row_out(row)
 
 
@@ -100,9 +106,21 @@ def bulk_update_status(
         )
         .all()
     )
+    paper_ids: set[int] = set()
     for row in updated:
         row.status = body.status
+        if body.status == "approved":
+            paper_ids.add(row.paper_id)
     db.commit()
+
+    # When rows are approved, promote them to canonical data if not already done
+    if body.status == "approved" and paper_ids:
+        from app.services.canonical_promoter import promote_paper_to_canonical
+        for pid in paper_ids:
+            row_obj = db.query(ExtractedRow).filter(ExtractedRow.paper_id == pid).first()
+            if row_obj:
+                promote_paper_to_canonical(pid, row_obj.project_id, db)
+
     return {"updated": len(updated)}
 
 

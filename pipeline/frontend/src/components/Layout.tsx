@@ -1,6 +1,6 @@
-import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
+import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/auth'
-import { FlaskConical, LogOut, User, ChevronDown } from 'lucide-react'
+import { LogOut, User, ChevronDown } from 'lucide-react'
 import { useState } from 'react'
 
 export default function Layout() {
@@ -19,13 +19,13 @@ export default function Layout() {
       <header className="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           {/* Logo */}
-          <NavLink to="/" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm group-hover:bg-blue-700 transition-colors">
-              <FlaskConical size={16} className="text-white" />
+          <NavLink to="/" className="flex items-center gap-3 group">
+            <div className="bg-white rounded-md p-1 shadow-sm border border-slate-100 group-hover:shadow-md transition-shadow">
+              <img src="/mcgill.png" alt="McGill" className="h-7 w-auto" />
             </div>
             <div className="hidden sm:block">
-              <span className="font-bold text-slate-900 text-sm">Food Research</span>
-              <span className="text-blue-600 font-bold text-sm"> Platform</span>
+              <span className="font-bold text-slate-900 text-sm">Meat & Cheese</span>
+              <span className="text-[#C8102E] font-bold text-sm"> Database</span>
             </div>
           </NavLink>
 
@@ -35,8 +35,11 @@ export default function Layout() {
               onClick={() => setUserMenuOpen(!userMenuOpen)}
               className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors"
             >
-              <div className="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center">
-                <User size={13} className="text-blue-600" />
+              <div
+                className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[11px] font-bold shadow-sm"
+                style={{ background: 'linear-gradient(135deg, #C8102E, #8B0000)' }}
+              >
+                {user?.full_name?.charAt(0)?.toUpperCase() ?? 'U'}
               </div>
               <span className="text-sm font-medium text-slate-700 hidden sm:block">
                 {user?.full_name}
@@ -66,20 +69,12 @@ export default function Layout() {
         </div>
       </header>
 
-      {/* Page content */}
-      <main className="flex-1">
+      {/* Dashboard content */}
+      <main className="flex-1 overflow-y-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
           <Outlet />
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
-          <p className="text-xs text-slate-400">Food Research Platform · AI-powered data extraction</p>
-          <p className="text-xs text-slate-400">McGill University</p>
-        </div>
-      </footer>
     </div>
   )
 }

@@ -3,6 +3,9 @@
 @tailwind utilities;
 
 @layer base {
+  html, body, #root {
+    height: 100%;
+  }
   body {
     @apply bg-slate-50 text-slate-900 font-sans antialiased;
   }
@@ -11,7 +14,7 @@
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-medium rounded-lg transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed text-sm;
+    @apply inline-flex items-center gap-2 px-4 py-2 bg-[#C8102E] hover:bg-[#a60d26] active:bg-[#8B0000] text-white font-medium rounded-lg transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed text-sm;
   }
   .btn-secondary {
     @apply inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 font-medium rounded-lg transition-all border border-slate-200 shadow-sm disabled:opacity-40 text-sm;
@@ -26,7 +29,7 @@
     @apply bg-white border border-slate-200 rounded-xl p-5 shadow-sm;
   }
   .input {
-    @apply w-full bg-white border border-slate-300 rounded-lg px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm;
+    @apply w-full bg-white border border-slate-300 rounded-lg px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#C8102E]/30 focus:border-[#C8102E] transition shadow-sm;
   }
   .label {
     @apply block text-xs font-semibold text-slate-600 mb-1.5 tracking-wide uppercase;
@@ -55,3 +58,28 @@
     @apply text-sm text-slate-500;
   }
 }
+
+/* ── Blob animations for Login page ────────────────────────────────────────── */
+
+@keyframes blob1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(-30px, 20px) scale(1.08); }
+  66%       { transform: translate(20px, -25px) scale(0.95); }
+}
+@keyframes blob2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(25px, -15px) scale(1.06); }
+  66%       { transform: translate(-20px, 20px) scale(0.97); }
+}
+@keyframes blob3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%       { transform: translate(15px, 15px) scale(1.12); }
+}
+
+.animate-blob1 { animation: blob1 12s ease-in-out infinite; }
+.animate-blob2 { animation: blob2 15s ease-in-out infinite; }
+.animate-blob3 { animation: blob3 10s ease-in-out infinite; }
+
+/* ── Sidebar scrollbar hide ─────────────────────────────────────────────────── */
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }

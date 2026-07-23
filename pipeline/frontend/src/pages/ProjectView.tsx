@@ -207,7 +207,7 @@ export default function ProjectView() {
                   <div className="text-sm font-medium text-slate-900 truncate">{paper.original_name}</div>
                   <div className="text-xs text-slate-400 mt-0.5">
                     {paper.page_count} pages
-                    {paper.row_count > 0 && <> · <span className="text-emerald-600 font-medium">{paper.row_count} rows extracted</span></>}
+                    {(paper.row_count ?? 0) > 0 && <> · <span className="text-emerald-600 font-medium">{paper.row_count} rows extracted</span></>}
                   </div>
                   {paper.error_message && (
                     <div className="text-xs text-red-500 mt-1 flex items-center gap-1">

@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     AI_PROVIDER: str = "vertexai"
 
     # --- Vertex AI (ADC / service account) ---
-    VERTEX_PROJECT: str = "joinagent"
+    VERTEX_PROJECT: str = "joinagent-8467d"
     VERTEX_LOCATION: str = "us-central1"
     VERTEX_MODEL: str = "gemini-2.5-flash"
 
@@ -32,11 +32,24 @@ class Settings(BaseSettings):
     # --- Anthropic ---
     ANTHROPIC_API_KEY: str = ""
 
+    # --- Groq (free tier, no billing needed) ---
+    GROQ_API_KEY: str = ""
+    GROQ_MODEL: str = "groq/compound"
+    # llama-3.3-70b-versatile used directly for food extraction (12 000 TPM, JSON mode native).
+    # groq/compound misroutes response_format requests to openai/gpt-oss-120b (8 000 TPM only).
+    GROQ_FOOD_MODEL: str = "llama-3.3-70b-versatile"
+
     AI_MAX_TOKENS: int = 16384
 
     MAX_UPLOAD_SIZE_MB: int = 50
     MAX_PAPERS_PER_UPLOAD: int = 10
     UPLOAD_DIR: str = "uploads"
+
+    # Docling / PP-Chart2Table cache directories (relative to backend root)
+    DOCLING_CACHE_DIR: str = "uploads/docling_cache"
+    CHART_CACHE_DIR: str = "uploads/chart_cache"
+    # Bump DOCLING_CACHE_VERSION to invalidate all cached extractions
+    DOCLING_CACHE_VERSION: str = "1"
 
     class Config:
         env_file = ".env"
