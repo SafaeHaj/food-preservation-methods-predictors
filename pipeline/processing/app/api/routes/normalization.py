@@ -2,13 +2,16 @@
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
-from app.db.database import get_db
-from app.db.models import NormalizationMapping, User
-from app.schemas.canonical import NormalizationMappingCreate, NormalizationMappingOut
+from shared.auth import get_current_user
+from shared.db.database import get_db
+from shared.errors import ConflictError, NotFoundError
+from shared.db.models import NormalizationMapping, User
+from shared.schemas.canonical import NormalizationMappingCreate, NormalizationMappingOut
+
+from app.services import scoping
 
 router = APIRouter(prefix="/normalization", tags=["normalization"])
 
@@ -23,12 +26,11 @@ def list_mappings(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    query = db.query(NormalizationMapping)
-    if project_id is not None:
-        query = query.filter(
-            (NormalizationMapping.project_id == project_id) |
-            (NormalizationMapping.project_id == None)
-        )
+    # include_shared: site-wide unit and term mappings have no project and apply to all.
+    query = scoping.scope_query(
+        db, db.query(NormalizationMapping), NormalizationMapping.project_id,
+        project_id, current_user, include_shared=True,
+    )
     if mapping_type:
         query = query.filter(NormalizationMapping.mapping_type == mapping_type)
     if q:
@@ -49,7 +51,7 @@ def create_mapping(
                               original_term=payload.original_term)
                   .first())
     if existing:
-        raise HTTPException(status_code=409, detail="Mapping already exists")
+        raise ConflictError("Mapping already exists")
     m = NormalizationMapping(**payload.model_dump(), created_by=current_user.id)
     db.add(m)
     db.commit()
@@ -65,7 +67,7 @@ def delete_mapping(
 ):
     m = db.query(NormalizationMapping).filter(NormalizationMapping.id == mapping_id).first()
     if not m:
-        raise HTTPException(status_code=404, detail="Mapping not found")
+        raise NotFoundError("Mapping not found")
     db.delete(m)
     db.commit()
 

@@ -1,14 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { thresholdsApi } from '../../services/api'
-import type { Threshold } from '../../types'
-import { Plus, Trash2, RefreshCw } from 'lucide-react'
+import { useThresholdMutations, useThresholds } from '../../api/canonical'
+import { get } from '../../api/client'
+import { errorMessage } from '../../api/errors'
+import { Plus, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function ThresholdShelfLifePage() {
   const { projectId } = useParams<{ projectId: string }>()
-  const [thresholds, setThresholds] = useState<Threshold[]>([])
-  const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [crossings, setCrossings] = useState<Record<number, unknown[]>>({})
   const [form, setForm] = useState({
@@ -17,37 +16,48 @@ export default function ThresholdShelfLifePage() {
     source_type: 'regulation', notes: '',
   })
 
-  const load = () => {
-    if (!projectId) return
-    setLoading(true)
-    thresholdsApi.list({ project_id: Number(projectId) }).then(setThresholds).finally(() => setLoading(false))
-  }
-
-  useEffect(() => { load() }, [projectId])
+  const { data: thresholds = [], isLoading: loading } = useThresholds(Number(projectId))
+  const thresholdMutations = useThresholdMutations(Number(projectId))
 
   const handleCreate = async () => {
     if (!form.name || !form.measurement_type) {
-      toast.error('Name and measurement type required')
+      toast.error('A name and a measurement type are required')
       return
     }
-    await thresholdsApi.create({ ...form, project_id: Number(projectId), threshold_value: Number(form.threshold_value) })
-    toast.success('Threshold created')
-    setShowForm(false)
-    load()
+    try {
+      await thresholdMutations.create.mutateAsync({
+        ...form,
+        threshold_value: Number(form.threshold_value),
+      })
+      toast.success('Threshold created')
+      setShowForm(false)
+    } catch (error) {
+      toast.error(errorMessage(error, 'Could not create the threshold'))
+    }
   }
 
   const handleDelete = async (id: number) => {
     if (!window.confirm('Delete this threshold?')) return
-    await thresholdsApi.delete(id)
-    toast.success('Deleted')
-    load()
+    try {
+      await thresholdMutations.remove.mutateAsync(id)
+      toast.success('Threshold deleted')
+    } catch (error) {
+      toast.error(errorMessage(error, 'Could not delete the threshold'))
+    }
   }
 
+  // Crossings are computed on demand for one threshold at a time, so they are fetched
+  // imperatively into local state rather than being a standing query.
   const handleAnalyze = async (id: number) => {
-    if (!projectId) return
-    const data = await thresholdsApi.getCrossings(id, Number(projectId))
-    setCrossings((prev) => ({ ...prev, [id]: data }))
-    toast.success(`Found ${data.length} trajectories analyzed`)
+    try {
+      const data = await get<unknown[]>(`/thresholds/${id}/crossings`, {
+        project_id: Number(projectId),
+      })
+      setCrossings((prev) => ({ ...prev, [id]: data }))
+      toast.success(`Analysed ${data.length} trajectories`)
+    } catch (error) {
+      toast.error(errorMessage(error, 'Could not analyse crossings'))
+    }
   }
 
   return (
@@ -57,9 +67,6 @@ export default function ThresholdShelfLifePage() {
         <div className="flex gap-2">
           <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-1 text-sm bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700">
             <Plus size={14} /> Add Threshold
-          </button>
-          <button onClick={load} className="flex items-center gap-1 text-sm text-gray-600 border border-gray-300 rounded px-2 py-1">
-            <RefreshCw size={14} />
           </button>
         </div>
       </div>

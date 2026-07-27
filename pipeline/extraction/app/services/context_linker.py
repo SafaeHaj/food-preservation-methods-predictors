@@ -213,9 +213,6 @@ def build_context_links(
                 continue
             if re.match(r'^\d{1,4}$', sole):  # page number only
                 continue
-        # Add same_page flag so the frontend can distinguish high-confidence links
-        link = dict(link)
-        link["same_page"] = (link.get("page_number") == page_number)
         filtered.append(link)
 
     return filtered[:max_links]

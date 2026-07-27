@@ -2,22 +2,24 @@
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
-from app.db.database import get_db
-from app.db.models import ThresholdDefinition, User
-from app.schemas.canonical import ThresholdCreate, ThresholdOut, ThresholdUpdate
+from shared.auth import get_current_user
+from shared.db.database import get_db
+from shared.db.models import ThresholdDefinition, User
+from shared.schemas.canonical import ThresholdCreate, ThresholdOut, ThresholdUpdate
+
+from app.services import scoping
 
 router = APIRouter(prefix="/thresholds", tags=["thresholds"])
 
 
-def _get_or_404(threshold_id: int, db: Session) -> ThresholdDefinition:
-    t = db.query(ThresholdDefinition).filter(ThresholdDefinition.id == threshold_id).first()
-    if not t:
-        raise HTTPException(status_code=404, detail="Threshold not found")
-    return t
+def _get_or_404(threshold_id: int, db: Session, user: User, role: str = "viewer"):
+    """Fetch and authorize through the project that owns it."""
+    return scoping.require_entity(
+        db, ThresholdDefinition, threshold_id, user, label="Threshold", required_role=role
+    )
 
 
 @router.get("", response_model=list[ThresholdOut])
@@ -28,9 +30,10 @@ def list_thresholds(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    q = db.query(ThresholdDefinition)
-    if project_id:
-        q = q.filter(ThresholdDefinition.project_id == project_id)
+    q = scoping.scope_query(
+        db, db.query(ThresholdDefinition), ThresholdDefinition.project_id,
+        project_id, current_user,
+    )
     if measurement_type:
         q = q.filter(ThresholdDefinition.measurement_type == measurement_type)
     if is_active is not None:
@@ -57,7 +60,7 @@ def get_threshold(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return _get_or_404(threshold_id, db)
+    return _get_or_404(threshold_id, db, current_user)
 
 
 @router.patch("/{threshold_id}", response_model=ThresholdOut)
@@ -67,7 +70,7 @@ def update_threshold(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    t = _get_or_404(threshold_id, db)
+    t = _get_or_404(threshold_id, db, current_user)
     for k, v in payload.model_dump(exclude_none=True).items():
         setattr(t, k, v)
     t.version += 1
@@ -82,7 +85,7 @@ def delete_threshold(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    t = _get_or_404(threshold_id, db)
+    t = _get_or_404(threshold_id, db, current_user)
     db.delete(t)
     db.commit()
 
@@ -95,6 +98,6 @@ def get_threshold_crossings(
     current_user: User = Depends(get_current_user),
 ):
     """Return which trajectories cross this threshold and at what time."""
-    t = _get_or_404(threshold_id, db)
+    t = _get_or_404(threshold_id, db, current_user)
     from app.services.threshold_analysis import compute_crossings
     return compute_crossings(t, project_id, db)

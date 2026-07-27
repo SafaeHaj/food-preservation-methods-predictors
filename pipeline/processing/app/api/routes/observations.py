@@ -3,24 +3,26 @@
 import json
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
-from app.db.database import get_db
-from app.db.models import AuditEvent, Observation, TreatmentArm, User
-from app.schemas.canonical import (
+from shared.auth import get_current_user
+from shared.db.database import get_db
+from shared.db.models import AuditEvent, Observation, TreatmentArm, User
+from shared.schemas.canonical import (
     ObservationBulkCreate, ObservationCreate, ObservationOut, ObservationUpdate,
 )
+
+from app.services import scoping
 
 router = APIRouter(prefix="/observations", tags=["observations"])
 
 
-def _get_or_404(obs_id: int, db: Session) -> Observation:
-    o = db.query(Observation).filter(Observation.id == obs_id).first()
-    if not o:
-        raise HTTPException(status_code=404, detail="Observation not found")
-    return o
+def _get_or_404(obs_id: int, db: Session, user: User, role: str = "viewer"):
+    """Fetch and authorize through the project that owns it."""
+    return scoping.require_entity(
+        db, Observation, obs_id, user, label="Observation", required_role=role
+    )
 
 
 def _audit(db, user, eid, action, before=None, after=None):
@@ -45,17 +47,23 @@ def list_observations(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    from app.db.models import Experiment, Study
-    q = db.query(Observation)
+    from shared.db.models import Experiment, Study
+
+    # Always join up to Study: an observation's project is four hops away, and the scope
+    # has to be applied even when the caller supplies no filter at all. Without this,
+    # `GET /observations?limit=500` returned other tenants' measurements.
+    q = scoping.scope_query(
+        db,
+        (db.query(Observation)
+           .join(TreatmentArm, TreatmentArm.id == Observation.treatment_arm_id)
+           .join(Experiment, Experiment.id == TreatmentArm.experiment_id)
+           .join(Study, Study.id == Experiment.study_id)),
+        Study.project_id, project_id, current_user,
+    )
     if treatment_arm_id:
         q = q.filter(Observation.treatment_arm_id == treatment_arm_id)
     elif experiment_id:
-        q = q.join(TreatmentArm).filter(TreatmentArm.experiment_id == experiment_id)
-    elif project_id:
-        q = (q.join(TreatmentArm)
-               .join(Experiment, TreatmentArm.experiment_id == Experiment.id)
-               .join(Study, Experiment.study_id == Study.id)
-               .filter(Study.project_id == project_id))
+        q = q.filter(TreatmentArm.experiment_id == experiment_id)
     if measurement_type:
         q = q.filter(Observation.measurement_type == measurement_type)
     if review_status:
@@ -105,7 +113,7 @@ def get_observation(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return _get_or_404(obs_id, db)
+    return _get_or_404(obs_id, db, current_user)
 
 
 @router.patch("/{obs_id}", response_model=ObservationOut)
@@ -115,7 +123,7 @@ def update_observation(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    obs = _get_or_404(obs_id, db)
+    obs = _get_or_404(obs_id, db, current_user)
     before = {"review_status": obs.review_status, "numeric_value_normalized": obs.numeric_value_normalized}
     data = payload.model_dump(exclude_none=True)
     for k, v in data.items():
@@ -135,7 +143,7 @@ def approve_observation(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    obs = _get_or_404(obs_id, db)
+    obs = _get_or_404(obs_id, db, current_user)
     obs.review_status = "approved"
     obs.updated_by = current_user.id
     obs.version += 1
@@ -152,7 +160,7 @@ def delete_observation(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    obs = _get_or_404(obs_id, db)
+    obs = _get_or_404(obs_id, db, current_user)
     _audit(db, current_user, obs_id, "delete",
            {"measurement_type": obs.measurement_type, "time_days": obs.time_days}, None)
     db.delete(obs)

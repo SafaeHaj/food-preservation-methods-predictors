@@ -15,9 +15,9 @@ import {
 } from '../data/columnRoles'
 import {
   uploadDataset, listDatasets, updateMapping as apiUpdateMapping,
-  deleteDataset as apiDeleteDataset, downloadDatasetUrl,
+  deleteDataset as apiDeleteDataset, downloadDataset,
   type BackendDataset,
-} from '../services/modelLabApi'
+} from '../api/modelLab'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface ParsedFile {
@@ -802,13 +802,15 @@ export default function DatasetTab({ onGoToTrain }: { onGoToTrain?: () => void }
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <a
-              href={downloadDatasetUrl(projectId, backendDataset.id)}
-              download={backendDataset.original_name}
+            {/* Routed through the client so it carries the bearer token and honours
+                VITE_API_URL. The previous href was a bare "/api/..." string, which broke
+                whenever the gateway was not same-origin. */}
+            <button
+              onClick={() => downloadDataset(projectId, backendDataset.id, backendDataset.original_name)}
               className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
             >
               <Download size={12} /> Download
-            </a>
+            </button>
           </div>
         </div>
 

@@ -24,7 +24,6 @@ from typing import Optional
 
 import pandas as pd
 
-from app.core.config import settings
 from app.services.docling_extractor import DoclingFigure
 
 logger = logging.getLogger(__name__)

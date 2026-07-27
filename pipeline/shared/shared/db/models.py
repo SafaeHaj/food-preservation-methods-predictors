@@ -6,20 +6,52 @@ Hierarchy (canonical):
                               ↘ ExperimentMicroorganism → Microorganism
 
 Supporting:
-  Job, ExtractionRun, ExtractionChunk
-  ProvenanceRecord, ValidationIssue, AuditEvent
-  ProjectMember, ReviewAssignment, Comment
+  Job, ExtractionRun
+  AuditEvent
+  ProjectMember
   NormalizationMapping
-  TrajectoryDefinition, ModelRun, ModelFit, ModelPrediction
+  TrajectoryDefinition (+ trajectory_observations junction), ModelRun, ModelFit, ModelPrediction
   ImputationProposal, ThresholdDefinition
   DatasetSnapshot, ExportRun
 
-Legacy (preserved, never deleted):
-  User, Project, Paper, ExtractedRow
+Removed (no reachable code touched them; see the schema audit in the migration plan):
+  ProvenanceRecord, ValidationIssue, Comment, ReviewAssignment, ExtractionChunk
+  and Observation.chunk_id. ExtEvidence is KEPT: unlike the others it is still written
+  by the food_extraction pipeline, even though the current frontend never calls it.
+
+  ExtractedRow was removed with the legacy flat-extraction path. It was a free-schema
+  key/value blob that ran in parallel with the ext_* tables below, and the only bridge
+  from it to the canonical hierarchy (canonical_promoter) now reads ext_* directly.
+
+Platform:
+  User, Project, Paper
 
 Food-safety extraction schema (new):
   ExtIngredient, ExtExperiment, ExtExperimentIngredient,
   ExtIndicator, ExtMeasurement, ExtEvidence
+
+──────────────────────────────────────────────────────────────────────────────
+Foreign-key deletion policy
+──────────────────────────────────────────────────────────────────────────────
+Every FK declares an explicit `ondelete`. Two exceptions are marked RESTRICT in place
+with a comment saying why. Pick the rule, don't reason case by case -- deciding ad hoc
+is how `jobs.paper_id` ended up with no policy and made deleting a paper impossible.
+
+  1. Tenancy root  -- anything scoped to `projects.id`            → CASCADE
+  2. Ownership     -- child cannot exist without its parent       → CASCADE
+                      (nullable=False structural edges)
+  3. Provenance    -- nullable pointer at the work that produced  → SET NULL
+                      the row; the row outlives it (jobs, runs)
+  4. Attribution   -- nullable `users.id` (created_by, actor_id)  → SET NULL
+  5. Cross-ref     -- nullable optional pointer at a sibling      → SET NULL
+
+Note the asymmetry on `jobs`: `paper_id` is SET NULL (the paper goes, the project
+stays, the run history stays queryable) while `project_id` is CASCADE (the whole tenant
+is gone, so is its history).
+
+A relationship whose child FK is CASCADE must also set `passive_deletes=True`, or
+SQLAlchemy loads every child and issues its own UPDATE/DELETE, silently bypassing the
+database rule this policy exists to establish.
 """
 
 import json
@@ -27,11 +59,11 @@ from datetime import datetime
 
 from sqlalchemy import (
     Boolean, Column, DateTime, Float, ForeignKey,
-    Index, Integer, String, Text, UniqueConstraint, JSON,
+    Index, Integer, String, Table, Text, UniqueConstraint, JSON,
 )
 from sqlalchemy.orm import relationship
 
-from app.db.database import Base
+from shared.db.database import Base
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -62,16 +94,18 @@ class Project(Base):
     schema_json   = Column(Text, default="[]")
     created_at    = Column(DateTime, default=datetime.utcnow)
     updated_at    = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # Deliberately RESTRICT (no ondelete): a project must always have an owner, so deleting
+    # a user with projects should fail loudly rather than orphan or cascade them.
     owner_id      = Column(Integer, ForeignKey("users.id"), nullable=False)
 
     owner         = relationship("User", back_populates="projects")
-    papers        = relationship("Paper", back_populates="project", cascade="all, delete-orphan")
-    members       = relationship("ProjectMember", back_populates="project", cascade="all, delete-orphan")
-    studies       = relationship("Study", back_populates="project", cascade="all, delete-orphan")
-    thresholds    = relationship("ThresholdDefinition", back_populates="project", cascade="all, delete-orphan")
-    norm_mappings = relationship("NormalizationMapping", back_populates="project", cascade="all, delete-orphan")
-    snapshots     = relationship("DatasetSnapshot", back_populates="project", cascade="all, delete-orphan")
-    export_runs   = relationship("ExportRun", back_populates="project", cascade="all, delete-orphan")
+    papers        = relationship("Paper", back_populates="project", cascade="all, delete-orphan", passive_deletes=True)
+    members       = relationship("ProjectMember", back_populates="project", cascade="all, delete-orphan", passive_deletes=True)
+    studies       = relationship("Study", back_populates="project", cascade="all, delete-orphan", passive_deletes=True)
+    thresholds    = relationship("ThresholdDefinition", back_populates="project", cascade="all, delete-orphan", passive_deletes=True)
+    norm_mappings = relationship("NormalizationMapping", back_populates="project", cascade="all, delete-orphan", passive_deletes=True)
+    snapshots     = relationship("DatasetSnapshot", back_populates="project", cascade="all, delete-orphan", passive_deletes=True)
+    export_runs   = relationship("ExportRun", back_populates="project", cascade="all, delete-orphan", passive_deletes=True)
 
     @property
     def schema(self):
@@ -82,7 +116,7 @@ class Paper(Base):
     __tablename__ = "papers"
 
     id            = Column(Integer, primary_key=True, index=True)
-    project_id    = Column(Integer, ForeignKey("projects.id"), nullable=False)
+    project_id    = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
     filename      = Column(String, nullable=False)
     original_name = Column(String, nullable=False)
     file_path     = Column(String, nullable=False)
@@ -93,36 +127,12 @@ class Paper(Base):
     uploaded_at   = Column(DateTime, default=datetime.utcnow)
 
     project         = relationship("Project", back_populates="papers")
-    rows            = relationship("ExtractedRow", back_populates="paper", cascade="all, delete-orphan")
-    extraction_runs = relationship("ExtractionRun", back_populates="paper", cascade="all, delete-orphan")
+    extraction_runs = relationship("ExtractionRun", back_populates="paper", cascade="all, delete-orphan", passive_deletes=True)
     study           = relationship("Study", back_populates="paper", uselist=False)
-
-
-class ExtractedRow(Base):
-    """Legacy flat extracted row — preserved permanently, never auto-deleted."""
-    __tablename__ = "extracted_rows"
-
-    id              = Column(Integer, primary_key=True, index=True)
-    paper_id        = Column(Integer, ForeignKey("papers.id"), nullable=False)
-    project_id      = Column(Integer, ForeignKey("projects.id"), nullable=False)
-    data_json       = Column(Text, default="{}")
-    provenance_json = Column(Text, default="{}")
-    status          = Column(String, default="pending")
-    reviewer_note   = Column(Text, default="")
-    created_at      = Column(DateTime, default=datetime.utcnow)
-    updated_at      = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    # Link to canonical entity if migrated
-    canonical_study_id = Column(Integer, ForeignKey("studies.id"), nullable=True)
-
-    paper = relationship("Paper", back_populates="rows")
-
-    @property
-    def data(self):
-        return json.loads(self.data_json) if self.data_json else {}
-
-    @property
-    def provenance(self):
-        return json.loads(self.provenance_json) if self.provenance_json else {}
+    # No cascade: jobs are the async audit trail and outlive the paper they ran on
+    # (`jobs.paper_id` is ON DELETE SET NULL). This relationship exists so the ORM is aware
+    # of the table at all -- its absence is what made deleting a paper fail on the FK.
+    jobs            = relationship("Job", back_populates="paper", passive_deletes=True)
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -134,8 +144,8 @@ class Job(Base):
     __tablename__ = "jobs"
 
     id              = Column(Integer, primary_key=True, index=True)
-    project_id      = Column(Integer, ForeignKey("projects.id"), nullable=True)
-    paper_id        = Column(Integer, ForeignKey("papers.id"), nullable=True)
+    project_id      = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=True)
+    paper_id        = Column(Integer, ForeignKey("papers.id", ondelete="SET NULL"), nullable=True)
     job_type        = Column(String, nullable=False)   # extraction|modelling|export|normalization
     status          = Column(String, default="queued") # queued|parsing|chunking|extracting_metadata|extracting_tables|extracting_observations|normalizing|validating|awaiting_review|completed|partial_success|failed|cancelled
     progress        = Column(Integer, default=0)        # 0-100
@@ -145,16 +155,30 @@ class Job(Base):
     result_json     = Column(Text, default="{}")
     idempotency_key = Column(String, unique=True, index=True, nullable=True)
     celery_task_id  = Column(String, index=True, nullable=True)
-    created_by      = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_by      = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at      = Column(DateTime, default=datetime.utcnow)
     started_at      = Column(DateTime, nullable=True)
     completed_at    = Column(DateTime, nullable=True)
 
     extraction_run  = relationship("ExtractionRun", back_populates="job", uselist=False)
+    paper           = relationship("Paper", back_populates="jobs")
 
     @property
     def result(self):
-        return json.loads(self.result_json) if self.result_json else {}
+        # Tolerant on read: a job written by an older revision may hold anything.
+        try:
+            return json.loads(self.result_json) if self.result_json else {}
+        except (TypeError, ValueError):
+            return {}
+
+    @result.setter
+    def result(self, value):
+        """Serialize on assignment so no caller has to remember `json.dumps`.
+
+        Every task previously wrote `result_json` by hand, and each picked its own key
+        names and its own idea of what an empty result looked like ("{}" vs "" vs null).
+        """
+        self.result_json = json.dumps(value or {}, default=str)
 
 
 class ExtractionRun(Base):
@@ -162,8 +186,8 @@ class ExtractionRun(Base):
     __tablename__ = "extraction_runs"
 
     id              = Column(Integer, primary_key=True, index=True)
-    paper_id        = Column(Integer, ForeignKey("papers.id"), nullable=False)
-    job_id          = Column(Integer, ForeignKey("jobs.id"), nullable=True)
+    paper_id        = Column(Integer, ForeignKey("papers.id", ondelete="CASCADE"), nullable=False)
+    job_id          = Column(Integer, ForeignKey("jobs.id", ondelete="SET NULL"), nullable=True)
     provider        = Column(String)        # vertexai|google_ai|openai|anthropic
     model_name      = Column(String)
     prompt_version  = Column(String)
@@ -178,27 +202,6 @@ class ExtractionRun(Base):
 
     paper  = relationship("Paper", back_populates="extraction_runs")
     job    = relationship("Job", back_populates="extraction_run")
-    chunks = relationship("ExtractionChunk", back_populates="run", cascade="all, delete-orphan")
-
-
-class ExtractionChunk(Base):
-    """One page/section/table from a PDF during extraction."""
-    __tablename__ = "extraction_chunks"
-
-    id              = Column(Integer, primary_key=True, index=True)
-    run_id          = Column(Integer, ForeignKey("extraction_runs.id"), nullable=False)
-    chunk_type      = Column(String)   # page|section|table|figure_caption
-    page_number     = Column(Integer)
-    section_name    = Column(String)
-    table_number    = Column(Integer, nullable=True)
-    text_content    = Column(Text, default="")
-    token_count     = Column(Integer, default=0)
-    bbox_json       = Column(Text)   # [x0,y0,x1,y1]
-    has_table       = Column(Boolean, default=False)
-    table_json      = Column(Text)   # structured table data
-    created_at      = Column(DateTime, default=datetime.utcnow)
-
-    run = relationship("ExtractionRun", back_populates="chunks")
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -210,8 +213,8 @@ class Study(Base):
     __tablename__ = "studies"
 
     id                    = Column(Integer, primary_key=True, index=True)
-    project_id            = Column(Integer, ForeignKey("projects.id"), nullable=False)
-    paper_id              = Column(Integer, ForeignKey("papers.id"), nullable=True)
+    project_id            = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    paper_id              = Column(Integer, ForeignKey("papers.id", ondelete="SET NULL"), nullable=True)
     title                 = Column(Text)
     authors_json          = Column(Text, default="[]")   # [str]
     publication_year      = Column(Integer)
@@ -226,17 +229,15 @@ class Study(Base):
     version               = Column(Integer, default=1)
     created_at            = Column(DateTime, default=datetime.utcnow)
     updated_at            = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    created_by            = Column(Integer, ForeignKey("users.id"), nullable=True)
-    updated_by            = Column(Integer, ForeignKey("users.id"), nullable=True)
-    legacy_row_id         = Column(Integer, ForeignKey("extracted_rows.id"), nullable=True)
+    created_by            = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    updated_by            = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    # `legacy_row_id` pointed at extracted_rows and formed a circular FK pair with
+    # extracted_rows.canonical_study_id. Both went with the legacy flat-extraction path;
+    # the schema no longer contains a cycle.
 
     project       = relationship("Project", back_populates="studies")
     paper         = relationship("Paper", back_populates="study")
-    experiments   = relationship("Experiment", back_populates="study", cascade="all, delete-orphan")
-    provenance    = relationship("ProvenanceRecord", back_populates="study",
-                                 primaryjoin="ProvenanceRecord.study_id == Study.id")
-    # Comments are accessed via Comment.entity_type + entity_id query (polymorphic)
-    # A direct relationship is omitted to avoid SQLAlchemy ambiguity warnings.
+    experiments   = relationship("Experiment", back_populates="study", cascade="all, delete-orphan", passive_deletes=True)
 
     __table_args__ = (
         Index("ix_study_project_doi", "project_id", "doi_normalized"),
@@ -252,7 +253,7 @@ class Microorganism(Base):
     __tablename__ = "microorganisms"
 
     id              = Column(Integer, primary_key=True, index=True)
-    project_id      = Column(Integer, ForeignKey("projects.id"), nullable=True)  # NULL = global
+    project_id      = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=True)  # NULL = global
     genus           = Column(String, nullable=False)
     species         = Column(String)
     strain          = Column(String)
@@ -277,7 +278,7 @@ class Experiment(Base):
     __tablename__ = "experiments"
 
     id                              = Column(Integer, primary_key=True, index=True)
-    study_id                        = Column(Integer, ForeignKey("studies.id"), nullable=False)
+    study_id                        = Column(Integer, ForeignKey("studies.id", ondelete="CASCADE"), nullable=False)
     experiment_label                = Column(String)
     food_category                   = Column(String)   # cheese|meat|other
     product_name_original           = Column(String)
@@ -312,12 +313,12 @@ class Experiment(Base):
     version                         = Column(Integer, default=1)
     created_at                      = Column(DateTime, default=datetime.utcnow)
     updated_at                      = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    created_by                      = Column(Integer, ForeignKey("users.id"), nullable=True)
-    updated_by                      = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_by                      = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    updated_by                      = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     study           = relationship("Study", back_populates="experiments")
-    treatment_arms  = relationship("TreatmentArm", back_populates="experiment", cascade="all, delete-orphan")
-    microorganisms  = relationship("ExperimentMicroorganism", back_populates="experiment", cascade="all, delete-orphan")
+    treatment_arms  = relationship("TreatmentArm", back_populates="experiment", cascade="all, delete-orphan", passive_deletes=True)
+    microorganisms  = relationship("ExperimentMicroorganism", back_populates="experiment", cascade="all, delete-orphan", passive_deletes=True)
     trajectories    = relationship("TrajectoryDefinition", back_populates="experiment")
 
     @property
@@ -334,8 +335,8 @@ class ExperimentMicroorganism(Base):
     __tablename__ = "experiment_microorganisms"
 
     id               = Column(Integer, primary_key=True, index=True)
-    experiment_id    = Column(Integer, ForeignKey("experiments.id"), nullable=False)
-    microorganism_id = Column(Integer, ForeignKey("microorganisms.id"), nullable=False)
+    experiment_id    = Column(Integer, ForeignKey("experiments.id", ondelete="CASCADE"), nullable=False)
+    microorganism_id = Column(Integer, ForeignKey("microorganisms.id", ondelete="CASCADE"), nullable=False)
     role_in_study    = Column(String)  # target|indicator|background|contaminant
     inoculum_level   = Column(Float)
     inoculum_unit    = Column(String)
@@ -353,10 +354,10 @@ class TreatmentArm(Base):
     __tablename__ = "treatment_arms"
 
     id                          = Column(Integer, primary_key=True, index=True)
-    experiment_id               = Column(Integer, ForeignKey("experiments.id"), nullable=False)
+    experiment_id               = Column(Integer, ForeignKey("experiments.id", ondelete="CASCADE"), nullable=False)
     arm_label                   = Column(String)
     is_control                  = Column(Boolean, default=False)
-    control_arm_id              = Column(Integer, ForeignKey("treatment_arms.id"), nullable=True)
+    control_arm_id              = Column(Integer, ForeignKey("treatment_arms.id", ondelete="SET NULL"), nullable=True)
     treatment_type              = Column(String)   # antimicrobial|essential_oil|bacteriocin|packaging|temperature|combination|vehicle_control|untreated_control|other
     ingredient_name_original    = Column(String)
     ingredient_name_normalized  = Column(String)
@@ -374,11 +375,11 @@ class TreatmentArm(Base):
     version                     = Column(Integer, default=1)
     created_at                  = Column(DateTime, default=datetime.utcnow)
     updated_at                  = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    created_by                  = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_by                  = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     experiment    = relationship("Experiment", back_populates="treatment_arms")
     control_arm   = relationship("TreatmentArm", remote_side="TreatmentArm.id", foreign_keys=[control_arm_id])
-    observations  = relationship("Observation", back_populates="treatment_arm", cascade="all, delete-orphan")
+    observations  = relationship("Observation", back_populates="treatment_arm", cascade="all, delete-orphan", passive_deletes=True)
     trajectories  = relationship("TrajectoryDefinition", back_populates="treatment_arm")
 
     @property
@@ -395,8 +396,8 @@ class Observation(Base):
     __tablename__ = "observations"
 
     id                      = Column(Integer, primary_key=True, index=True)
-    treatment_arm_id        = Column(Integer, ForeignKey("treatment_arms.id"), nullable=False)
-    microorganism_id        = Column(Integer, ForeignKey("microorganisms.id"), nullable=True)
+    treatment_arm_id        = Column(Integer, ForeignKey("treatment_arms.id", ondelete="CASCADE"), nullable=False)
+    microorganism_id        = Column(Integer, ForeignKey("microorganisms.id", ondelete="SET NULL"), nullable=True)
 
     measurement_type        = Column(String, nullable=False)  # microbial_count|ph|water_activity|moisture|color_L|color_a|color_b|texture|TBARS|TBA|PV|TVB_N|sensory|protein|weight_loss|shelf_life|threshold_crossing|other
     measurement_subtype     = Column(String)   # e.g. aerobic_plate_count|yeast_mold|Listeria
@@ -434,17 +435,12 @@ class Observation(Base):
     version                 = Column(Integer, default=1)
     created_at              = Column(DateTime, default=datetime.utcnow)
     updated_at              = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    created_by              = Column(Integer, ForeignKey("users.id"), nullable=True)
-    updated_by              = Column(Integer, ForeignKey("users.id"), nullable=True)
-    extraction_run_id       = Column(Integer, ForeignKey("extraction_runs.id"), nullable=True)
-    chunk_id                = Column(Integer, ForeignKey("extraction_chunks.id"), nullable=True)
+    created_by              = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    updated_by              = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    extraction_run_id       = Column(Integer, ForeignKey("extraction_runs.id", ondelete="SET NULL"), nullable=True)
 
     treatment_arm   = relationship("TreatmentArm", back_populates="observations")
     microorganism   = relationship("Microorganism", back_populates="observations")
-    provenance      = relationship("ProvenanceRecord", back_populates="observation",
-                                    primaryjoin="ProvenanceRecord.observation_id == Observation.id")
-    validation_issues = relationship("ValidationIssue", back_populates="observation",
-                                      primaryjoin="ValidationIssue.observation_id == Observation.id")
 
     __table_args__ = (
         Index("ix_obs_arm_time", "treatment_arm_id", "time_days"),
@@ -456,74 +452,12 @@ class Observation(Base):
 # EVIDENCE AND QUALITY
 # ════════════════════════════════════════════════════════════════════════════
 
-class ProvenanceRecord(Base):
-    """Field- or observation-level PDF evidence."""
-    __tablename__ = "provenance_records"
-
-    id                  = Column(Integer, primary_key=True, index=True)
-    # Target entity (polymorphic)
-    entity_type         = Column(String, nullable=False)  # study|experiment|treatment_arm|observation
-    entity_id           = Column(Integer, nullable=False, index=True)
-    study_id            = Column(Integer, ForeignKey("studies.id"), nullable=True)
-    observation_id      = Column(Integer, ForeignKey("observations.id"), nullable=True)
-    field_name          = Column(String)     # which specific field this provenance covers
-    paper_id            = Column(Integer, ForeignKey("papers.id"), nullable=False)
-    page_number         = Column(Integer)
-    page_label          = Column(String)    # e.g. "S3" for supplementary
-    section_name        = Column(String)
-    table_number        = Column(Integer, nullable=True)
-    figure_number       = Column(Integer, nullable=True)
-    table_row_header    = Column(String)
-    table_col_header    = Column(String)
-    source_snippet      = Column(Text)      # exact text from PDF
-    bbox_x0             = Column(Float)
-    bbox_y0             = Column(Float)
-    bbox_x1             = Column(Float)
-    bbox_y1             = Column(Float)
-    extraction_provider = Column(String)
-    extraction_model    = Column(String)
-    prompt_version      = Column(String)
-    extraction_run_id   = Column(Integer, ForeignKey("extraction_runs.id"), nullable=True)
-    confidence          = Column(Float)     # 0-1
-    manually_verified   = Column(Boolean, default=False)
-    verified_by         = Column(Integer, ForeignKey("users.id"), nullable=True)
-    verified_at         = Column(DateTime, nullable=True)
-    created_at          = Column(DateTime, default=datetime.utcnow)
-
-    study       = relationship("Study", back_populates="provenance", foreign_keys=[study_id])
-    observation = relationship("Observation", back_populates="provenance", foreign_keys=[observation_id])
-
-
-class ValidationIssue(Base):
-    """A scientific validation rule violation."""
-    __tablename__ = "validation_issues"
-
-    id               = Column(Integer, primary_key=True, index=True)
-    entity_type      = Column(String)     # study|experiment|treatment_arm|observation
-    entity_id        = Column(Integer, index=True)
-    observation_id   = Column(Integer, ForeignKey("observations.id"), nullable=True)
-    field_name       = Column(String)
-    rule_code        = Column(String, index=True)  # stable code e.g. "VAL-001"
-    severity         = Column(String)              # error|warning|info
-    message          = Column(Text)
-    detected_value   = Column(String)
-    expected_condition = Column(String)
-    remediation_hint = Column(Text)
-    resolved         = Column(Boolean, default=False)
-    resolution_note  = Column(Text)
-    resolved_by      = Column(Integer, ForeignKey("users.id"), nullable=True)
-    resolved_at      = Column(DateTime, nullable=True)
-    created_at       = Column(DateTime, default=datetime.utcnow)
-
-    observation = relationship("Observation", back_populates="validation_issues", foreign_keys=[observation_id])
-
-
 class AuditEvent(Base):
     """Immutable record of every create/update/delete/approve/reject action."""
     __tablename__ = "audit_events"
 
     id            = Column(Integer, primary_key=True, index=True)
-    actor_id      = Column(Integer, ForeignKey("users.id"), nullable=True)
+    actor_id      = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     entity_type   = Column(String, nullable=False, index=True)
     entity_id     = Column(Integer, nullable=False, index=True)
     action        = Column(String, nullable=False)  # create|update|delete|approve|reject|normalize|impute|import|export
@@ -533,7 +467,7 @@ class AuditEvent(Base):
     reason        = Column(Text)
     source        = Column(String)  # user|ai_extraction|normalizer|model|import
     ip_address    = Column(String)
-    project_id    = Column(Integer, ForeignKey("projects.id"), nullable=True)
+    project_id    = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=True)
     created_at    = Column(DateTime, default=datetime.utcnow, index=True)
 
     actor = relationship("User", back_populates="audit_events", foreign_keys=[actor_id])
@@ -552,10 +486,12 @@ class ProjectMember(Base):
     __tablename__ = "project_members"
 
     id          = Column(Integer, primary_key=True, index=True)
-    project_id  = Column(Integer, ForeignKey("projects.id"), nullable=False)
+    project_id  = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    # Deliberately RESTRICT (no ondelete): a membership row without a user is meaningless,
+    # and silently dropping someone's access on user deletion would be worse than failing.
     user_id     = Column(Integer, ForeignKey("users.id"), nullable=False)
     role        = Column(String, nullable=False)   # owner|admin|reviewer|analyst|viewer
-    invited_by  = Column(Integer, ForeignKey("users.id"), nullable=True)
+    invited_by  = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     joined_at   = Column(DateTime, default=datetime.utcnow)
 
     project = relationship("Project", back_populates="members")
@@ -564,42 +500,6 @@ class ProjectMember(Base):
     __table_args__ = (
         UniqueConstraint("project_id", "user_id", name="uq_member"),
     )
-
-
-class ReviewAssignment(Base):
-    """Assigns a paper/study to a specific reviewer."""
-    __tablename__ = "review_assignments"
-
-    id              = Column(Integer, primary_key=True, index=True)
-    project_id      = Column(Integer, ForeignKey("projects.id"), nullable=False)
-    study_id        = Column(Integer, ForeignKey("studies.id"), nullable=True)
-    paper_id        = Column(Integer, ForeignKey("papers.id"), nullable=True)
-    reviewer_id     = Column(Integer, ForeignKey("users.id"), nullable=False)
-    assigned_by     = Column(Integer, ForeignKey("users.id"), nullable=True)
-    status          = Column(String, default="pending")   # pending|in_progress|completed|reassigned
-    due_date        = Column(DateTime, nullable=True)
-    completed_at    = Column(DateTime, nullable=True)
-    notes           = Column(Text)
-    created_at      = Column(DateTime, default=datetime.utcnow)
-
-
-class Comment(Base):
-    """Threaded comments on any entity."""
-    __tablename__ = "comments"
-
-    id          = Column(Integer, primary_key=True, index=True)
-    project_id  = Column(Integer, ForeignKey("projects.id"), nullable=True)
-    entity_type = Column(String, nullable=False)   # study|experiment|treatment_arm|observation|row
-    entity_id   = Column(Integer, nullable=False, index=True)
-    parent_id   = Column(Integer, ForeignKey("comments.id"), nullable=True)
-    author_id   = Column(Integer, ForeignKey("users.id"), nullable=False)
-    body        = Column(Text, nullable=False)
-    resolved    = Column(Boolean, default=False)
-    created_at  = Column(DateTime, default=datetime.utcnow)
-    updated_at  = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    replies = relationship("Comment", back_populates="parent")
-    parent  = relationship("Comment", back_populates="replies", remote_side="Comment.id")
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -611,14 +511,14 @@ class NormalizationMapping(Base):
     __tablename__ = "normalization_mappings"
 
     id              = Column(Integer, primary_key=True, index=True)
-    project_id      = Column(Integer, ForeignKey("projects.id"), nullable=True)  # NULL = global
+    project_id      = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=True)  # NULL = global
     mapping_type    = Column(String, nullable=False)   # microorganism|ingredient|cheese_type|packaging|application_method|unit|measurement_type
     original_term   = Column(String, nullable=False)
     canonical_term  = Column(String, nullable=False)
     canonical_id    = Column(Integer, nullable=True)  # FK to canonical entity if applicable
     confidence      = Column(Float, default=1.0)
     source          = Column(String)   # manual|ai_suggested|imported
-    created_by      = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_by      = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at      = Column(DateTime, default=datetime.utcnow)
     applied_count   = Column(Integer, default=0)
 
@@ -633,38 +533,61 @@ class NormalizationMapping(Base):
 # TRAJECTORIES AND MODELS
 # ════════════════════════════════════════════════════════════════════════════
 
+#: Which observations make up a trajectory. Previously a JSON list of ids on
+#: trajectory_definitions, which hid a many-to-many behind a text column (a 1NF violation and
+#: unqueryable/unenforceable). Now a proper junction with real foreign keys.
+trajectory_observations = Table(
+    "trajectory_observations",
+    Base.metadata,
+    Column("trajectory_id", Integer,
+           ForeignKey("trajectory_definitions.id", ondelete="CASCADE"), primary_key=True),
+    Column("observation_id", Integer,
+           ForeignKey("observations.id", ondelete="CASCADE"), primary_key=True),
+)
+
+
 class TrajectoryDefinition(Base):
     """Defines a compatible group of observations forming a temporal series."""
     __tablename__ = "trajectory_definitions"
 
     id                  = Column(Integer, primary_key=True, index=True)
-    project_id          = Column(Integer, ForeignKey("projects.id"), nullable=False)
-    experiment_id       = Column(Integer, ForeignKey("experiments.id"), nullable=True)
-    treatment_arm_id    = Column(Integer, ForeignKey("treatment_arms.id"), nullable=True)
+    project_id          = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    experiment_id       = Column(Integer, ForeignKey("experiments.id", ondelete="SET NULL"), nullable=True)
+    treatment_arm_id    = Column(Integer, ForeignKey("treatment_arms.id", ondelete="SET NULL"), nullable=True)
     label               = Column(String)
     measurement_type    = Column(String, nullable=False)
     measurement_subtype = Column(String)
-    microorganism_id    = Column(Integer, ForeignKey("microorganisms.id"), nullable=True)
+    microorganism_id    = Column(Integer, ForeignKey("microorganisms.id", ondelete="SET NULL"), nullable=True)
     process_class       = Column(String)  # growth|inactivation|stable|monotonic_increase|monotonic_decrease|non_monotonic|insufficient_data
     grouping_signature  = Column(String, index=True)  # deterministic hash
-    observation_ids_json = Column(Text, default="[]")  # [int]
     n_points            = Column(Integer, default=0)
     time_min_days       = Column(Float)
     time_max_days       = Column(Float)
     has_control         = Column(Boolean, default=False)
     data_sufficient     = Column(Boolean, default=False)  # meets minimum data requirements
     notes               = Column(Text)
-    created_by          = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_by          = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at          = Column(DateTime, default=datetime.utcnow)
     updated_at          = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     experiment    = relationship("Experiment", back_populates="trajectories")
     treatment_arm = relationship("TreatmentArm", back_populates="trajectories")
     model_runs    = relationship("ModelRun", back_populates="trajectory")
+    observations  = relationship(
+        "Observation",
+        secondary=trajectory_observations,
+        order_by="Observation.time_days",
+        lazy="selectin",
+    )
 
     @property
-    def observation_ids(self):
-        return json.loads(self.observation_ids_json) if self.observation_ids_json else []
+    def observation_ids(self) -> list[int]:
+        """Ids of the member observations, ordered by time.
+
+        Kept as a property so existing readers (model_registry, threshold_analysis) and the
+        TrajectoryOut schema keep working unchanged after the move to a junction table.
+        """
+        return [o.id for o in self.observations]
 
 
 class ModelRun(Base):
@@ -672,14 +595,25 @@ class ModelRun(Base):
     __tablename__ = "model_runs"
 
     id                  = Column(Integer, primary_key=True, index=True)
-    trajectory_id       = Column(Integer, ForeignKey("trajectory_definitions.id"), nullable=False)
-    project_id          = Column(Integer, ForeignKey("projects.id"), nullable=False)
+    trajectory_id       = Column(Integer, ForeignKey("trajectory_definitions.id", ondelete="CASCADE"), nullable=False)
+    project_id          = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
     status              = Column(String, default="pending")  # pending|running|completed|failed
     models_tried        = Column(Integer, default=0)
     models_converged    = Column(Integer, default=0)
-    selected_model_id   = Column(Integer, ForeignKey("model_fits.id"), nullable=True)
+    # model_runs.selected_model_id <-> model_fits.run_id is a circular FK pair; use_alter
+    # defers this one to a separate ALTER so the tables can be created in any order.
+    selected_model_id   = Column(
+        Integer,
+        ForeignKey(
+            "model_fits.id",
+            use_alter=True,
+            name="fk_model_runs_selected_model_id",
+            ondelete="SET NULL",
+        ),
+        nullable=True,
+    )
     error_message       = Column(Text)
-    created_by          = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_by          = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at          = Column(DateTime, default=datetime.utcnow)
     completed_at        = Column(DateTime, nullable=True)
 
@@ -694,7 +628,7 @@ class ModelFit(Base):
     __tablename__ = "model_fits"
 
     id                  = Column(Integer, primary_key=True, index=True)
-    run_id              = Column(Integer, ForeignKey("model_runs.id"), nullable=False)
+    run_id              = Column(Integer, ForeignKey("model_runs.id", ondelete="CASCADE"), nullable=False)
     model_name          = Column(String, nullable=False)   # Gompertz|Baranyi|Logistic|Weibull|Geeraerd|etc.
     model_version       = Column(String)
     process_class       = Column(String)
@@ -721,7 +655,7 @@ class ModelFit(Base):
     created_at          = Column(DateTime, default=datetime.utcnow)
 
     run         = relationship("ModelRun", back_populates="fits", foreign_keys=[run_id])
-    predictions = relationship("ModelPrediction", back_populates="fit", cascade="all, delete-orphan")
+    predictions = relationship("ModelPrediction", back_populates="fit", cascade="all, delete-orphan", passive_deletes=True)
 
     @property
     def parameters(self):
@@ -741,7 +675,7 @@ class ModelPrediction(Base):
     __tablename__ = "model_predictions"
 
     id              = Column(Integer, primary_key=True, index=True)
-    fit_id          = Column(Integer, ForeignKey("model_fits.id"), nullable=False)
+    fit_id          = Column(Integer, ForeignKey("model_fits.id", ondelete="CASCADE"), nullable=False)
     time_days       = Column(Float, nullable=False)
     predicted_value = Column(Float)
     lower_bound     = Column(Float)
@@ -763,11 +697,11 @@ class ImputationProposal(Base):
     __tablename__ = "imputation_proposals"
 
     id                      = Column(Integer, primary_key=True, index=True)
-    project_id              = Column(Integer, ForeignKey("projects.id"), nullable=False)
-    trajectory_id           = Column(Integer, ForeignKey("trajectory_definitions.id"), nullable=True)
-    fit_id                  = Column(Integer, ForeignKey("model_fits.id"), nullable=True)
-    target_observation_id   = Column(Integer, ForeignKey("observations.id"), nullable=True)
-    target_arm_id           = Column(Integer, ForeignKey("treatment_arms.id"), nullable=True)
+    project_id              = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    trajectory_id           = Column(Integer, ForeignKey("trajectory_definitions.id", ondelete="SET NULL"), nullable=True)
+    fit_id                  = Column(Integer, ForeignKey("model_fits.id", ondelete="SET NULL"), nullable=True)
+    target_observation_id   = Column(Integer, ForeignKey("observations.id", ondelete="SET NULL"), nullable=True)
+    target_arm_id           = Column(Integer, ForeignKey("treatment_arms.id", ondelete="SET NULL"), nullable=True)
     target_time_days        = Column(Float)
     target_measurement_type = Column(String)
     predicted_value         = Column(Float)
@@ -785,10 +719,10 @@ class ImputationProposal(Base):
     parameters_json         = Column(Text, default="{}")
     # Review
     reviewer_decision       = Column(String)    # pending|accepted|rejected|superseded
-    reviewer_id             = Column(Integer, ForeignKey("users.id"), nullable=True)
+    reviewer_id             = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     reviewer_note           = Column(Text)
     reviewed_at             = Column(DateTime, nullable=True)
-    created_by              = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_by              = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at              = Column(DateTime, default=datetime.utcnow)
 
     @property
@@ -809,7 +743,7 @@ class ThresholdDefinition(Base):
     __tablename__ = "threshold_definitions"
 
     id                  = Column(Integer, primary_key=True, index=True)
-    project_id          = Column(Integer, ForeignKey("projects.id"), nullable=False)
+    project_id          = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
     name                = Column(String, nullable=False)
     measurement_type    = Column(String, nullable=False)
     threshold_value     = Column(Float, nullable=False)
@@ -822,7 +756,7 @@ class ThresholdDefinition(Base):
     notes               = Column(Text)
     is_active           = Column(Boolean, default=True)
     version             = Column(Integer, default=1)
-    created_by          = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_by          = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at          = Column(DateTime, default=datetime.utcnow)
     updated_at          = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -838,7 +772,7 @@ class DatasetSnapshot(Base):
     __tablename__ = "dataset_snapshots"
 
     id              = Column(Integer, primary_key=True, index=True)
-    project_id      = Column(Integer, ForeignKey("projects.id"), nullable=False)
+    project_id      = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
     label           = Column(String)
     description     = Column(Text)
     filters_json    = Column(Text, default="{}")    # what filters were applied
@@ -848,7 +782,7 @@ class DatasetSnapshot(Base):
     only_approved   = Column(Boolean, default=True)
     feature_config_json = Column(Text, default="{}")
     snapshot_hash   = Column(String(64))   # SHA-256 of snapshot content
-    created_by      = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_by      = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at      = Column(DateTime, default=datetime.utcnow)
 
     project = relationship("Project", back_populates="snapshots")
@@ -867,14 +801,14 @@ class ExportRun(Base):
     __tablename__ = "export_runs"
 
     id              = Column(Integer, primary_key=True, index=True)
-    project_id      = Column(Integer, ForeignKey("projects.id"), nullable=False)
-    snapshot_id     = Column(Integer, ForeignKey("dataset_snapshots.id"), nullable=True)
+    project_id      = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    snapshot_id     = Column(Integer, ForeignKey("dataset_snapshots.id", ondelete="SET NULL"), nullable=True)
     format          = Column(String)    # excel|csv_zip|json|parquet
     status          = Column(String, default="pending")
     file_path       = Column(String)
     file_size_bytes = Column(Integer)
     filters_json    = Column(Text, default="{}")
-    created_by      = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_by      = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at      = Column(DateTime, default=datetime.utcnow)
     completed_at    = Column(DateTime, nullable=True)
     error_message   = Column(Text)
@@ -891,8 +825,8 @@ class UploadedDataset(Base):
     __tablename__ = "uploaded_datasets"
 
     id                  = Column(Integer, primary_key=True, index=True)
-    project_id          = Column(Integer, ForeignKey("projects.id"), nullable=False, index=True)
-    uploader_id         = Column(Integer, ForeignKey("users.id"), nullable=True)
+    project_id          = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
+    uploader_id         = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     original_name       = Column(String, nullable=False)       # user-facing filename
     filename            = Column(String, nullable=False)        # UUID-based stored name
@@ -920,9 +854,9 @@ class LabTrainingRun(Base):
     __tablename__ = "lab_training_runs"
 
     id                  = Column(Integer, primary_key=True, index=True)
-    project_id          = Column(Integer, ForeignKey("projects.id"), nullable=False, index=True)
-    dataset_id          = Column(Integer, ForeignKey("uploaded_datasets.id"), nullable=False)
-    job_id              = Column(Integer, ForeignKey("jobs.id"), nullable=True, index=True)
+    project_id          = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
+    dataset_id          = Column(Integer, ForeignKey("uploaded_datasets.id", ondelete="CASCADE"), nullable=False)
+    job_id              = Column(Integer, ForeignKey("jobs.id", ondelete="SET NULL"), nullable=True, index=True)
 
     dataset_family      = Column(String, nullable=False)
     column_mapping_json = Column(Text, default="{}")
@@ -934,7 +868,7 @@ class LabTrainingRun(Base):
     status              = Column(String, default="queued")      # queued|running|completed|failed
     error_message       = Column(Text, nullable=True)
 
-    created_by          = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_by          = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at          = Column(DateTime, default=datetime.utcnow)
     completed_at        = Column(DateTime, nullable=True)
 
@@ -944,8 +878,8 @@ class LabModelResult(Base):
     __tablename__ = "lab_model_results"
 
     id                  = Column(Integer, primary_key=True, index=True)
-    training_run_id     = Column(Integer, ForeignKey("lab_training_runs.id"), nullable=False, index=True)
-    project_id          = Column(Integer, ForeignKey("projects.id"), nullable=False, index=True)
+    training_run_id     = Column(Integer, ForeignKey("lab_training_runs.id", ondelete="CASCADE"), nullable=False, index=True)
+    project_id          = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
 
     model_name          = Column(String, nullable=False)        # baranyi | gompertz | weibull_aft | ...
     model_family        = Column(String, nullable=False)        # kinetic | survival
@@ -1000,7 +934,7 @@ class ExtExperiment(Base):
     id                  = Column(Integer, primary_key=True, index=True)
     project_id          = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
     paper_id            = Column(Integer, ForeignKey("papers.id", ondelete="CASCADE"), nullable=False, index=True)
-    job_id              = Column(Integer, ForeignKey("jobs.id"), nullable=True)
+    job_id              = Column(Integer, ForeignKey("jobs.id", ondelete="SET NULL"), nullable=True)
     meat_matrix         = Column(String, nullable=False)
     treatment           = Column(String, nullable=False)
     created_at          = Column(DateTime, default=datetime.utcnow)
@@ -1092,7 +1026,8 @@ class DoclingCache(Base):
     created_at      = Column(DateTime, default=datetime.utcnow)
 
     figure_conversions = relationship(
-        "FigureConversionCache", back_populates="docling_cache", cascade="all, delete-orphan"
+        "FigureConversionCache", back_populates="docling_cache",
+        cascade="all, delete-orphan", passive_deletes=True,
     )
 
 
@@ -1128,7 +1063,7 @@ class ExtractionAsset(Base):
     id                  = Column(Integer, primary_key=True, index=True)
     paper_id            = Column(Integer, ForeignKey("papers.id", ondelete="CASCADE"), nullable=False, index=True)
     project_id          = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
-    job_id              = Column(Integer, ForeignKey("jobs.id"), nullable=True)
+    job_id              = Column(Integer, ForeignKey("jobs.id", ondelete="SET NULL"), nullable=True)
     docling_item_ref    = Column(String, nullable=True)
     asset_type          = Column(String, nullable=False)        # figure | native_table
     page_number         = Column(Integer, nullable=True)
@@ -1151,7 +1086,8 @@ class ExtractionAsset(Base):
     created_at          = Column(DateTime, default=datetime.utcnow)
 
     context_links = relationship(
-        "AssetContextLink", back_populates="asset", cascade="all, delete-orphan"
+        "AssetContextLink", back_populates="asset",
+        cascade="all, delete-orphan", passive_deletes=True,
     )
 
 

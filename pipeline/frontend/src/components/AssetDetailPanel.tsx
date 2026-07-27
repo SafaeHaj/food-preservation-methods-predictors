@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { X, ExternalLink, FileSpreadsheet, CheckCircle, Star, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react'
 import clsx from 'clsx'
-import { workspaceApi } from '../services/api'
-import type { ExtractionAsset, AssetDetail, ContextLink } from '../types/workspace'
+import { useAsset } from '../api/workspace'
+import type { AssetDetail, ContextLink, ExtractionAsset } from '../types/workspace'
 
 const LINK_TYPE_LABELS: Record<string, { label: string; color: string }> = {
   caption:                   { label: 'Caption',           color: 'bg-blue-50 text-blue-700' },
@@ -13,21 +13,32 @@ const LINK_TYPE_LABELS: Record<string, { label: string; color: string }> = {
   keyword_match:             { label: 'Keyword match',     color: 'bg-violet-50 text-violet-600' },
 }
 
-interface CsvPreviewProps { projectId: number; paperId: number; assetId: number }
+/** Rows shown inline. The full file is one click away via Download. */
+const CSV_PREVIEW_ROWS = 12
 
-function CsvPreview({ projectId, paperId, assetId }: CsvPreviewProps) {
+function CsvPreview({ url }: { url: string }) {
   const [rows, setRows] = useState<string[][]>([])
   const [error, setError] = useState(false)
 
   useEffect(() => {
-    fetch(workspaceApi.csvUrl(projectId, paperId, assetId))
-      .then((r) => r.text())
-      .then((txt) => {
-        const lines = txt.trim().split('\n').slice(0, 12)
-        setRows(lines.map((l) => l.split(',').map((c) => c.trim().replace(/^"|"$/g, ''))))
+    // Fetched directly rather than through the axios client: the URL is already signed,
+    // and this is a plain text read that needs no interceptors. Aborted on unmount so
+    // closing the panel mid-load does not set state on a dead component.
+    const controller = new AbortController()
+    fetch(url, { signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) throw new Error(String(response.status))
+        return response.text()
       })
-      .catch(() => setError(true))
-  }, [projectId, paperId, assetId])
+      .then((text) => {
+        const lines = text.trim().split('\n').slice(0, CSV_PREVIEW_ROWS)
+        setRows(lines.map((line) => line.split(',').map((cell) => cell.trim().replace(/^"|"$/g, ''))))
+      })
+      .catch((cause) => {
+        if (cause?.name !== 'AbortError') setError(true)
+      })
+    return () => controller.abort()
+  }, [url])
 
   if (error) return <p className="text-xs text-slate-400 italic">Could not load CSV preview.</p>
   if (!rows.length) return <p className="text-xs text-slate-400">Loading…</p>
@@ -97,15 +108,12 @@ interface Props {
 }
 
 export default function AssetDetailPanel({ asset, projectId, paperId, onClose, onToggleSelect }: Props) {
-  const [detail, setDetail] = useState<AssetDetail | null>(null)
   const [imgTab, setImgTab] = useState<'figure' | 'page'>('figure')
   const [expanded, setExpanded] = useState<Record<number, boolean>>({})
   const [selecting, setSelecting] = useState(false)
   const [imgError, setImgError] = useState(false)
 
-  useEffect(() => {
-    workspaceApi.getAsset(projectId, paperId, asset.id).then(setDetail)
-  }, [asset.id, projectId, paperId])
+  const { data: detail } = useAsset(projectId, paperId, asset.id)
 
   const handleSelect = async () => {
     setSelecting(true)
@@ -119,9 +127,7 @@ export default function AssetDetailPanel({ asset, projectId, paperId, onClose, o
   const toggleExpand = (i: number) =>
     setExpanded((prev) => ({ ...prev, [i]: !prev[i] }))
 
-  const imgUrl = imgTab === 'figure'
-    ? workspaceApi.imageUrl(projectId, paperId, asset.id)
-    : workspaceApi.pageImageUrl(projectId, paperId, asset.id)
+  const imgUrl = imgTab === 'figure' ? asset.links.image : asset.links.page_image
 
   const typeLabel = asset.asset_type === 'native_table' ? 'Table' : 'Figure'
 
@@ -174,10 +180,10 @@ export default function AssetDetailPanel({ asset, projectId, paperId, onClose, o
             {/* Left: image + CSV */}
             <div className="flex flex-col gap-4 p-4 overflow-y-auto">
               {/* Image tabs */}
-              {(asset.has_image || asset.has_page_image) && (
+              {(asset.links.image || asset.links.page_image) && (
                 <>
                   <div className="flex gap-1 mb-1">
-                    {asset.has_image && (
+                    {asset.links.image && (
                       <button
                         onClick={() => setImgTab('figure')}
                         className={clsx(
@@ -188,7 +194,7 @@ export default function AssetDetailPanel({ asset, projectId, paperId, onClose, o
                         Figure
                       </button>
                     )}
-                    {asset.has_page_image && (
+                    {asset.links.page_image && (
                       <button
                         onClick={() => setImgTab('page')}
                         className={clsx(
@@ -200,7 +206,7 @@ export default function AssetDetailPanel({ asset, projectId, paperId, onClose, o
                       </button>
                     )}
                     <a
-                      href={imgUrl}
+                      href={imgUrl ?? undefined}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="ml-auto flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors"
@@ -208,7 +214,7 @@ export default function AssetDetailPanel({ asset, projectId, paperId, onClose, o
                       <ExternalLink size={11} /> Open
                     </a>
                   </div>
-                  {!imgError ? (
+                  {imgUrl && !imgError ? (
                     <img
                       key={imgUrl}
                       src={imgUrl}
@@ -225,7 +231,7 @@ export default function AssetDetailPanel({ asset, projectId, paperId, onClose, o
               )}
 
               {/* CSV preview */}
-              {asset.has_csv && (
+              {asset.links.csv && (
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <FileSpreadsheet size={13} className="text-emerald-600" />
@@ -234,32 +240,32 @@ export default function AssetDetailPanel({ asset, projectId, paperId, onClose, o
                       {asset.csv_rows}r × {asset.csv_cols}c
                     </span>
                     <a
-                      href={workspaceApi.csvUrl(projectId, paperId, asset.id)}
+                      href={asset.links.csv}
                       download
                       className="ml-auto text-xs text-blue-500 hover:text-blue-700"
                     >
                       Download
                     </a>
                   </div>
-                  <CsvPreview projectId={projectId} paperId={paperId} assetId={asset.id} />
+                  <CsvPreview url={asset.links.csv} />
                 </div>
               )}
 
               {/* Native table CSV */}
-              {asset.asset_type === 'native_table' && asset.has_csv && (
+              {asset.asset_type === 'native_table' && asset.links.csv && (
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <FileSpreadsheet size={13} className="text-blue-600" />
                     <span className="text-xs font-semibold text-slate-700">Table Data</span>
                     <a
-                      href={workspaceApi.csvUrl(projectId, paperId, asset.id)}
+                      href={asset.links.csv}
                       download
                       className="ml-auto text-xs text-blue-500 hover:text-blue-700"
                     >
                       Download CSV
                     </a>
                   </div>
-                  <CsvPreview projectId={projectId} paperId={paperId} assetId={asset.id} />
+                  <CsvPreview url={asset.links.csv} />
                 </div>
               )}
 

@@ -19,6 +19,8 @@ from typing import Any
 import numpy as np
 from scipy.optimize import curve_fit, brentq
 
+from shared.errors import ValidationError
+
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 # ─── Model functions (all log₁₀ units) ───────────────────────────────────────
@@ -442,7 +444,12 @@ def run_kinetic_training(
     required = {"trajectory_id", "time", "response"}
     missing  = required - set(role_to_col.keys())
     if missing:
-        return {"error": f"Missing required roles: {missing}"}
+        # Raised, not returned: an unmapped column is a user error the API must report as
+        # a 422 naming the missing roles, not a dict the caller may forget to inspect.
+        raise ValidationError(
+            "The column mapping is missing roles this model family requires",
+            details={"missing_roles": sorted(missing), "mapped_roles": sorted(role_to_col)},
+        )
 
     df = pd.DataFrame(df_records)
     traj_col = role_to_col["trajectory_id"]

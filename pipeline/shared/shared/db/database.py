@@ -1,44 +1,35 @@
-from sqlalchemy import create_engine, text
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+"""Engine, session factory and the FastAPI session dependency.
 
-from app.core.config import settings
+The schema is owned by Alembic (`pipeline/shared/alembic`), applied by the gateway before
+it serves. There is no `create_all` and no runtime ALTER TABLE patching: both raced the
+migrations and let the live schema drift from the migration history.
+"""
 
-connect_args = {}
-if settings.DATABASE_URL.startswith("sqlite"):
-    connect_args = {"check_same_thread": False}
+from sqlalchemy import create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
 
-engine = create_engine(settings.DATABASE_URL, connect_args=connect_args)
+from shared.config import get_common_settings
+
+_settings = get_common_settings()
+
+# SQLite's default thread check rejects the session being used from a Celery worker thread.
+_connect_args = {"check_same_thread": False} if _settings.is_sqlite else {}
+
+engine = create_engine(
+    _settings.DATABASE_URL,
+    connect_args=_connect_args,
+    # Recycle before typical proxy/database idle timeouts so a pooled connection that was
+    # closed server-side surfaces as a reconnect rather than a mid-request failure.
+    pool_pre_ping=True,
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
 def get_db():
+    """Request-scoped session. Transactions are managed by `shared.uow.unit_of_work`."""
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
-
-
-def apply_column_migrations() -> None:
-    """
-    Add columns that create_all() cannot backfill on existing tables.
-    Safe to call on every startup — each ALTER TABLE is wrapped in a try/except.
-    Only needed for SQLite where Alembic auto-migrations are not running.
-    """
-    if not settings.DATABASE_URL.startswith("sqlite"):
-        return
-    migrations = [
-        # ExtEvidence — Docling provenance anchor (added in Docling pipeline)
-        "ALTER TABLE ext_evidence ADD COLUMN docling_item_ref VARCHAR",
-        "ALTER TABLE ext_evidence ADD COLUMN is_chart_derived BOOLEAN DEFAULT 0",
-    ]
-    with engine.connect() as conn:
-        for stmt in migrations:
-            try:
-                conn.execute(text(stmt))
-                conn.commit()
-            except Exception:
-                # Column already exists — safe to ignore
-                pass

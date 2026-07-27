@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { FileSpreadsheet, Image, Table2, BarChart2, Camera, Layers, HelpCircle, CheckCircle, Clock, AlertCircle, Star } from 'lucide-react'
 import clsx from 'clsx'
 import type { ExtractionAsset } from '../types/workspace'
-import { workspaceApi } from '../services/api'
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
   chart:               <BarChart2 size={11} />,
@@ -36,17 +35,17 @@ const CONV_BADGE: Record<string, { label: string; color: string; icon: React.Rea
 
 interface Props {
   asset: ExtractionAsset
-  projectId: number
-  paperId: number
   onClick: (asset: ExtractionAsset) => void
   onToggleSelect: (asset: ExtractionAsset, val: boolean) => void
 }
 
-export default function AssetCard({ asset, projectId, paperId, onClick, onToggleSelect }: Props) {
+export default function AssetCard({ asset, onClick, onToggleSelect }: Props) {
   const [imgError, setImgError] = useState(false)
   const [selecting, setSelecting] = useState(false)
 
-  const imgUrl = workspaceApi.imageUrl(projectId, paperId, asset.id)
+  // Signed by the server and carried in the payload. The card cannot build this URL: the
+  // signature is what authenticates the request, since <img> cannot send a bearer token.
+  const imgUrl = asset.links.image
   const typeLabel = asset.asset_type === 'native_table' ? 'Table' : 'Figure'
   const conv = CONV_BADGE[asset.conversion_status ?? 'skipped'] ?? CONV_BADGE.skipped
   const typeColor = TYPE_COLORS[asset.classification] ?? TYPE_COLORS.unknown
@@ -77,7 +76,7 @@ export default function AssetCard({ asset, projectId, paperId, onClick, onToggle
     >
       {/* Thumbnail area */}
       <div className="relative h-44 bg-slate-50 flex items-center justify-center overflow-hidden">
-        {asset.has_image && !imgError ? (
+        {imgUrl && !imgError ? (
           <img
             src={imgUrl}
             alt={asset.caption ?? `${typeLabel} p.${asset.page_number}`}

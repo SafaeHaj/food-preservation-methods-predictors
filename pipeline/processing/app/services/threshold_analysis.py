@@ -8,7 +8,7 @@ import numpy as np
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
-    from app.db.models import ThresholdDefinition
+    from shared.db.models import ThresholdDefinition
 
 
 def compute_crossings(threshold: "ThresholdDefinition", project_id: int, db: "Session") -> list[dict[str, Any]]:
@@ -18,11 +18,11 @@ def compute_crossings(threshold: "ThresholdDefinition", project_id: int, db: "Se
 
     Returns a list of crossing records.
     """
-    from app.db.models import (
+    from shared.db.models import (
         Experiment, ModelFit, ModelPrediction, ModelRun,
         Observation, TrajectoryDefinition, TreatmentArm, Study,
     )
-    from app.db.models import Microorganism
+    from shared.db.models import Microorganism
 
     import json
 

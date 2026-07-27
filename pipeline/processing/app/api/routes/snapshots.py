@@ -4,13 +4,16 @@ import hashlib
 import json
 from typing import Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
-from app.db.database import get_db
-from app.db.models import DatasetSnapshot, ExportRun, User
-from app.schemas.canonical import ExportRequest, ExportRunOut, SnapshotCreate, SnapshotOut
+from shared.auth import get_current_user
+from shared.db.database import get_db
+from shared.errors import BusinessRuleError, NotFoundError
+from shared.db.models import DatasetSnapshot, ExportRun, User
+from shared.schemas.canonical import ExportRequest, ExportRunOut, SnapshotCreate, SnapshotOut
+
+from app.services import scoping
 
 router = APIRouter(prefix="/snapshots", tags=["snapshots"])
 
@@ -23,9 +26,9 @@ def list_snapshots(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    q = db.query(DatasetSnapshot)
-    if project_id:
-        q = q.filter(DatasetSnapshot.project_id == project_id)
+    q = scoping.scope_query(
+        db, db.query(DatasetSnapshot), DatasetSnapshot.project_id, project_id, current_user,
+    )
     return q.order_by(DatasetSnapshot.created_at.desc()).offset(skip).limit(limit).all()
 
 
@@ -67,14 +70,13 @@ def get_snapshot(
 ):
     snap = db.query(DatasetSnapshot).filter(DatasetSnapshot.id == snapshot_id).first()
     if not snap:
-        raise HTTPException(status_code=404, detail="Snapshot not found")
+        raise NotFoundError("Snapshot not found")
     return snap
 
 
 @router.post("/export", response_model=ExportRunOut, status_code=status.HTTP_202_ACCEPTED)
 def create_export(
     payload: ExportRequest,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -90,8 +92,8 @@ def create_export(
     db.commit()
     db.refresh(run)
 
-    from app.services.exporter import build_export_async
-    background_tasks.add_task(build_export_async, run.id)
+    from app.tasks import run_export
+    run_export.delay(run.id)
     return run
 
 
@@ -103,7 +105,7 @@ def get_export_run(
 ):
     run = db.query(ExportRun).filter(ExportRun.id == run_id).first()
     if not run:
-        raise HTTPException(status_code=404, detail="Export run not found")
+        raise NotFoundError("Export run not found")
     return run
 
 
@@ -118,11 +120,11 @@ def download_export(
 
     run = db.query(ExportRun).filter(ExportRun.id == run_id).first()
     if not run:
-        raise HTTPException(status_code=404, detail="Export run not found")
+        raise NotFoundError("Export run not found")
     if run.status != "completed":
-        raise HTTPException(status_code=400, detail=f"Export not ready (status: {run.status})")
+        raise BusinessRuleError(f"Export not ready (status: {run.status})")
     if not run.file_path or not os.path.exists(run.file_path):
-        raise HTTPException(status_code=404, detail="Export file not found on disk")
+        raise NotFoundError("Export file not found on disk")
 
     media_types = {
         "excel": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.51.1",
     "@tanstack/react-table": "^8.17.3",
     "@types/katex": "^0.16.8",
     "axios": "^1.7.2",

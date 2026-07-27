@@ -1,59 +1,55 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { normalizationApi } from '../../services/api'
-import type { NormalizationMapping } from '../../types'
-import { RefreshCw, Play, Trash2, Plus } from 'lucide-react'
+import { useNormalizationMappings, useNormalizationMutations } from '../../api/canonical'
+import { errorMessage } from '../../api/errors'
+import { Play, Trash2, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function NormalizationPage() {
   const { projectId } = useParams<{ projectId: string }>()
-  const [mappings, setMappings] = useState<NormalizationMapping[]>([])
-  const [loading, setLoading] = useState(true)
   const [applying, setApplying] = useState(false)
   const [form, setForm] = useState({ mapping_type: 'cheese_type', original_term: '', canonical_term: '' })
   const [showForm, setShowForm] = useState(false)
 
   const MAPPING_TYPES = ['cheese_type', 'ingredient', 'microorganism', 'measurement_type', 'application_method', 'packaging', 'unit']
 
-  const load = () => {
-    if (!projectId) return
-    setLoading(true)
-    normalizationApi.listMappings({ project_id: Number(projectId) })
-      .then(setMappings)
-      .finally(() => setLoading(false))
-  }
-
-  useEffect(() => { load() }, [projectId])
+  const { data: mappings = [], isLoading: loading } = useNormalizationMappings(Number(projectId))
+  const normalization = useNormalizationMutations(Number(projectId))
 
   const handleApply = async () => {
-    if (!projectId) return
     setApplying(true)
     try {
-      const result = await normalizationApi.apply(Number(projectId))
-      toast.success(`Applied: ${result.experiments} experiments, ${result.observations} observations updated`)
-    } catch {
-      toast.error('Normalization failed')
+      const result = await normalization.apply.mutateAsync()
+      toast.success(`Applied to ${result.updated} records`)
+    } catch (error) {
+      toast.error(errorMessage(error, 'Normalization failed'))
     } finally {
       setApplying(false)
     }
   }
 
   const handleDelete = async (id: number) => {
-    await normalizationApi.deleteMapping(id)
-    toast.success('Mapping deleted')
-    load()
+    try {
+      await normalization.remove.mutateAsync(id)
+      toast.success('Mapping deleted')
+    } catch (error) {
+      toast.error(errorMessage(error, 'Could not delete the mapping'))
+    }
   }
 
   const handleCreate = async () => {
     if (!form.original_term || !form.canonical_term) {
-      toast.error('Both terms required')
+      toast.error('Both terms are required')
       return
     }
-    await normalizationApi.createMapping({ ...form, project_id: Number(projectId), source: 'manual' })
-    toast.success('Mapping created')
-    setShowForm(false)
-    setForm({ mapping_type: 'cheese_type', original_term: '', canonical_term: '' })
-    load()
+    try {
+      await normalization.create.mutateAsync(form)
+      toast.success('Mapping created')
+      setShowForm(false)
+      setForm({ mapping_type: 'cheese_type', original_term: '', canonical_term: '' })
+    } catch (error) {
+      toast.error(errorMessage(error, 'Could not create the mapping'))
+    }
   }
 
   return (
@@ -68,9 +64,6 @@ export default function NormalizationPage() {
           <button onClick={handleApply} disabled={applying}
             className="flex items-center gap-1 text-sm bg-green-600 text-white px-3 py-1.5 rounded hover:bg-green-700 disabled:opacity-50">
             <Play size={14} /> {applying ? 'Applying…' : 'Apply All'}
-          </button>
-          <button onClick={load} className="flex items-center gap-1 text-sm text-gray-600 border border-gray-300 rounded px-2 py-1">
-            <RefreshCw size={14} />
           </button>
         </div>
       </div>

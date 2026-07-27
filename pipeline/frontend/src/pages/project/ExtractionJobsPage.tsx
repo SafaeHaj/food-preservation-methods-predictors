@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { jobsApi } from '../../services/api'
+import { useCancelJob, useJobs } from '../../api/jobs'
+import { errorMessage } from '../../api/errors'
 import type { Job } from '../../types'
-import { RefreshCw, XCircle, Cpu, FlaskConical, Layers, ChevronRight, Loader2 } from 'lucide-react'
+import { XCircle, Cpu, FlaskConical, Layers, ChevronRight, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
@@ -11,7 +11,8 @@ import clsx from 'clsx'
 const JOB_TYPE_META: Record<string, { label: string; color: string }> = {
   workspace_extraction: { label: 'Docling Extraction', color: 'bg-violet-50 text-violet-700' },
   llm_validation:       { label: 'LLM Validation',     color: 'bg-blue-50 text-blue-700' },
-  extraction:           { label: 'Legacy Extraction',   color: 'bg-slate-100 text-slate-500' },
+  training:             { label: 'Model Training',      color: 'bg-emerald-50 text-emerald-700' },
+  export:               { label: 'Export',               color: 'bg-slate-100 text-slate-600' },
 }
 
 const STATUS_META: Record<string, { label: string; cls: string }> = {
@@ -142,30 +143,20 @@ function PaperJobGroup({ group, onCancel, projectId }: { group: PaperGroup; onCa
 
 export default function ExtractionJobsPage() {
   const { projectId } = useParams<{ projectId: string }>()
-  const [jobs, setJobs] = useState<Job[]>([])
-  const [loading, setLoading] = useState(true)
-
-  const load = () => {
-    if (!projectId) return
-    setLoading(true)
-    jobsApi.list({ project_id: Number(projectId), limit: 100 } as Parameters<typeof jobsApi.list>[0])
-      .then(setJobs)
-      .finally(() => setLoading(false))
-  }
-
-  useEffect(() => {
-    load()
-    const interval = setInterval(load, 8000)
-    return () => clearInterval(interval)
-  }, [projectId])
+  // No interval. The list is invalidated whenever a job stream reaches a terminal state,
+  // so it stays current without polling every eight seconds for the life of the tab.
+  const { data: jobs = [], isLoading: loading } = useJobs({
+    project_id: Number(projectId),
+    limit: 100,
+  })
+  const cancelJob = useCancelJob()
 
   const handleCancel = async (id: number) => {
     try {
-      await jobsApi.cancel(id)
+      await cancelJob.mutateAsync(id)
       toast.success('Job cancelled')
-      load()
-    } catch {
-      toast.error('Cannot cancel job')
+    } catch (error) {
+      toast.error(errorMessage(error, 'This job could not be cancelled'))
     }
   }
 
@@ -196,12 +187,6 @@ export default function ExtractionJobsPage() {
           <h1 className="text-xl font-bold text-slate-900">Extraction Jobs</h1>
           <p className="text-xs text-slate-400 mt-0.5">All pipeline runs, grouped by paper</p>
         </div>
-        <button
-          onClick={load}
-          className="flex items-center gap-1.5 text-sm text-slate-500 border border-slate-200 rounded-lg px-3 py-1.5 hover:bg-slate-50 transition-colors"
-        >
-          <RefreshCw size={13} /> Refresh
-        </button>
       </div>
 
       {loading && jobs.length === 0 ? (

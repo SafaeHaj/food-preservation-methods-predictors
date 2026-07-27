@@ -1,0 +1,29 @@
+# Runtime dependencies for the prediction microservice container (lean; the heavy dev/notebook
+# deps in requirements.txt -- torch, sdv, sentence-transformers, PyMuPDF -- are NOT needed here).
+# scikit-survival is installed separately with --no-deps in the Dockerfile (its `ecos` dep has
+# no wheel and is unused by RandomSurvivalForest / metrics).
+
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pydantic>=2.7
+pydantic-settings>=2.3
+pyyaml>=6.0
+httpx>=0.27
+
+sqlalchemy>=2.0
+alembic>=1.13
+
+numpy>=2.0
+pandas>=2.2
+scipy>=1.13
+scikit-learn>=1.9,<1.10
+joblib>=1.3
+
+# scikit-survival's real (used) dependencies, pinned explicitly so --no-deps loses nothing:
+narwhals
+numexpr
+osqp
+
+# survival engines
+lifelines>=0.29
+xgboost>=2.0

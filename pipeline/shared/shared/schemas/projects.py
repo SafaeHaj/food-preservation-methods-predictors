@@ -34,7 +34,22 @@ class ProjectOut(BaseModel):
     updated_at: datetime
     owner_id: int
     paper_count: int = 0
-    row_count: int = 0
+    #: The caller's role on this project ("owner" | "admin" | "reviewer" | "analyst" |
+    #: "viewer"), so the UI can hide actions it would only be refused for.
+    your_role: str = "viewer"
 
     class Config:
         from_attributes = True
+
+
+class ProjectStats(BaseModel):
+    """Aggregates for the project overview."""
+
+    study_count: int = 0
+    experiment_count: int = 0
+    observation_count: int = 0
+    paper_count: int = 0
+    approved_count: int = 0
+    needs_review_count: int = 0
+    member_count: int = 0
+    last_extraction_at: Optional[str] = None

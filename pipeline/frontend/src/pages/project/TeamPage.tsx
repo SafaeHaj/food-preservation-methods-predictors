@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { membersApi, projectsApi } from '../../services/api'
-import type { ProjectMember } from '../../types'
-import { Trash2, RefreshCw, UserPlus, AlertCircle } from 'lucide-react'
+import { useMembers, useMemberMutations } from '../../api/projects'
+import { errorMessage } from '../../api/errors'
+import { Trash2, UserPlus, AlertCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const ROLE_COLORS: Record<string, string> = {
@@ -15,49 +15,43 @@ const ROLE_COLORS: Record<string, string> = {
 
 export default function TeamPage() {
   const { projectId } = useParams<{ projectId: string }>()
-  const [members, setMembers] = useState<ProjectMember[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ user_email: '', role: 'reviewer' })
 
-  const load = () => {
-    if (!projectId) return
-    setLoading(true)
-    setError(null)
-    membersApi.list(Number(projectId))
-      .then(setMembers)
-      .catch((e) => setError(e?.response?.data?.detail ?? 'Failed to load team'))
-      .finally(() => setLoading(false))
-  }
-
-  useEffect(() => { load() }, [projectId])
+  const { data: members = [], isLoading: loading, error: loadError } =
+    useMembers(Number(projectId))
+  const error = loadError ? errorMessage(loadError, 'Could not load the team') : null
+  const memberMutations = useMemberMutations(Number(projectId))
 
   const handleAdd = async () => {
-    if (!form.user_email) { toast.error('Email required'); return }
+    if (!form.user_email) { toast.error('An email address is required'); return }
     try {
-      await membersApi.add(Number(projectId), form.user_email, form.role)
+      await memberMutations.add.mutateAsync(form)
       toast.success('Member added')
       setShowForm(false)
       setForm({ user_email: '', role: 'reviewer' })
-      load()
-    } catch (e: unknown) {
-      const msg = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? 'Failed to add member'
-      toast.error(msg)
+    } catch (mutationError) {
+      toast.error(errorMessage(mutationError, 'Could not add that member'))
     }
   }
 
   const handleRoleChange = async (userId: number, role: string) => {
-    await membersApi.updateRole(Number(projectId), userId, role)
-    toast.success('Role updated')
-    load()
+    try {
+      await memberMutations.updateRole.mutateAsync({ userId, role })
+      toast.success('Role updated')
+    } catch (mutationError) {
+      toast.error(errorMessage(mutationError, 'Could not update the role'))
+    }
   }
 
   const handleRemove = async (userId: number) => {
     if (!window.confirm('Remove this member?')) return
-    await membersApi.remove(Number(projectId), userId)
-    toast.success('Member removed')
-    load()
+    try {
+      await memberMutations.remove.mutateAsync(userId)
+      toast.success('Member removed')
+    } catch (mutationError) {
+      toast.error(errorMessage(mutationError, 'Could not remove that member'))
+    }
   }
 
   return (
@@ -67,9 +61,6 @@ export default function TeamPage() {
         <div className="flex gap-2">
           <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-1 text-sm bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700">
             <UserPlus size={14} /> Invite
-          </button>
-          <button onClick={load} className="flex items-center gap-1 text-sm text-gray-600 border border-gray-300 rounded px-2 py-1">
-            <RefreshCw size={14} />
           </button>
         </div>
       </div>

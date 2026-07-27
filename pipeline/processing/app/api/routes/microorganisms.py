@@ -3,22 +3,24 @@
 import json
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
-from app.db.database import get_db
-from app.db.models import Microorganism, User
-from app.schemas.canonical import MicroorganismCreate, MicroorganismOut, MicroorganismUpdate
+from shared.auth import get_current_user
+from shared.db.database import get_db
+from shared.db.models import Microorganism, User
+from shared.schemas.canonical import MicroorganismCreate, MicroorganismOut, MicroorganismUpdate
+
+from app.services import scoping
 
 router = APIRouter(prefix="/microorganisms", tags=["microorganisms"])
 
 
-def _get_or_404(micro_id: int, db: Session) -> Microorganism:
-    m = db.query(Microorganism).filter(Microorganism.id == micro_id).first()
-    if not m:
-        raise HTTPException(status_code=404, detail="Microorganism not found")
-    return m
+def _get_or_404(micro_id: int, db: Session, user: User, role: str = "viewer"):
+    """Fetch and authorize through the project that owns it."""
+    return scoping.require_entity(
+        db, Microorganism, micro_id, user, label="Microorganism", required_role=role
+    )
 
 
 @router.get("", response_model=list[MicroorganismOut])
@@ -31,11 +33,11 @@ def list_microorganisms(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    query = db.query(Microorganism)
-    if project_id is not None:
-        query = query.filter(
-            (Microorganism.project_id == project_id) | (Microorganism.project_id == None)
-        )
+    # include_shared: the global organism catalogue has no project and is readable by all.
+    query = scoping.scope_query(
+        db, db.query(Microorganism), Microorganism.project_id,
+        project_id, current_user, include_shared=True,
+    )
     if q:
         query = query.filter(Microorganism.canonical_name.ilike(f"%{q}%"))
     if organism_role:
@@ -63,7 +65,7 @@ def get_microorganism(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return _get_or_404(micro_id, db)
+    return _get_or_404(micro_id, db, current_user)
 
 
 @router.patch("/{micro_id}", response_model=MicroorganismOut)
@@ -73,7 +75,7 @@ def update_microorganism(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    m = _get_or_404(micro_id, db)
+    m = _get_or_404(micro_id, db, current_user)
     data = payload.model_dump(exclude_none=True)
     if "synonyms" in data:
         m.synonyms_json = json.dumps(data.pop("synonyms"))
@@ -90,6 +92,6 @@ def delete_microorganism(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    m = _get_or_404(micro_id, db)
+    m = _get_or_404(micro_id, db, current_user)
     db.delete(m)
     db.commit()

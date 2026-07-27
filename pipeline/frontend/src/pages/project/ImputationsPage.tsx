@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { imputationsApi } from '../../services/api'
-import type { ImputationProposal } from '../../types'
-import { CheckCircle, XCircle, RefreshCw } from 'lucide-react'
+import { useImputations, useReviewImputation } from '../../api/canonical'
+import { errorMessage } from '../../api/errors'
+import { CheckCircle, XCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
@@ -21,29 +21,25 @@ const DECISION_COLORS: Record<string, string> = {
 
 export default function ImputationsPage() {
   const { projectId } = useParams<{ projectId: string }>()
-  const [proposals, setProposals] = useState<ImputationProposal[]>([])
-  const [loading, setLoading] = useState(true)
   const [decisionFilter, setDecisionFilter] = useState('pending')
 
-  const load = () => {
-    if (!projectId) return
-    setLoading(true)
-    imputationsApi.list({
-      project_id: Number(projectId),
-      reviewer_decision: decisionFilter || undefined,
-    }).then(setProposals).finally(() => setLoading(false))
-  }
-
-  useEffect(() => { load() }, [projectId, decisionFilter])
+  const { data: proposals = [], isLoading: loading } = useImputations(Number(projectId), {
+    reviewer_decision: decisionFilter || undefined,
+  })
+  // The mutation invalidates the list itself, so there is no manual reload here — and no
+  // window in which the list still shows a proposal that has already been decided.
+  const reviewImputation = useReviewImputation(Number(projectId))
 
   const handleReview = async (id: number, decision: 'accepted' | 'rejected') => {
-    let note: string | null = null
-    if (decision === 'rejected') {
-      note = window.prompt('Reason for rejection (optional):')
+    const note = decision === 'rejected'
+      ? window.prompt('Reason for rejection (optional):') ?? undefined
+      : undefined
+    try {
+      await reviewImputation.mutateAsync({ id, decision, note })
+      toast.success(decision === 'accepted' ? 'Proposal accepted' : 'Proposal rejected')
+    } catch (error) {
+      toast.error(errorMessage(error, 'Could not record the decision'))
     }
-    await imputationsApi.review(id, decision, note ?? undefined)
-    toast.success(decision === 'accepted' ? 'Proposal accepted' : 'Proposal rejected')
-    load()
   }
 
   return (
@@ -58,9 +54,6 @@ export default function ImputationsPage() {
             <option value="accepted">Accepted</option>
             <option value="rejected">Rejected</option>
           </select>
-          <button onClick={load} className="flex items-center gap-1 text-sm text-gray-600 border border-gray-300 rounded px-2 py-1">
-            <RefreshCw size={14} />
-          </button>
         </div>
       </div>
 

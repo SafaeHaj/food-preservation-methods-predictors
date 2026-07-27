@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { trajectoriesApi } from '../../services/api'
+import { useTrajectories, useTrajectoryRuns } from '../../api/canonical'
 import type { Trajectory, ModelRun, ModelFit } from '../../types'
 import { RefreshCw, ChevronDown, ChevronUp } from 'lucide-react'
 import clsx from 'clsx'
@@ -33,12 +33,8 @@ function FitRow({ fit, selected }: { fit: ModelFit; selected: boolean }) {
 }
 
 function ModelRunCard({ trajId }: { trajId: number }) {
-  const [runs, setRuns] = useState<ModelRun[]>([])
   const [expanded, setExpanded] = useState(false)
-
-  useEffect(() => {
-    trajectoriesApi.listRuns(trajId).then(setRuns)
-  }, [trajId])
+  const { data: runs = [] } = useTrajectoryRuns(trajId)
 
   if (runs.length === 0) return null
 
@@ -79,16 +75,9 @@ function ModelRunCard({ trajId }: { trajId: number }) {
 
 export default function ModelLabPage() {
   const { projectId } = useParams<{ projectId: string }>()
-  const [trajectories, setTrajectories] = useState<Trajectory[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    if (!projectId) return
-    setLoading(true)
-    trajectoriesApi.list({ project_id: Number(projectId), data_sufficient: true })
-      .then(setTrajectories)
-      .finally(() => setLoading(false))
-  }, [projectId])
+  const { data: trajectories = [], isLoading: loading } = useTrajectories(Number(projectId), {
+    data_sufficient: true,
+  })
 
   return (
     <div>

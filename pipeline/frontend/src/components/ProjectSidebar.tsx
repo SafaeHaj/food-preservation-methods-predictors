@@ -2,20 +2,24 @@ import { NavLink, useParams, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Upload, Cpu, ShieldCheck, ClipboardList,
   Database, FlaskConical, Activity, GitBranch, Download, Users, Settings,
-  History, LogOut, ChevronRight,
+  History, LogOut, ChevronRight, Table2,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useAuthStore } from '../store/auth'
 
+// "Extraction Review" pointed at the legacy flat-row review screen, which was removed
+// along with the extraction path that produced its data. Curation now happens on the
+// Validation screen (before the LLM runs) and in the Scientific Database (after).
 const EXTRACTION_NAV = [
-  { to: '',          end: true, label: 'Dashboard',        Icon: LayoutDashboard },
-  { to: 'upload',              label: 'Upload Papers',     Icon: Upload },
-  { to: 'jobs',                label: 'Extraction Jobs',   Icon: Cpu },
-  { to: 'validation',          label: 'Validation',        Icon: ShieldCheck },
-  { to: 'review',              label: 'Extraction Review', Icon: ClipboardList },
+  { to: '',          end: true, label: 'Dashboard',      Icon: LayoutDashboard },
+  { to: 'upload',              label: 'Upload Papers',   Icon: Upload },
+  { to: 'jobs',                label: 'Extraction Jobs', Icon: Cpu },
+  { to: 'validation',          label: 'Validation',      Icon: ShieldCheck },
+  { to: 'extracted',           label: 'Extracted Data',  Icon: Table2 },
 ]
 
 const DATABASE_NAV = [
+  { to: 'studies',      label: 'Studies',             Icon: ClipboardList },
   { to: 'dataset',      label: 'Scientific Database', Icon: Database },
   { to: 'experiments',  label: 'Experiments',         Icon: FlaskConical },
   { to: 'trajectories', label: 'Trajectories',        Icon: Activity },

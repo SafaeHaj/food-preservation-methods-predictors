@@ -1,0 +1,11 @@
+# Serve precompiled Debian (bookworm) binaries from Posit Package Manager rather than
+# compiling every R dependency from source. frailtypack Imports shiny, which drags in
+# bslib -> sass (libsass, C++) and fails to build in a slim container.
+# PPM only returns binaries when the client sends a matching User-Agent, hence HTTPUserAgent.
+options(repos = c(PPM = "https://packagemanager.posit.co/cran/__linux__/bookworm/latest"))
+options(HTTPUserAgent = sprintf(
+  "R/%s R (%s)",
+  getRversion(),
+  paste(getRversion(), R.version$platform, R.version$arch, R.version$os)
+))
+options(Ncpus = max(1L, parallel::detectCores()))

@@ -1,0 +1,19 @@
+# Build context for the context-root images (gateway / extraction / processing).
+# The prediction service builds from ./prediction and has its own .dockerignore.
+frontend/node_modules
+frontend/dist
+frontend/.vite
+**/__pycache__
+**/.pytest_cache
+**/*.pyc
+
+# service-local runtime state
+prediction/data
+prediction/results
+prediction/misc
+prediction/tests
+extraction/uploads
+processing/exports
+
+*.log
+.env

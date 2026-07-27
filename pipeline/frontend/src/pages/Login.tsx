@@ -2,7 +2,8 @@ import { useState, FormEvent, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Mail, Lock, ArrowRight, FlaskConical, BarChart3, Database, Brain } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { authApi } from '../services/api'
+import { login as loginRequest } from '../api/auth'
+import { errorMessage } from '../api/errors'
 import { useAuthStore } from '../store/auth'
 
 // ─── Animated particle network canvas ──────────────────────────────────────────
@@ -100,11 +101,11 @@ export default function Login() {
     e.preventDefault()
     setLoading(true)
     try {
-      const data = await authApi.login(email, password)
-      setAuth(data.access_token, { id: data.user_id, email: data.email, full_name: data.full_name })
+      const data = await loginRequest(email, password)
+      setAuth(data.access_token, data.user)
       navigate('/')
-    } catch (err: unknown) {
-      toast.error((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Login failed')
+    } catch (error) {
+      toast.error(errorMessage(error, 'Could not sign you in'))
     } finally {
       setLoading(false)
     }

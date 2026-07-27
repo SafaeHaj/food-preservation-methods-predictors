@@ -1,33 +1,21 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { observationsApi } from '../../services/api'
-import type { Observation } from '../../types'
-import { RefreshCw, Download } from 'lucide-react'
+import { useObservations } from '../../api/canonical'
+import { Download } from 'lucide-react'
 
 export default function DatasetPage() {
   const { projectId } = useParams<{ projectId: string }>()
-  const [observations, setObservations] = useState<Observation[]>([])
-  const [loading, setLoading] = useState(true)
   const [typeFilter, setTypeFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [includeImputed, setIncludeImputed] = useState(true)
 
-  const load = () => {
-    if (!projectId) return
-    setLoading(true)
-    observationsApi
-      .list({
-        project_id: Number(projectId),
-        measurement_type: typeFilter || undefined,
-        review_status: statusFilter || undefined,
-        include_imputed: includeImputed,
-        limit: 500,
-      })
-      .then(setObservations)
-      .finally(() => setLoading(false))
-  }
-
-  useEffect(() => { load() }, [projectId, typeFilter, statusFilter, includeImputed])
+  // The filters are part of the query key, so each combination is cached separately and
+  // returning to one already seen is instant rather than a fresh round trip.
+  const { data: observations = [], isLoading: loading } = useObservations(Number(projectId), {
+    measurement_type: typeFilter || undefined,
+    review_status: statusFilter || undefined,
+    include_imputed: includeImputed,
+  })
 
   const measurementTypes = useMemo(() => {
     const s = new Set(observations.map((o) => o.measurement_type))
@@ -65,9 +53,6 @@ export default function DatasetPage() {
             <input type="checkbox" checked={includeImputed} onChange={(e) => setIncludeImputed(e.target.checked)} />
             Show imputed
           </label>
-          <button onClick={load} className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 px-2 py-1 border border-gray-300 rounded">
-            <RefreshCw size={14} />
-          </button>
           <button onClick={handleCsvDownload} className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 px-2 py-1 border border-blue-300 rounded">
             <Download size={14} /> CSV
           </button>

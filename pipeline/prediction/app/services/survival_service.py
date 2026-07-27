@@ -69,6 +69,14 @@ def _sksurv_available() -> bool:
     return importlib.util.find_spec("sksurv") is not None
 
 
+def _frailty_off(cfg: Config) -> Config:
+    """Copy of ``cfg`` with the Weibull R-frailty (stage 2) disabled."""
+    m = cfg.model
+    return cfg.with_overrides(
+        model=replace(m, weibull_aft=replace(m.weibull_aft, use_r_frailty=False))
+    )
+
+
 class SurvivalTrainingService:
     """Fit every engine on a flat dataset and persist the artifacts."""
 
@@ -121,23 +129,34 @@ class SurvivalTrainingService:
             return lambda: GradientBoostedSurvivalEngine(cfg)
         raise KeyError(name)
 
+    def _fit_config(self, name: str, design: FlatDesign) -> Config:
+        """Full-fit config: disable Weibull R-frailty when there is no real study grouping.
+
+        Without a mapped ``study_id`` the groups are per-row, and ``frailtyPenal`` on singleton
+        clusters is unidentifiable -- it raises rather than converging, which would fail Weibull
+        on most model-lab uploads. Frailty is only meaningful with >= 2 genuine studies.
+        """
+        cfg = self.config
+        if name == "weibull_aft" and cfg.model.weibull_aft.use_r_frailty:
+            has_studies = design.study_col is not None and len(np.unique(design.groups)) >= 2
+            if not has_studies:
+                cfg = _frailty_off(cfg)
+        return cfg
+
     def _fit_one(self, name: str, design: FlatDesign) -> dict[str, Any]:
-        factory = self._engine_factory(name, design)
+        cfg = self._fit_config(name, design)
+        factory = self._engine_factory(name, design, cfg)
         try:
             model = factory()
             try:
                 model.fit(design.X, design.y_time, design.y_event, groups=design.groups)
-            except RNotAvailableError:
-                if name != "weibull_aft":
+            except (RNotAvailableError, RuntimeError):
+                # Weibull frailty stage failed (R missing, or non-convergent): keep the stage-1 refit
+                # rather than failing the engine. A genuine stage-1 error re-raises on the retry.
+                if name != "weibull_aft" or not cfg.model.weibull_aft.use_r_frailty:
                     raise
-                # R absent: fall back to the Python stage-1 refit rather than failing Weibull.
-                cfg2 = self.config.with_overrides(
-                    model=replace(
-                        self.config.model,
-                        weibull_aft=replace(self.config.model.weibull_aft, use_r_frailty=False),
-                    )
-                )
-                factory = self._engine_factory(name, design, cfg2)
+                cfg = _frailty_off(cfg)
+                factory = self._engine_factory(name, design, cfg)
                 model = factory()
                 model.fit(design.X, design.y_time, design.y_event, groups=design.groups)
         except ImportError as exc:
@@ -145,7 +164,7 @@ class SurvivalTrainingService:
         except Exception as exc:  # noqa: BLE001 - per-engine isolation
             return {"status": "failed", "reason": f"{type(exc).__name__}: {exc}"}
 
-        c_index = self._safe_c_index(factory, design)
+        c_index = self._safe_c_index(name, design)
         model_ref = f"{name}_{uuid.uuid4().hex[:12]}"
         joblib.dump(
             {
@@ -164,14 +183,20 @@ class SurvivalTrainingService:
             "artifact_path": model_ref,
         }
 
-    def _safe_c_index(self, factory, design: FlatDesign) -> float | None:
-        """Study-grouped CV C-index, or None when it cannot be computed (no sksurv / <2 groups)."""
+    def _safe_c_index(self, name: str, design: FlatDesign) -> float | None:
+        """Study-grouped CV C-index, or None when it cannot be computed (no sksurv / <2 groups).
+
+        CV always uses the frailty-off Weibull: an R subprocess per fold is prohibitively slow,
+        and the frailty shifts the scale, not the formulation ranking the C-index measures.
+        """
         if not _sksurv_available():
             return None
+        cfg = _frailty_off(self.config) if name == "weibull_aft" else self.config
+        factory = self._engine_factory(name, design, cfg)
         try:
             cv = grouped_cv_score(
                 factory, design.X, design.y_time, design.y_event, design.groups,
-                n_splits=self.config.model.cv.n_splits, seed=self.config.model.cv.seed,
+                n_splits=cfg.model.cv.n_splits, seed=cfg.model.cv.seed,
             )
             val = float(cv["mean_c_index"])
             return None if np.isnan(val) else val

@@ -11,9 +11,13 @@ import clsx from 'clsx'
 import { MODEL_DOCS, type ModelDoc } from '../../data/modelDocs'
 import DatasetTab from '../../components/DatasetTab'
 import {
-  listDatasets, startTraining, listRuns, getRun, listModels, runPrediction,
+  runPrediction,
+  useDatasets, useModels, useStartTraining, useTrainingRuns,
   type BackendDataset, type TrainingRunStatus, type ModelResult, type PredictResult,
-} from '../../services/modelLabApi'
+} from '../../api/modelLab'
+import { errorMessage } from '../../api/errors'
+import { keys } from '../../api/keys'
+import { useJobStream } from '../../hooks/useJobStream'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Tab = 'dataset' | 'models' | 'train' | 'predict'
@@ -255,16 +259,13 @@ function ModelsTab({
   projectId: number
   onGuide: (m: ModelDoc) => void
 }) {
-  const [registryModels, setRegistryModels] = useState<ModelResult[]>([])
-  const [runs, setRuns]                     = useState<TrainingRunStatus[]>([])
-  const [loading, setLoading]               = useState(true)
-
-  useEffect(() => {
-    Promise.all([listModels(projectId), listRuns(projectId)])
-      .then(([models, r]) => { setRegistryModels(models); setRuns(r) })
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [projectId])
+  // Shared query keys, not local copies: this tab and the predict tab read the same two
+  // caches, so switching between them costs nothing and they can never disagree.
+  const modelsQuery = useModels(projectId)
+  const runsQuery = useTrainingRuns(projectId)
+  const registryModels = modelsQuery.data ?? []
+  const runs = runsQuery.data ?? []
+  const loading = modelsQuery.isLoading || runsQuery.isLoading
 
   const runMap = Object.fromEntries(runs.map((r) => [r.id, r]))
 
@@ -619,55 +620,44 @@ function TrainTab({
   projectId: number
   onGoToDataset: () => void
 }) {
-  const [dataset, setDataset]   = useState<BackendDataset | null>(null)
-  const [allRuns, setAllRuns]   = useState<TrainingRunStatus[]>([])
   const [threshold, setThreshold] = useState('7.0')
-  const [loading, setLoading]   = useState(true)
-  const [starting, setStarting] = useState(false)
   const [error, setError]       = useState<string | null>(null)
-  const pollRef                 = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  useEffect(() => {
-    Promise.all([
-      listDatasets(projectId).then((ds) => ds.find((d) => d.parse_status === 'ready') ?? null),
-      listRuns(projectId),
-    ])
-      .then(([ds, runs]) => { setDataset(ds); setAllRuns(runs) })
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [projectId])
+  const datasetsQuery = useDatasets(projectId)
+  const runsQuery = useTrainingRuns(projectId)
+  const startTraining = useStartTraining(projectId)
+
+  const dataset = datasetsQuery.data?.find((d) => d.parse_status === 'ready') ?? null
+  const allRuns = runsQuery.data ?? []
+  const loading = datasetsQuery.isLoading || runsQuery.isLoading
+  const starting = startTraining.isPending
 
   const latestRun = allRuns[0] ?? null
-  const isRunning = latestRun && (latestRun.status === 'queued' || latestRun.status === 'running')
+  const isRunning = !!latestRun && (latestRun.status === 'queued' || latestRun.status === 'running')
 
-  useEffect(() => {
-    if (isRunning && latestRun) {
-      pollRef.current = setInterval(() => {
-        getRun(projectId, latestRun.id).then((updated) => {
-          setAllRuns((prev) => prev.map((r) => (r.id === updated.id ? updated : r)))
-          if (updated.status === 'completed' || updated.status === 'failed') {
-            clearInterval(pollRef.current!)
-          }
-        }).catch(() => {})
-      }, 2500)
-    }
-    return () => { if (pollRef.current) clearInterval(pollRef.current) }
-  }, [projectId, latestRun?.id, latestRun?.status])
+  // The last polling loop in the app. Training reports through the same job resource as
+  // every other pipeline, so following it needs no bespoke interval — and the stream stops
+  // itself when the run finishes or the user navigates away.
+  useJobStream(isRunning ? latestRun?.job_id : null, {
+    invalidateOnComplete: [
+      keys.modelLab.runs(projectId),
+      keys.modelLab.models(projectId),
+    ],
+  })
 
   const handleStart = async () => {
     if (!dataset) return
-    setStarting(true); setError(null)
+    setError(null)
     try {
-      const mapping = dataset.column_mapping as Record<string, string>
-      const family  = dataset.dataset_family ?? 'kinetic'
-      const thr     = family === 'kinetic' ? parseFloat(threshold) : undefined
-      const { training_run_id } = await startTraining(projectId, dataset.id, mapping, family, thr)
-      const newRun = await getRun(projectId, training_run_id)
-      setAllRuns((prev) => [newRun, ...prev])
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to start training')
-    } finally {
-      setStarting(false)
+      const family = dataset.dataset_family ?? 'kinetic'
+      await startTraining.mutateAsync({
+        dataset_id: dataset.id,
+        column_mapping: dataset.column_mapping as Record<string, string>,
+        dataset_family: family,
+        threshold: family === 'kinetic' ? parseFloat(threshold) : undefined,
+      })
+    } catch (mutationError) {
+      setError(errorMessage(mutationError, 'Could not start training'))
     }
   }
 
@@ -1129,17 +1119,7 @@ function SurvivalPredictPanel({
           </div>
         ) : result ? (
           <div className="space-y-4">
-            {result.error && (
-              <div className="flex gap-3 bg-red-50 border border-red-200 rounded-xl px-5 py-4">
-                <AlertCircle size={15} className="text-red-500 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-semibold text-red-800">Prediction error</p>
-                  <p className="text-[12px] text-red-700 mt-0.5">{result.error}</p>
-                </div>
-              </div>
-            )}
-
-            {!result.error && (
+            {(
               <div className="grid grid-cols-2 gap-4">
                 <div className="rounded-2xl border border-violet-200 bg-violet-50 p-5">
                   <p className="text-[11px] font-bold uppercase tracking-wider text-violet-500 mb-2">Predicted shelf life</p>
@@ -1199,23 +1179,21 @@ function SurvivalPredictPanel({
 }
 
 function PredictTab({ projectId }: { projectId: number }) {
-  const [models, setModels] = useState<ModelResult[]>([])
-  const [runs, setRuns]     = useState<TrainingRunStatus[]>([])
-  const [loading, setLoading] = useState(true)
   const [mode, setMode]     = useState<'survival' | 'kinetic' | null>(null)
 
+  const modelsQuery = useModels(projectId)
+  const runsQuery = useTrainingRuns(projectId)
+  const models = modelsQuery.data ?? []
+  const runs = runsQuery.data ?? []
+  const loading = modelsQuery.isLoading || runsQuery.isLoading
+
+  // Default the mode to whichever family actually has a trained model, once they load.
   useEffect(() => {
-    Promise.all([listModels(projectId), listRuns(projectId)])
-      .then(([ms, rs]) => {
-        setModels(ms)
-        setRuns(rs)
-        const hasSurvival = ms.some((m) => m.status === 'completed' && m.is_active && m.model_family === 'survival')
-        const hasKinetic  = ms.some((m) => m.status === 'completed' && m.is_active && m.model_family === 'kinetic')
-        if (hasSurvival) setMode('survival')
-        else if (hasKinetic) setMode('kinetic')
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false))
+    if (mode || models.length === 0) return
+    const trained = (family: string) =>
+      models.some((m) => m.status === 'completed' && m.is_active && m.model_family === family)
+    if (trained('survival')) setMode('survival')
+    else if (trained('kinetic')) setMode('kinetic')
   }, [projectId])
 
   if (loading) {

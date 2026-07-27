@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { snapshotsApi } from '../../services/api'
+import { useExportRun, useRequestExport } from '../../api/canonical'
+import { download } from '../../api/client'
+import { errorMessage } from '../../api/errors'
 import type { ExportRun } from '../../types'
-import { Download, RefreshCw, FileSpreadsheet, Archive, Braces, Database } from 'lucide-react'
+import { Download, FileSpreadsheet, Archive, Braces, Database } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const FORMAT_ICONS: Record<string, React.ReactNode> = {
@@ -22,50 +24,51 @@ const STATUS_COLORS: Record<string, string> = {
 export default function ExportPage() {
   const { projectId } = useParams<{ projectId: string }>()
   const [runs, setRuns] = useState<ExportRun[]>([])
-  const [loading, setLoading] = useState(false)
+  const [activeRunId, setActiveRunId] = useState<number | null>(null)
   const [requesting, setRequesting] = useState(false)
 
-  const loadRuns = async () => {
-    // We don't have a list endpoint for exports directly; use snapshot exports
-    // This page will show pending/completed exports from the ExportRun model
-  }
+  const requestExport = useRequestExport(Number(projectId))
+
+  // One query watches the run in flight. Its refetch interval stops itself the moment the
+  // run reaches a terminal state, so there is no interval to clear and none can be leaked
+  // by navigating away mid-export.
+  const { data: activeRun } = useExportRun(activeRunId)
+
+  useEffect(() => {
+    if (!activeRun) return
+    setRuns((previous) => {
+      const index = previous.findIndex((run) => run.id === activeRun.id)
+      if (index < 0) return [activeRun as ExportRun, ...previous]
+      const next = [...previous]
+      next[index] = activeRun as ExportRun
+      return next
+    })
+    if (activeRun.status === 'completed') {
+      toast.success('Export ready for download')
+      setActiveRunId(null)
+    } else if (activeRun.status === 'failed') {
+      toast.error('The export failed')
+      setActiveRunId(null)
+    }
+  }, [activeRun])
 
   const handleExport = async (format: string) => {
-    if (!projectId) return
     setRequesting(true)
     try {
-      const run = await snapshotsApi.requestExport({
-        project_id: Number(projectId),
-        format,
-      })
-      toast.success(`Export started (Run #${run.id})`)
-      // Poll until done
-      const poll = setInterval(async () => {
-        const updated = await snapshotsApi.getExportRun(run.id)
-        setRuns((prev) => {
-          const idx = prev.findIndex((r) => r.id === run.id)
-          if (idx >= 0) { const next = [...prev]; next[idx] = updated; return next }
-          return [updated, ...prev]
-        })
-        if (updated.status === 'completed' || updated.status === 'failed') {
-          clearInterval(poll)
-          if (updated.status === 'completed') {
-            toast.success('Export ready for download')
-          } else {
-            toast.error(`Export failed: ${updated.error_message}`)
-          }
-        }
-      }, 2000)
-    } catch {
-      toast.error('Failed to start export')
+      const run = await requestExport.mutateAsync({ format })
+      toast.success(`Export started (run #${run.id})`)
+      setActiveRunId(run.id)
+    } catch (error) {
+      toast.error(errorMessage(error, 'Could not start the export'))
     } finally {
       setRequesting(false)
     }
   }
 
-  const handleDownload = (runId: number) => {
-    snapshotsApi.downloadExport(runId).catch(() => toast.error('Download failed'))
-  }
+  const handleDownload = (runId: number) =>
+    download(`/snapshots/exports/${runId}/download`, `export_${runId}`).catch((error) =>
+      toast.error(errorMessage(error, 'Download failed')),
+    )
 
   const formats: { key: string; label: string; desc: string }[] = [
     { key: 'excel', label: 'Excel Workbook', desc: 'Multi-sheet .xlsx with all entities' },

@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { trajectoriesApi } from '../../services/api'
-import type { Trajectory, ModelRun } from '../../types'
-import { Play, RefreshCw, Cpu } from 'lucide-react'
+import { useFitTrajectory, useTrajectories } from '../../api/canonical'
+import { errorMessage } from '../../api/errors'
+import { Play, Cpu } from 'lucide-react'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
@@ -15,28 +15,21 @@ const PROCESS_COLORS: Record<string, string> = {
 
 export default function TrajectoriesPage() {
   const { projectId } = useParams<{ projectId: string }>()
-  const [trajectories, setTrajectories] = useState<Trajectory[]>([])
-  const [loading, setLoading] = useState(true)
   const [fittingId, setFittingId] = useState<number | null>(null)
   const [processFilter, setProcessFilter] = useState('')
 
-  const load = () => {
-    if (!projectId) return
-    setLoading(true)
-    trajectoriesApi.list({ project_id: Number(projectId), process_class: processFilter || undefined })
-      .then(setTrajectories)
-      .finally(() => setLoading(false))
-  }
-
-  useEffect(() => { load() }, [projectId, processFilter])
+  const { data: trajectories = [], isLoading: loading } = useTrajectories(Number(projectId), {
+    process_class: processFilter || undefined,
+  })
+  const fitTrajectory = useFitTrajectory(Number(projectId))
 
   const handleFit = async (id: number) => {
     setFittingId(id)
     try {
-      const run: ModelRun = await trajectoriesApi.fitModels(id)
+      const run = await fitTrajectory.mutateAsync(id)
       toast.success(`Model fitting started (run #${run.id})`)
-    } catch {
-      toast.error('Failed to start fitting')
+    } catch (error) {
+      toast.error(errorMessage(error, 'Could not start model fitting'))
     } finally {
       setFittingId(null)
     }
@@ -54,9 +47,6 @@ export default function TrajectoriesPage() {
             <option value="stable">Stable</option>
             <option value="insufficient_data">Insufficient data</option>
           </select>
-          <button onClick={load} className="flex items-center gap-1 text-sm text-gray-600 border border-gray-300 rounded px-2 py-1">
-            <RefreshCw size={14} />
-          </button>
         </div>
       </div>
 

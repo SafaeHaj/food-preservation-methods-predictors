@@ -2,58 +2,45 @@ import { useState, useEffect, FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, FolderOpen, FileText, CheckSquare, Trash2, FlaskConical, X, BarChart2, Eye } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { projectsApi } from '../services/api'
+import { useCreateProject, useDeleteProject, useProjects } from '../api/projects'
+import { errorMessage } from '../api/errors'
 import { Project } from '../types'
 import { useAuthStore } from '../store/auth'
 
 export default function Dashboard() {
-  const [projects, setProjects] = useState<Project[]>([])
-  const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const [name, setName] = useState('')
   const [desc, setDesc] = useState('')
-  const [creating, setCreating] = useState(false)
   const user = useAuthStore((s) => s.user)
 
-  const load = async () => {
-    try {
-      const data = await projectsApi.list()
-      setProjects(data)
-    } catch {
-      toast.error('Failed to load projects')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => { load() }, [])
+  // The list is owned by the cache; the mutations invalidate it, so no local copy is kept
+  // in sync by hand and there is no window where the two disagree.
+  const { data: projects = [], isLoading: loading } = useProjects()
+  const createProject = useCreateProject()
+  const deleteProject = useDeleteProject()
+  const creating = createProject.isPending
 
   const handleCreate = async (e: FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
-    setCreating(true)
     try {
-      const project = await projectsApi.create({ name: name.trim(), description: desc.trim() })
-      setProjects((prev) => [project, ...prev])
+      await createProject.mutateAsync({ name: name.trim(), description: desc.trim() })
       setShowCreate(false)
       setName('')
       setDesc('')
       toast.success('Project created')
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to create project')
-    } finally {
-      setCreating(false)
+    } catch (error) {
+      toast.error(errorMessage(error, 'Could not create the project'))
     }
   }
 
   const handleDelete = async (id: number, projectName: string) => {
     if (!confirm(`Delete project "${projectName}" and all its data?`)) return
     try {
-      await projectsApi.delete(id)
-      setProjects((prev) => prev.filter((p) => p.id !== id))
+      await deleteProject.mutateAsync(id)
       toast.success('Project deleted')
-    } catch {
-      toast.error('Failed to delete project')
+    } catch (error) {
+      toast.error(errorMessage(error, 'Could not delete the project'))
     }
   }
 

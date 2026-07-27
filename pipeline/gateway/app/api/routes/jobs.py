@@ -1,14 +1,19 @@
-"""Job status polling and management."""
+"""Job routes -- the one async-work resource every workflow reports through."""
+
+from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
+from shared.db.database import get_db
+from shared.db.models import User
+from shared.schemas.canonical import JobOut
+
 from app.api.deps import get_current_user
-from app.db.database import get_db
-from app.db.models import Job, User
-from app.schemas.canonical import JobOut
+from app.services import job_service
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -22,44 +27,53 @@ def list_jobs(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, le=200),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
-    q = db.query(Job)
-    if project_id:
-        q = q.filter(Job.project_id == project_id)
-    if paper_id:
-        q = q.filter(Job.paper_id == paper_id)
-    if job_type:
-        q = q.filter(Job.job_type == job_type)
-    if status:
-        q = q.filter(Job.status == status)
-    return q.order_by(Job.created_at.desc()).offset(skip).limit(limit).all()
+    return job_service.list_jobs(
+        db, user,
+        project_id=project_id, paper_id=paper_id, job_type=job_type,
+        status=status, skip=skip, limit=limit,
+    )
 
 
 @router.get("/{job_id}", response_model=JobOut)
 def get_job(
     job_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
-    job = db.query(Job).filter(Job.id == job_id).first()
-    if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
-    return job
+    return job_service.get_job(db, job_id, user)
+
+
+@router.get("/{job_id}/events")
+def stream_job(
+    job_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Server-Sent Events for one job's progress.
+
+    Authorized once here, on the request session; the stream then re-checks per tick with
+    its own session, so revoking access mid-run closes the stream rather than leaking on.
+    """
+    job_service.get_job(db, job_id, user)
+    return StreamingResponse(
+        job_service.stream_job_events(job_id, user.id),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "Connection": "keep-alive",
+            # nginx buffers proxied responses by default, which would hold every frame
+            # until the stream closed and defeat the point of streaming.
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @router.post("/{job_id}/cancel", response_model=JobOut)
 def cancel_job(
     job_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
-    job = db.query(Job).filter(Job.id == job_id).first()
-    if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
-    if job.status in ("completed", "failed", "cancelled"):
-        raise HTTPException(status_code=400, detail=f"Cannot cancel job with status '{job.status}'")
-    job.status = "cancelled"
-    db.commit()
-    db.refresh(job)
-    return job
+    return job_service.cancel_job(db, job_id, user)

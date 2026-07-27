@@ -21,7 +21,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-from app.core.config import settings
+from shared.config import get_extraction_settings
+
+_settings = get_extraction_settings()
 
 logger = logging.getLogger(__name__)
 
@@ -162,7 +164,7 @@ def _caption_text(element, doc) -> Optional[str]:
 
 def _write_cache(cache_dir: Path, result: DoclingResult) -> None:
     meta = {
-        "docling_version": settings.DOCLING_CACHE_VERSION,
+        "docling_version": _settings.DOCLING_CACHE_VERSION,
         "file_hash": result.file_hash,
         "page_count": result.page_count,
         "table_count": len(result.tables),
@@ -209,7 +211,7 @@ def _load_cache(file_hash: str, cache_dir: Path) -> Optional[DoclingResult]:
         return None
     try:
         meta = json.loads(meta_path.read_text(encoding="utf-8"))
-        if meta.get("docling_version") != settings.DOCLING_CACHE_VERSION:
+        if meta.get("docling_version") != _settings.DOCLING_CACHE_VERSION:
             return None
         return DoclingResult(
             file_hash=file_hash,
@@ -248,7 +250,7 @@ def extract_pdf(pdf_path: str) -> DoclingResult:
         ) from exc
 
     file_hash = _file_hash(pdf_path)
-    base_dir = Path(settings.DOCLING_CACHE_DIR)
+    base_dir = _settings.docling_cache_path
     cache_dir = base_dir / file_hash
     cache_dir.mkdir(parents=True, exist_ok=True)
 

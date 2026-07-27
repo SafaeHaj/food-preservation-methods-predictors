@@ -39,7 +39,10 @@ export interface Paper {
   status: 'uploaded' | 'extracting' | 'extracted' | 'reviewed' | 'error'
   error_message: string
   uploaded_at: string
-  row_count?: number
+  /** Elements Docling found in the PDF. Replaces the legacy `row_count`. */
+  asset_count: number
+  /** Structured experiments the LLM produced from those elements. */
+  experiment_count: number
 }
 
 export interface ProvenanceInfo {

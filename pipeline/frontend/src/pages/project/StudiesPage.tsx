@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { studiesApi, projectsApi } from '../../services/api'
-import type { Study } from '../../types'
-import { CheckCircle, AlertCircle, RefreshCw, Plus, X, Trash2, Zap } from 'lucide-react'
+import { useStudies, useStudyMutations } from '../../api/canonical'
+import { errorMessage } from '../../api/errors'
+import { CheckCircle, AlertCircle, Plus, X, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
@@ -28,33 +28,24 @@ const EMPTY_FORM: StudyForm = { title: '', authors: '', publication_year: '', jo
 
 export default function StudiesPage() {
   const { projectId } = useParams<{ projectId: string }>()
-  const [studies, setStudies] = useState<Study[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState<StudyForm>(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
-  const [syncing, setSyncing] = useState(false)
 
-  const load = () => {
-    if (!projectId) return
-    setLoading(true)
-    setError(null)
-    studiesApi
-      .list(Number(projectId), statusFilter ? { review_status: statusFilter } : undefined)
-      .then(setStudies)
-      .catch((e) => setError(e?.response?.data?.detail ?? 'Failed to load studies'))
-      .finally(() => setLoading(false))
-  }
+  const { data: studies = [], isLoading: loading, error: loadError } =
+    useStudies(Number(projectId), { review_status: statusFilter || undefined })
+  const error = loadError ? errorMessage(loadError, 'Could not load studies') : null
 
-  useEffect(() => { load() }, [projectId, statusFilter])
+  // Each mutation invalidates the study list and the project statistics, so no page here
+  // reloads anything by hand.
+  const studyMutations = useStudyMutations(Number(projectId))
 
   const handleCreate = async () => {
     if (!projectId || !form.title.trim()) { toast.error('Title is required'); return }
     setSaving(true)
     try {
-      await studiesApi.create({
+      await studyMutations.create.mutateAsync({
         project_id: Number(projectId),
         title: form.title.trim(),
         authors: form.authors.split(',').map((a) => a.trim()).filter(Boolean),
@@ -67,7 +58,6 @@ export default function StudiesPage() {
       toast.success('Study created')
       setShowForm(false)
       setForm(EMPTY_FORM)
-      load()
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? 'Failed to create study'
       toast.error(msg)
@@ -78,43 +68,36 @@ export default function StudiesPage() {
 
   const handleApprove = async (id: number) => {
     try {
-      await studiesApi.approve(id)
+      await studyMutations.approve.mutateAsync({ id })
       toast.success('Study approved')
-      load()
-    } catch { toast.error('Failed to approve') }
+    } catch (error) {
+      toast.error(errorMessage(error, 'Could not approve the study'))
+    }
   }
 
   const handleReject = async (id: number) => {
-    const reason = window.prompt('Reason for rejection (optional):')
+    const reason = window.prompt('Reason for rejection (optional):') ?? undefined
     try {
-      await studiesApi.reject(id, reason ?? undefined)
+      await studyMutations.reject.mutateAsync({ id, reason })
       toast.success('Study rejected')
-      load()
-    } catch { toast.error('Failed to reject') }
+    } catch (error) {
+      toast.error(errorMessage(error, 'Could not reject the study'))
+    }
   }
 
   const handleDelete = async (id: number, title: string) => {
     if (!confirm(`Delete "${title}"?`)) return
     try {
-      await studiesApi.delete(id)
-      toast.success('Deleted')
-      load()
-    } catch { toast.error('Failed to delete') }
-  }
-
-  const handleSync = async () => {
-    if (!projectId) return
-    setSyncing(true)
-    try {
-      const result = await projectsApi.promoteCanonical(Number(projectId))
-      toast.success(`Synced: ${result.studies} studies, ${result.experiments} experiments, ${result.observations} observations`)
-      load()
-    } catch {
-      toast.error('Sync failed')
-    } finally {
-      setSyncing(false)
+      await studyMutations.remove.mutateAsync(id)
+      toast.success('Study deleted')
+    } catch (error) {
+      toast.error(errorMessage(error, 'Could not delete the study'))
     }
   }
+
+  // The "Sync from extraction" action is gone. Promotion into the canonical hierarchy is
+  // now the last step of the LLM ingestion job, so studies appear here as soon as a paper
+  // finishes extracting — there is nothing left for a user to trigger by hand.
 
   const set = (k: keyof StudyForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }))
@@ -136,21 +119,10 @@ export default function StudiesPage() {
             <option value="rejected">Rejected</option>
           </select>
           <button
-            onClick={handleSync}
-            disabled={syncing}
-            className="flex items-center gap-1 text-sm text-emerald-700 bg-emerald-50 border border-emerald-300 px-3 py-1.5 rounded hover:bg-emerald-100 disabled:opacity-50"
-            title="Promote all extracted PDF rows to studies/experiments/observations"
-          >
-            <Zap size={14} /> {syncing ? 'Syncing…' : 'Sync from PDFs'}
-          </button>
-          <button
             onClick={() => setShowForm((v) => !v)}
             className="flex items-center gap-1 text-sm bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700"
           >
             <Plus size={14} /> New Study
-          </button>
-          <button onClick={load} className="flex items-center gap-1 text-sm text-gray-600 border border-gray-300 rounded px-2 py-1">
-            <RefreshCw size={14} />
           </button>
         </div>
       </div>
@@ -251,14 +223,9 @@ export default function StudiesPage() {
       ) : studies.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <p className="text-lg font-medium">No studies yet</p>
-          <p className="text-sm mt-1 mb-4">If you've already extracted PDFs, click <strong>Sync from PDFs</strong> to promote the data here.</p>
-          <button
-            onClick={handleSync}
-            disabled={syncing}
-            className="inline-flex items-center gap-1.5 text-sm text-emerald-700 bg-emerald-50 border border-emerald-300 px-4 py-2 rounded-lg hover:bg-emerald-100 disabled:opacity-50"
-          >
-            <Zap size={15} /> {syncing ? 'Syncing…' : 'Sync from PDFs'}
-          </button>
+          <p className="text-sm mt-1 mb-4">
+            Studies appear here automatically once a paper finishes extracting.
+          </p>
         </div>
       ) : (
         <div className="space-y-2">

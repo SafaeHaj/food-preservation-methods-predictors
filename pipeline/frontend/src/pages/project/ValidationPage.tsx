@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import {
   AlertCircle, AlignLeft, BarChart3, BookOpen, Brain,
@@ -7,74 +7,20 @@ import {
 } from 'lucide-react'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
-import { papersApi, workspaceApi } from '../../services/api'
+import { usePapers } from '../../api/papers'
+import { useEvidencePackages, useSendToLlm } from '../../api/workspace'
+import { errorMessage } from '../../api/errors'
+import type {
+  EvidenceAsset, EvidencePackages, EvidenceParagraph,
+} from '../../types/workspace'
+import { keys } from '../../api/keys'
+import { useJobStream } from '../../hooks/useJobStream'
+import { useLatestJob } from '../../hooks/useLatestJob'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
-interface Paper {
-  id: number
-  original_name: string
-  status: string
-}
-
-interface ParagraphItem {
-  asset_id: number
-  link_id: number
-  link_type: string
-  text: string
-  page_number: number
-  score: number
-  section_name: string | null
-  asset_caption: string | null
-  relevance_score: number
-}
-
-interface AssetItem {
-  id: number
-  asset_type: string
-  classification: string
-  caption: string | null
-  section_name: string | null
-  page_number: number
-  relevance_score: number
-  selected_for_llm: boolean
-  has_csv: boolean
-  has_image: boolean
-  csv_rows: number | null
-  csv_cols: number | null
-  link_count: number
-  context_links: Array<{
-    id: number
-    link_type: string
-    text: string
-    page_number: number
-    score: number
-  }>
-}
-
-interface EvidencePackages {
-  paragraphs: ParagraphItem[]
-  native_tables: AssetItem[]
-  chart_csvs: AssetItem[]
-  excluded: AssetItem[]
-  totals: { paragraphs: number; native_tables: number; chart_csvs: number; excluded: number }
-  last_job: LlmJob | null
-}
-
-interface LlmJob {
-  job_id: number
-  status: string
-  progress: number
-  current_step: string
-  error_message?: string | null
-  result?: {
-    experiments: number
-    measurements: number
-    reasoning: string
-    low_confidence_count: number
-  } | null
-  completed_at?: string | null
-}
+// Types come from `types/workspace`, which mirrors the server's response models. They
+// were previously redeclared here by hand and had already drifted from the payload.
 
 // ─── Validation check helpers ──────────────────────────────────────────────────
 
@@ -232,7 +178,7 @@ function EvidenceSection({
 
 // ─── Paragraph row ──────────────────────────────────────────────────────────────
 
-function ParagraphRow({ item }: { item: ParagraphItem }) {
+function ParagraphRow({ item }: { item: EvidenceParagraph }) {
   const [expanded, setExpanded] = useState(false)
   const badge = {
     neighbor_before: 'Before',
@@ -276,7 +222,7 @@ function ParagraphRow({ item }: { item: ParagraphItem }) {
 
 // ─── Asset row ─────────────────────────────────────────────────────────────────
 
-function AssetRow({ item, type }: { item: AssetItem; type: 'table' | 'chart' | 'excluded' }) {
+function AssetRow({ item, type }: { item: EvidenceAsset; type: 'table' | 'chart' | 'excluded' }) {
   const [expanded, setExpanded] = useState(false)
   const colorMap = {
     table: 'text-emerald-500',
@@ -345,100 +291,72 @@ export default function ValidationPage() {
   const navigate = useNavigate()
   const pid = Number(projectId)
 
-  const [papers, setPapers] = useState<Paper[]>([])
   const [paperId, setPaperId] = useState<number | null>(null)
-  const [pkgData, setPkgData] = useState<EvidencePackages | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [sending, setSending] = useState(false)
-  const [job, setJob] = useState<LlmJob | null>(null)
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  // ── Papers ──────────────────────────────────────────────────────────────────
 
-  // ── Load papers ──────────────────────────────────────────────────────────────
+  const { data: allPapers = [] } = usePapers(pid)
 
-  useEffect(() => {
-    papersApi.list(pid).then((list: Paper[]) => {
-      const extracted = list.filter((p) => ['extracted', 'extracting'].includes(p.status))
-      setPapers(extracted.length > 0 ? extracted : list)
-
-      const qp = searchParams.get('paperId')
-      if (qp) {
-        setPaperId(Number(qp))
-      } else if (list.length > 0) {
-        setPaperId(list[0].id)
-      }
-    }).catch(console.error)
-  }, [pid, searchParams])
-
-  // ── Load evidence packages when paper selected ───────────────────────────────
-
-  const loadPackages = useCallback(async (pId: number) => {
-    setLoading(true)
-    setPkgData(null)
-    try {
-      const data: EvidencePackages = await workspaceApi.getEvidencePackages(pid, pId)
-      setPkgData(data)
-      if (data.last_job) {
-        setJob(data.last_job)
-        if (['queued', 'running'].includes(data.last_job.status)) {
-          startPolling(pId, data.last_job.job_id)
-        }
-      }
-    } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-      if (msg?.includes('No extracted assets')) {
-        setPkgData(null)
-      } else {
-        toast.error('Failed to load evidence packages')
-      }
-    } finally {
-      setLoading(false)
-    }
-  }, [pid])
+  // Prefer papers that have actually been through Docling; fall back to all of them so a
+  // project whose papers are all still queued does not present an empty picker.
+  const papers = useMemo(() => {
+    const analysed = allPapers.filter((p) => ['extracted', 'extracting'].includes(p.status))
+    return analysed.length > 0 ? analysed : allPapers
+  }, [allPapers])
 
   useEffect(() => {
-    if (paperId) loadPackages(paperId)
-    return () => { if (pollRef.current) clearInterval(pollRef.current) }
-  }, [paperId, loadPackages])
+    const requested = searchParams.get('paperId')
+    if (requested) setPaperId(Number(requested))
+    else if (paperId === null && papers.length > 0) setPaperId(papers[0].id)
+  }, [searchParams, papers, paperId])
 
-  // ── Polling ──────────────────────────────────────────────────────────────────
+  // ── Evidence ────────────────────────────────────────────────────────────────
 
-  const startPolling = (pId: number, jId: number) => {
-    if (pollRef.current) clearInterval(pollRef.current)
-    pollRef.current = setInterval(async () => {
-      try {
-        const j: LlmJob = await workspaceApi.getLlmJob(pid, pId, jId)
-        setJob(j)
-        if (!['queued', 'running'].includes(j.status)) {
-          clearInterval(pollRef.current!)
-          pollRef.current = null
-          if (j.status === 'completed') {
-            toast.success('LLM extraction complete!')
-          } else if (j.status === 'failed') {
-            toast.error(`Extraction failed: ${j.error_message || 'Unknown error'}`)
-          }
-        }
-      } catch {
-        clearInterval(pollRef.current!)
-        pollRef.current = null
+  const {
+    data: pkgData = null,
+    isLoading: loading,
+  } = useEvidencePackages(pid, paperId ?? 0, paperId !== null)
+
+  // ── LLM job ─────────────────────────────────────────────────────────────────
+
+  const sendToLlm = useSendToLlm(pid, paperId ?? 0)
+  const { jobId: existingJobId } = useLatestJob(pid, paperId ?? 0, 'llm_validation')
+  const jobId = sendToLlm.data?.job_id ?? existingJobId
+
+  const { progress: job } = useJobStream(jobId, {
+    // The ingestion job writes ext_* rows and promotes them into the canonical hierarchy,
+    // so the scientific database views are stale the moment it finishes.
+    invalidateOnComplete: [
+      keys.workspace.all(pid, paperId ?? 0),
+      keys.studies.all(pid),
+      keys.observations.all(pid),
+      keys.projects.stats(pid),
+    ],
+    onComplete: (final) => {
+      if (final.status === 'completed') toast.success('Extraction complete')
+    },
+    onError: (message) => toast.error(`Extraction failed: ${message}`),
+  })
+
+  const sending = sendToLlm.isPending
+
+  // The job result is an untyped payload on the wire; narrow it once here rather than
+  // casting at each of the four places it is rendered.
+  const ingestion = job?.result
+    ? {
+        experiments: Number(job.result.experiments ?? 0),
+        measurements: Number(job.result.measurements ?? 0),
+        lowConfidence: Number(job.result.low_confidence_count ?? 0),
+        reasoning: String(job.result.reasoning ?? ''),
       }
-    }, 2000)
-  }
-
-  // ── Send to LLM ─────────────────────────────────────────────────────────────
+    : null
 
   const handleSend = async () => {
     if (!paperId) return
-    setSending(true)
     try {
-      const resp = await workspaceApi.sendToLlm(pid, paperId)
-      setJob({ job_id: resp.job_id, status: 'queued', progress: 0, current_step: 'Queued' })
-      toast.success('Sent to Llama 4 — extraction running…')
-      startPolling(paperId, resp.job_id)
-    } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-      toast.error(msg || 'Failed to start LLM extraction')
-    } finally {
-      setSending(false)
+      await sendToLlm.mutateAsync()
+      toast.success('Sent for extraction')
+    } catch (error) {
+      toast.error(errorMessage(error, 'Could not start LLM extraction'))
     }
   }
 
@@ -446,7 +364,7 @@ export default function ValidationPage() {
 
   const checks = computeChecks(pkgData)
   const allChecksPass = checks.length > 0 && checks.every((c) => c.ok)
-  const isRunning = job && ['queued', 'running'].includes(job.status)
+  const isRunning = !!job && ['queued', 'running'].includes(job.status)
   const canSend = !isRunning && !sending && paperId !== null &&
     pkgData !== null &&
     (pkgData.totals.paragraphs + pkgData.totals.native_tables + pkgData.totals.chart_csvs) > 0
@@ -477,15 +395,6 @@ export default function ValidationPage() {
               <option key={p.id} value={p.id}>{p.original_name}</option>
             ))}
           </select>
-          {paperId && (
-            <button
-              onClick={() => loadPackages(paperId)}
-              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
-              title="Refresh"
-            >
-              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-            </button>
-          )}
         </div>
       </div>
 
@@ -542,17 +451,17 @@ export default function ValidationPage() {
                         />
                       </div>
                     )}
-                    {job.result && job.status === 'completed' && (
+                    {ingestion && job.status === 'completed' && (
                       <div className="mt-2 flex gap-4 flex-wrap">
                         <span className="text-xs text-green-700 font-medium">
-                          {job.result.experiments} experiment(s)
+                          {ingestion.experiments} experiment(s)
                         </span>
                         <span className="text-xs text-green-700 font-medium">
-                          {job.result.measurements} measurement(s)
+                          {ingestion.measurements} measurement(s)
                         </span>
-                        {job.result.low_confidence_count > 0 && (
+                        {ingestion.lowConfidence > 0 && (
                           <span className="text-xs text-amber-600">
-                            {job.result.low_confidence_count} low-confidence
+                            {ingestion.lowConfidence} low-confidence
                           </span>
                         )}
                         <button
@@ -563,8 +472,8 @@ export default function ValidationPage() {
                         </button>
                       </div>
                     )}
-                    {job.status === 'failed' && job.error_message && (
-                      <p className="text-xs text-red-600 mt-1">{job.error_message}</p>
+                    {job.status === 'failed' && job.error && (
+                      <p className="text-xs text-red-600 mt-1">{job.error}</p>
                     )}
                   </div>
                 </div>
@@ -769,11 +678,11 @@ export default function ValidationPage() {
               </div>
 
               {/* Reasoning summary */}
-              {job?.result?.reasoning && job.status === 'completed' && (
+              {ingestion?.reasoning && job?.status === 'completed' && (
                 <div className="card">
                   <h3 className="section-title mb-2">LLM Reasoning</h3>
                   <p className="text-xs text-slate-600 leading-relaxed line-clamp-8">
-                    {job.result.reasoning}
+                    {ingestion.reasoning}
                   </p>
                 </div>
               )}

@@ -1,8 +1,15 @@
-import { useEffect, useState } from 'react'
+/**
+ * Observations with missing values, grouped by why they are missing.
+ *
+ * The query was previously `observationsApi.list({ limit: 500 })` with no project filter,
+ * so this page showed — and counted — other projects' gaps as if they were this project's.
+ */
+
+import { useMemo } from 'react'
 import { useParams } from 'react-router-dom'
-import { observationsApi } from '../../services/api'
-import type { Observation, MissingReason } from '../../types'
-import { RefreshCw } from 'lucide-react'
+import { useObservations } from '../../api/canonical'
+import { errorMessage } from '../../api/errors'
+import type { MissingReason, Observation } from '../../types'
 
 const MISSING_REASON_LABELS: Record<MissingReason, string> = {
   not_reported: 'Not reported',
@@ -18,58 +25,79 @@ const MISSING_REASON_LABELS: Record<MissingReason, string> = {
   unknown: 'Unknown',
 }
 
+/** Rows listed per group before collapsing into a count. */
+const PREVIEW_PER_GROUP = 5
+
 export default function MissingDataPage() {
   const { projectId } = useParams<{ projectId: string }>()
-  const [observations, setObservations] = useState<Observation[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data: allObservations = [], isLoading, error } = useObservations(Number(projectId))
 
-  useEffect(() => {
-    if (!projectId) return
-    setLoading(true)
-    // Fetch observations where missing_reason is set or value is null
-    observationsApi.list({ limit: 500 }).then((obs: Observation[]) => {
-      setObservations(obs.filter((o) => o.missing_reason || o.numeric_value_normalized == null))
-    }).finally(() => setLoading(false))
-  }, [projectId])
+  const missing = useMemo(
+    () =>
+      allObservations.filter(
+        (observation) =>
+          observation.missing_reason || observation.numeric_value_normalized == null,
+      ),
+    [allObservations],
+  )
 
-  const byReason = observations.reduce<Record<string, Observation[]>>((acc, o) => {
-    const key = o.missing_reason ?? 'null_value'
-    if (!acc[key]) acc[key] = []
-    acc[key].push(o)
-    return acc
-  }, {})
+  const byReason = useMemo(
+    () =>
+      missing.reduce<Record<string, Observation[]>>((groups, observation) => {
+        const key = observation.missing_reason ?? 'null_value'
+        if (!groups[key]) groups[key] = []
+        groups[key].push(observation)
+        return groups
+      }, {}),
+    [missing],
+  )
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-semibold text-gray-900">Missing Data</h1>
-        <span className="text-sm text-gray-500">{observations.length} observations with missing values</span>
+        <span className="text-sm text-gray-500">
+          {missing.length} observations with missing values
+        </span>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <p className="text-sm text-gray-500">Loading…</p>
-      ) : observations.length === 0 ? (
+      ) : error ? (
+        <div className="text-center py-12 text-red-500 text-sm">
+          {errorMessage(error, 'Could not load observations')}
+        </div>
+      ) : missing.length === 0 ? (
         <div className="text-center py-12 text-green-600">No missing values found.</div>
       ) : (
         <div className="space-y-4">
-          {Object.entries(byReason).sort((a, b) => b[1].length - a[1].length).map(([reason, obs]) => (
-            <div key={reason} className="bg-white border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-sm font-semibold text-gray-800">
-                  {MISSING_REASON_LABELS[reason as MissingReason] ?? reason}
-                </h2>
-                <span className="text-sm text-gray-400">{obs.length} observations</span>
+          {Object.entries(byReason)
+            .sort((a, b) => b[1].length - a[1].length)
+            .map(([reason, observations]) => (
+              <div key={reason} className="bg-white border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-sm font-semibold text-gray-800">
+                    {MISSING_REASON_LABELS[reason as MissingReason] ?? reason}
+                  </h2>
+                  <span className="text-sm text-gray-400">
+                    {observations.length} observations
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  {observations.slice(0, PREVIEW_PER_GROUP).map((observation) => (
+                    <div key={observation.id} className="text-xs text-gray-500">
+                      Obs #{observation.id} · {observation.measurement_type} ·{' '}
+                      t={observation.time_days ?? '?'} days · arm #{observation.treatment_arm_id}
+                    </div>
+                  ))}
+                  {observations.length > PREVIEW_PER_GROUP && (
+                    <p className="text-xs text-gray-400">
+                      …and {observations.length - PREVIEW_PER_GROUP} more
+                    </p>
+                  )}
+                </div>
               </div>
-              <div className="space-y-1">
-                {obs.slice(0, 5).map((o) => (
-                  <div key={o.id} className="text-xs text-gray-500">
-                    Obs #{o.id} · {o.measurement_type} · t={o.time_days ?? '?'} days · arm #{o.treatment_arm_id}
-                  </div>
-                ))}
-                {obs.length > 5 && <p className="text-xs text-gray-400">…and {obs.length - 5} more</p>}
-              </div>
-            </div>
-          ))}
+            ))}
         </div>
       )}
     </div>

@@ -1,0 +1,12 @@
+# Keep the image lean and the build context small.
+data/
+results/
+misc/
+tests/
+**/__pycache__/
+*.joblib
+*.db
+.venv/
+.pytest_cache/
+# Heavy dev/notebook deps live here; the image uses requirements-service.txt instead.
+requirements.txt

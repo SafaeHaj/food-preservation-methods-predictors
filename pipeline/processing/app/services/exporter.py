@@ -23,8 +23,8 @@ def _ensure_export_dir() -> Path:
 
 def build_export_async(run_id: int) -> None:
     """Background task: build export file for a given ExportRun."""
-    from app.db.database import SessionLocal
-    from app.db.models import ExportRun
+    from shared.db.database import SessionLocal
+    from shared.db.models import ExportRun
 
     db: Session = SessionLocal()
     try:
@@ -63,10 +63,10 @@ def build_export_async(run_id: int) -> None:
 def _collect_dataframes(project_id: int, db: "Session") -> dict[str, Any]:
     """Collect all project data as dict of DataFrames."""
     import pandas as pd
-    from app.db.models import (
+    from shared.db.models import (
         Study, Experiment, TreatmentArm, Observation,
         Microorganism, ExperimentMicroorganism,
-        ProvenanceRecord, ValidationIssue, AuditEvent,
+        AuditEvent,
         ModelRun, ModelFit, ModelPrediction, ImputationProposal,
         TrajectoryDefinition, ThresholdDefinition,
         NormalizationMapping, Job, ExtractionRun,

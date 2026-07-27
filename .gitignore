@@ -36,7 +36,7 @@ wandb/
 mlruns/
 
 # OS / editor files
-data/synthetic/
+data/
 .DS_Store
 Thumbs.db
 .vscode/

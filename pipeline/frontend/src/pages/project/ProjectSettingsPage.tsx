@@ -1,44 +1,46 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { projectsApi } from '../../services/api'
-import type { Project } from '../../types'
+import { useDeleteProject, useProject, useUpdateProject } from '../../api/projects'
+import { errorMessage } from '../../api/errors'
 import toast from 'react-hot-toast'
 
 export default function ProjectSettingsPage() {
   const { projectId } = useParams<{ projectId: string }>()
   const navigate = useNavigate()
-  const [project, setProject] = useState<Project | null>(null)
   const [form, setForm] = useState({ name: '', description: '' })
   const [saving, setSaving] = useState(false)
 
+  const { data: project } = useProject(Number(projectId))
+  const updateProject = useUpdateProject(Number(projectId))
+  const deleteProject = useDeleteProject()
+
+  // Seed the editable form once the project arrives. The query owns the server value; this
+  // state owns the in-progress edit, which is the one thing the cache should not hold.
   useEffect(() => {
-    if (!projectId) return
-    projectsApi.get(Number(projectId)).then((p: Project) => {
-      setProject(p)
-      setForm({ name: p.name, description: p.description })
-    })
-  }, [projectId])
+    if (project) setForm({ name: project.name, description: project.description })
+  }, [project])
 
   const handleSave = async () => {
-    if (!projectId) return
     setSaving(true)
     try {
-      await projectsApi.update(Number(projectId), form)
+      await updateProject.mutateAsync(form)
       toast.success('Project updated')
-    } catch {
-      toast.error('Failed to update')
+    } catch (error) {
+      toast.error(errorMessage(error, 'Could not update the project'))
     } finally {
       setSaving(false)
     }
   }
 
   const handleDelete = async () => {
-    if (!projectId) return
-    const confirmed = window.confirm('Delete this project and all its data? This cannot be undone.')
-    if (!confirmed) return
-    await projectsApi.delete(Number(projectId))
-    toast.success('Project deleted')
-    navigate('/')
+    if (!window.confirm('Delete this project and all its data? This cannot be undone.')) return
+    try {
+      await deleteProject.mutateAsync(Number(projectId))
+      toast.success('Project deleted')
+      navigate('/')
+    } catch (error) {
+      toast.error(errorMessage(error, 'Could not delete the project'))
+    }
   }
 
   if (!project) return <p className="text-sm text-gray-500">Loading…</p>

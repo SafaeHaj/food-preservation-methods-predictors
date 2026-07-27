@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { auditApi } from '../../services/api'
-import type { AuditEvent } from '../../types'
-import { RefreshCw, ChevronDown, ChevronUp } from 'lucide-react'
+import { useAuditEvents } from '../../api/canonical'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 
 const ACTION_COLORS: Record<string, string> = {
   create: 'text-green-700 bg-green-50',
@@ -17,24 +16,14 @@ const ACTION_COLORS: Record<string, string> = {
 
 export default function AuditHistoryPage() {
   const { projectId } = useParams<{ projectId: string }>()
-  const [events, setEvents] = useState<AuditEvent[]>([])
-  const [loading, setLoading] = useState(true)
   const [entityTypeFilter, setEntityTypeFilter] = useState('')
   const [actionFilter, setActionFilter] = useState('')
   const [expandedId, setExpandedId] = useState<number | null>(null)
 
-  const load = () => {
-    if (!projectId) return
-    setLoading(true)
-    auditApi.list({
-      project_id: Number(projectId),
-      entity_type: entityTypeFilter || undefined,
-      action: actionFilter || undefined,
-      limit: 100,
-    }).then(setEvents).finally(() => setLoading(false))
-  }
-
-  useEffect(() => { load() }, [projectId, entityTypeFilter, actionFilter])
+  const { data: events = [], isLoading: loading } = useAuditEvents(Number(projectId), {
+    entity_type: entityTypeFilter || undefined,
+    action: actionFilter || undefined,
+  })
 
   return (
     <div>
@@ -55,9 +44,6 @@ export default function AuditHistoryPage() {
               <option key={a} value={a}>{a}</option>
             ))}
           </select>
-          <button onClick={load} className="flex items-center gap-1 text-sm text-gray-600 border border-gray-300 rounded px-2 py-1">
-            <RefreshCw size={14} />
-          </button>
         </div>
       </div>
 

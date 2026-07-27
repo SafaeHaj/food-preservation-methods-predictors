@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging
+from app.core.security import install_internal_secret_guard
 from app.database.session import init_db
 
 
@@ -24,6 +25,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=settings.api_title, version=settings.api_version, lifespan=lifespan
     )
+    install_internal_secret_guard(app)
     app.include_router(api_router, prefix="/api/v1")
 
     @app.get("/health", tags=["health"])

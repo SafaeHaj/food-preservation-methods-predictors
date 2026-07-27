@@ -281,8 +281,8 @@ def _classify_process(y: np.ndarray) -> str:
 
 def fit_trajectory_async(run_id: int) -> None:
     """Background task: fit all models for a trajectory ModelRun."""
-    from app.db.database import SessionLocal
-    from app.db.models import ModelFit, ModelPrediction, ModelRun, Observation, TrajectoryDefinition
+    from shared.db.database import SessionLocal
+    from shared.db.models import ModelFit, ModelPrediction, ModelRun, Observation, TrajectoryDefinition
 
     db: Session = SessionLocal()
     try:

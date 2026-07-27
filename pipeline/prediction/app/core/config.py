@@ -242,6 +242,9 @@ class Settings(BaseSettings):
 
     environment: str = "development"
     database_url: str = "sqlite:///./data/processed/shelflife.db"
+    #: Shared with the gateway and `processing`; proves a request came through the gateway.
+    #: Empty disables the check (see `app.core.security`).
+    internal_secret: str = ""
     api_title: str = "Shelf-life API"
     api_version: str = "0.1.0"
     log_level: str = "INFO"

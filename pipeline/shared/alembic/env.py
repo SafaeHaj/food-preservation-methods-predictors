@@ -1,16 +1,12 @@
-import os
-import sys
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 
-# Make app importable
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from app.db.database import Base  # noqa: E402
-from app.db import models as _models  # noqa: E402, F401 — import all models so Alembic sees them
-from app.core.config import settings  # noqa: E402
+# `shared` is installed as a package in every service image, so no sys.path juggling.
+from shared.db.database import Base  # noqa: E402
+from shared.db import models as _models  # noqa: E402, F401 — import all models so Alembic sees them
+from shared.config import get_common_settings  # noqa: E402
 
 config = context.config
 
@@ -18,7 +14,7 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # Override URL from app settings so the migration always matches the runtime DB
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+config.set_main_option("sqlalchemy.url", get_common_settings().DATABASE_URL)
 
 target_metadata = Base.metadata
 

@@ -22,7 +22,10 @@ import re
 import time
 from typing import Any, Optional
 
-from app.core.config import settings
+from shared.config import get_extraction_settings
+from shared.errors import ServiceUnavailableError
+
+_settings = get_extraction_settings()
 
 logger = logging.getLogger(__name__)
 
@@ -195,19 +198,25 @@ def _recover_experiments(raw: str) -> list:
     return objects
 
 
-# ─── Groq client ──────────────────────────────────────────────────────────────
+# ─── LLM client (Ollama or Groq, both via the OpenAI chat API) ──────────────────
 
-def _groq_client():
+def _llm_client():
     try:
         from openai import OpenAI
     except ImportError:
         raise RuntimeError("openai package required — pip install openai")
-    if not settings.GROQ_API_KEY:
-        raise RuntimeError("GROQ_API_KEY is not set in backend/.env")
-    return OpenAI(api_key=settings.GROQ_API_KEY, base_url="https://api.groq.com/openai/v1")
+    if _settings.LLM_PROVIDER == "groq" and not _settings.GROQ_API_KEY:
+        raise ServiceUnavailableError(
+            "LLM extraction is set to the Groq provider but no API key is configured"
+        )
+    return OpenAI(
+        api_key=_settings.llm_api_key,
+        base_url=_settings.llm_base_url,
+        timeout=_settings.LLM_TIMEOUT_SECONDS,
+    )
 
 
-def _groq_call(
+def _llm_call(
     client,
     model: str,
     system: str,
@@ -215,7 +224,8 @@ def _groq_call(
     max_tokens: int = 4096,
 ) -> str:
     """
-    Single Groq API call with adaptive retry:
+    Single chat-completion call with adaptive retry. The retries are Groq's error
+    contract; against Ollama they simply never trigger, so the same path serves both:
       • 413 (request too large) → halve text and retry
       • 429 (rate limit)        → sleep as requested, then retry
     Returns the raw response content string.
@@ -256,7 +266,7 @@ def _groq_call(
             else:
                 raise
 
-    raise RuntimeError("Groq call failed after maximum retries")
+    raise RuntimeError("LLM call failed after maximum retries")
 
 
 # ─── Evidence ref validation ───────────────────────────────────────────────────
@@ -305,7 +315,7 @@ def _extract_package(
 ) -> dict:
     """Run Pass 1 extraction on a single evidence package."""
     user_msg = _build_user_message(package.render(), known_refs)
-    raw = _groq_call(client, model, SYSTEM_PROMPT, user_msg, max_tokens=4096)
+    raw = _llm_call(client, model, SYSTEM_PROMPT, user_msg, max_tokens=4096)
     result = _parse_json(raw)
     if not isinstance(result.get("experiments"), list):
         # Try salvage
@@ -333,7 +343,7 @@ def _verify_low_confidence(
         f"Verify these {len(low_conf_items)} low-confidence measurements:\n{items_json}"
     )
     try:
-        raw = _groq_call(client, model, VERIFY_SYSTEM_PROMPT, user_msg, max_tokens=2048)
+        raw = _llm_call(client, model, VERIFY_SYSTEM_PROMPT, user_msg, max_tokens=2048)
         result = _parse_json(raw)
         return result.get("verified", [])
     except Exception as exc:
@@ -381,7 +391,7 @@ def extract_food_data(
     ----------
     evidence_packages : List[EvidencePackage] — from evidence_package.build_packages()
     known_item_refs   : Set[str]              — from DoclingResult.known_item_refs
-    model             : Groq model ID, defaults to settings.GROQ_FOOD_MODEL
+    model             : model id, defaults to the configured provider's model
     enable_verification: run Pass 2 for low-confidence items
 
     Returns
@@ -394,8 +404,8 @@ def extract_food_data(
     if not evidence_packages:
         return {"reasoning_summary": "No relevant evidence found.", "experiments": [], "low_confidence_count": 0}
 
-    _model = model or settings.GROQ_FOOD_MODEL
-    client = _groq_client()
+    _model = model or _settings.llm_model
+    client = _llm_client()
 
     all_experiments: list = []
     all_reasoning: list = []

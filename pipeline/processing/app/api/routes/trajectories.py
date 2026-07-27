@@ -3,22 +3,25 @@
 import json
 from typing import Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
-from app.db.database import get_db
-from app.db.models import Observation, TrajectoryDefinition, User
-from app.schemas.canonical import TrajectoryCreate, TrajectoryOut, ModelRunOut
+from shared.auth import get_current_user
+from shared.db.database import get_db
+from shared.errors import BusinessRuleError
+from shared.db.models import Observation, TrajectoryDefinition, User
+from shared.schemas.canonical import TrajectoryCreate, TrajectoryOut, ModelRunOut
+
+from app.services import scoping
 
 router = APIRouter(prefix="/trajectories", tags=["trajectories"])
 
 
-def _get_or_404(traj_id: int, db: Session) -> TrajectoryDefinition:
-    t = db.query(TrajectoryDefinition).filter(TrajectoryDefinition.id == traj_id).first()
-    if not t:
-        raise HTTPException(status_code=404, detail="Trajectory not found")
-    return t
+def _get_or_404(traj_id: int, db: Session, user: User, role: str = "viewer"):
+    """Fetch and authorize through the project that owns it."""
+    return scoping.require_entity(
+        db, TrajectoryDefinition, traj_id, user, label="Trajectory", required_role=role
+    )
 
 
 @router.get("", response_model=list[TrajectoryOut])
@@ -34,9 +37,10 @@ def list_trajectories(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    q = db.query(TrajectoryDefinition)
-    if project_id:
-        q = q.filter(TrajectoryDefinition.project_id == project_id)
+    q = scoping.scope_query(
+        db, db.query(TrajectoryDefinition), TrajectoryDefinition.project_id,
+        project_id, current_user,
+    )
     if experiment_id:
         q = q.filter(TrajectoryDefinition.experiment_id == experiment_id)
     if treatment_arm_id:
@@ -57,12 +61,13 @@ def create_trajectory(
     current_user: User = Depends(get_current_user),
 ):
     # Validate all observation_ids exist
+    observations = []
     if payload.observation_ids:
-        obs_count = (db.query(Observation)
-                       .filter(Observation.id.in_(payload.observation_ids))
-                       .count())
-        if obs_count != len(payload.observation_ids):
-            raise HTTPException(status_code=400, detail="Some observation IDs not found")
+        observations = (db.query(Observation)
+                          .filter(Observation.id.in_(payload.observation_ids))
+                          .all())
+        if len(observations) != len(payload.observation_ids):
+            raise BusinessRuleError("Some observation IDs not found")
 
     traj = TrajectoryDefinition(
         project_id=payload.project_id,
@@ -72,11 +77,12 @@ def create_trajectory(
         measurement_type=payload.measurement_type,
         measurement_subtype=payload.measurement_subtype,
         microorganism_id=payload.microorganism_id,
-        observation_ids_json=json.dumps(payload.observation_ids),
         n_points=len(payload.observation_ids),
         notes=payload.notes,
         created_by=current_user.id,
     )
+    # Membership now lives in the trajectory_observations junction, not a JSON id list.
+    traj.observations = observations
     db.add(traj)
     db.commit()
     db.refresh(traj)
@@ -89,7 +95,7 @@ def get_trajectory(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return _get_or_404(traj_id, db)
+    return _get_or_404(traj_id, db, current_user)
 
 
 @router.delete("/{traj_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -98,7 +104,7 @@ def delete_trajectory(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    traj = _get_or_404(traj_id, db)
+    traj = _get_or_404(traj_id, db, current_user)
     db.delete(traj)
     db.commit()
 
@@ -106,13 +112,12 @@ def delete_trajectory(
 @router.post("/{traj_id}/fit", response_model=ModelRunOut)
 def fit_models(
     traj_id: int,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Launch model fitting for this trajectory."""
-    traj = _get_or_404(traj_id, db)
-    from app.db.models import ModelRun
+    traj = _get_or_404(traj_id, db, current_user)
+    from shared.db.models import ModelRun
     run = ModelRun(
         trajectory_id=traj_id,
         project_id=traj.project_id,
@@ -123,8 +128,8 @@ def fit_models(
     db.commit()
     db.refresh(run)
 
-    from app.services.model_registry import fit_trajectory_async
-    background_tasks.add_task(fit_trajectory_async, run.id)
+    from app.tasks import run_trajectory_fit
+    run_trajectory_fit.delay(run.id)
     return run
 
 
@@ -134,8 +139,8 @@ def list_model_runs(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    _get_or_404(traj_id, db)
-    from app.db.models import ModelRun
+    _get_or_404(traj_id, db, current_user)
+    from shared.db.models import ModelRun
     return (db.query(ModelRun)
               .filter(ModelRun.trajectory_id == traj_id)
               .order_by(ModelRun.created_at.desc())

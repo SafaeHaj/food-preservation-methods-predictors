@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
-import { workspaceApi } from '../../services/api'
+import { useAsset, useAssets, useEvidencePackages } from '../../api/workspace'
 import type { ExtractionAsset, AssetDetail, ContextLink } from '../../types/workspace'
 
 // ─── Status badge helpers ─────────────────────────────────────────────────────
@@ -43,7 +43,7 @@ const LINK_LABELS: Record<string, { label: string; color: string }> = {
 
 // ─── CSV preview ──────────────────────────────────────────────────────────────
 
-function CsvTable({ projectId, paperId, assetId }: { projectId: number; paperId: number; assetId: number }) {
+function CsvTable({ url }: { url: string }) {
   const [rows, setRows] = useState<string[][]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState(false)
@@ -51,7 +51,8 @@ function CsvTable({ projectId, paperId, assetId }: { projectId: number; paperId:
   useEffect(() => {
     setLoading(true)
     setErr(false)
-    fetch(workspaceApi.csvUrl(projectId, paperId, assetId))
+    // The URL is signed by the server; no auth header is needed or possible here.
+    fetch(url)
       .then((r) => {
         if (!r.ok) throw new Error('failed')
         return r.text()
@@ -62,7 +63,7 @@ function CsvTable({ projectId, paperId, assetId }: { projectId: number; paperId:
         setLoading(false)
       })
       .catch(() => { setErr(true); setLoading(false) })
-  }, [projectId, paperId, assetId])
+  }, [url])
 
   if (loading) return <div className="flex items-center gap-2 text-sm text-slate-400 py-4"><Loader2 size={14} className="animate-spin" />Loading CSV…</div>
   if (err || !rows.length) return <p className="text-sm text-slate-400 italic py-4">No CSV data available.</p>
@@ -98,7 +99,7 @@ function ValidationChecks({ asset, detail }: { asset: ExtractionAsset; detail: A
   const checks = [
     {
       label: 'Figure image extracted',
-      pass: asset.has_image,
+      pass: !!asset.links.image,
       warn: false,
     },
     {
@@ -163,7 +164,7 @@ function FigureListItem({
 }) {
   const status = assetStatus(asset)
   const meta = STATUS_META[status]
-  const imgUrl = asset.has_image ? workspaceApi.imageUrl(asset.project_id, asset.paper_id, asset.id) : null
+  const imgUrl = asset.links.image
   const typeLabel = asset.asset_type === 'native_table' ? 'Table' : 'Figure'
   const [imgErr, setImgErr] = useState(false)
 
@@ -250,61 +251,39 @@ export default function PPChart2TablePage() {
   const pid    = Number(projectId)
   const paperIdNum = Number(paperId)
 
-  const [assets, setAssets] = useState<ExtractionAsset[]>([])
-  const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<ExtractionAsset | null>(null)
-  const [detail, setDetail] = useState<AssetDetail | null>(null)
   const [activeTab, setActiveTab] = useState<Tab>('figure')
   const [expandedLinks, setExpandedLinks] = useState<Record<number, boolean>>({})
   const [imgErr, setImgErr] = useState(false)
-  const [ppHealth, setPpHealth] = useState<{ available: boolean; last_error: string | null } | null>(null)
 
-  // Fetch PP-Chart2Table health status
+  // Chart conversion availability now travels with the evidence payload rather than a
+  // separate unauthenticated health endpoint at the gateway.
+  const { data: assetPage, isLoading: loading } = useAssets(pid, paperIdNum)
+  const assets = assetPage?.items ?? []
+
   useEffect(() => {
-    fetch('/api/chart2table/health')
-      .then((r) => r.json())
-      .then(setPpHealth)
-      .catch(() => null)
-  }, [])
+    if (!selected && assets.length > 0) setSelected(assets[0])
+  }, [assets, selected])
 
-  // Fetch figures for THIS paper only — never project-wide
-  const fetchAssets = useCallback(async () => {
-    if (!paperIdNum) return
-    try {
-      const res = await workspaceApi.listAssets(pid, paperIdNum, { limit: 500 })
-      setAssets(res.items)
-      if (res.items.length > 0 && !selected) {
-        setSelected(res.items[0])
-      }
-    } catch {
-      toast.error('Failed to load figures')
-    } finally {
-      setLoading(false)
-    }
-  }, [pid, paperIdNum])
-
-  useEffect(() => { fetchAssets() }, [fetchAssets])
-
-  // Load detail when selection changes
   useEffect(() => {
-    if (!selected) { setDetail(null); return }
-    setDetail(null)
     setImgErr(false)
     setActiveTab('figure')
-    workspaceApi.getAsset(pid, paperIdNum, selected.id)
-      .then(setDetail)
-      .catch(() => null)
-  }, [selected?.id, paperIdNum])
+  }, [selected?.id])
+
+  const { data: detail = null } = useAsset(pid, paperIdNum, selected?.id ?? null)
+
+  // Chart-conversion availability travels with the evidence payload. It used to come from
+  // GET /api/chart2table/health, which the gateway had to expose without authentication.
+  const { data: evidence } = useEvidencePackages(pid, paperIdNum)
+  const chartConversion = evidence
+    ? { available: evidence.chart_conversion_available, error: evidence.chart_conversion_error }
+    : null
 
   const figures = assets.filter((a) => a.asset_type === 'figure')
   const tables  = assets.filter((a) => a.asset_type === 'native_table')
 
-  const figureUrl = selected?.has_image
-    ? workspaceApi.imageUrl(pid, paperIdNum, selected.id)
-    : null
-  const pageUrl = selected?.has_page_image
-    ? workspaceApi.pageImageUrl(pid, paperIdNum, selected.id)
-    : null
+  const figureUrl = selected?.links.image ?? null
+  const pageUrl = selected?.links.page_image ?? null
 
   const typeLabel = selected?.asset_type === 'native_table' ? 'Table' : 'Figure'
   const selectedIndex = assets.indexOf(selected as ExtractionAsset)
@@ -351,17 +330,17 @@ export default function PPChart2TablePage() {
     <div className="flex flex-col h-full overflow-hidden bg-white">
 
       {/* ── PP-Chart2Table health banner ───────────────────────────── */}
-      {ppHealth && !ppHealth.available && (
+      {chartConversion && !chartConversion.available && (
         <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border-b border-amber-200 shrink-0">
           <AlertTriangle size={14} className="text-amber-500 shrink-0" />
           <p className="text-xs text-amber-700">
             <span className="font-semibold">PP-Chart2Table unavailable</span>
-            {ppHealth.last_error ? ` — ${ppHealth.last_error}` : ' — PaddleOCR not installed in this environment.'}
+            {chartConversion.error ? ` — ${chartConversion.error}` : ' — PaddleOCR is not installed in this environment.'}
             {' '}Chart images cannot be digitized; native tables and text evidence are still available.
           </p>
         </div>
       )}
-      {ppHealth?.available && (
+      {chartConversion?.available && (
         <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 border-b border-emerald-100 shrink-0">
           <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
           <p className="text-xs text-emerald-700 font-medium">PP-Chart2Table model loaded and ready.</p>
@@ -501,8 +480,8 @@ export default function PPChart2TablePage() {
 
               {activeTab === 'csv' && (
                 <div>
-                  {selected.has_csv ? (
-                    <CsvTable projectId={pid} paperId={paperIdNum} assetId={selected.id} />
+                  {selected.links.csv ? (
+                    <CsvTable url={selected.links.csv} />
                   ) : (
                     <div className="flex flex-col items-center justify-center py-16 text-slate-300 gap-3">
                       <FileSpreadsheet size={40} strokeWidth={1} />
@@ -599,9 +578,9 @@ export default function PPChart2TablePage() {
               <FileSpreadsheet size={14} className="text-slate-500" />
               <h3 className="text-sm font-bold text-slate-700">Extracted Data</h3>
             </div>
-            {selected?.has_csv && (
+            {selected?.links.csv && (
               <a
-                href={workspaceApi.csvUrl(pid, paperIdNum, selected.id)}
+                href={selected.links.csv}
                 download={`figure_${selected.id}.csv`}
                 className="flex items-center gap-1 text-[11px] text-blue-600 hover:text-blue-800 font-medium"
               >
@@ -612,8 +591,8 @@ export default function PPChart2TablePage() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-4">
-            {selected?.has_csv ? (
-              <CsvTable projectId={pid} paperId={paperIdNum} assetId={selected.id} />
+            {selected?.links.csv ? (
+              <CsvTable url={selected.links.csv} />
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-slate-300 gap-2 py-8">
                 <FileSpreadsheet size={32} strokeWidth={1} />

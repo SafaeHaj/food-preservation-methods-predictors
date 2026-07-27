@@ -3,26 +3,29 @@
 import json
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
-from app.db.database import get_db
-from app.db.models import AuditEvent, Experiment, ExperimentMicroorganism, User
-from app.schemas.canonical import (
+from shared.auth import get_current_user
+from shared.db.database import get_db
+from shared.errors import NotFoundError
+from shared.db.models import AuditEvent, Experiment, ExperimentMicroorganism, User
+from shared.schemas.canonical import (
     ExperimentCreate, ExperimentDetail, ExperimentOut, ExperimentUpdate,
     ExperimentMicroorganismCreate, ExperimentMicroorganismOut,
     TreatmentArmBrief,
 )
 
+from app.services import scoping
+
 router = APIRouter(prefix="/experiments", tags=["experiments"])
 
 
-def _get_or_404(experiment_id: int, db: Session) -> Experiment:
-    e = db.query(Experiment).filter(Experiment.id == experiment_id).first()
-    if not e:
-        raise HTTPException(status_code=404, detail="Experiment not found")
-    return e
+def _get_or_404(experiment_id: int, db: Session, user: User, role: str = "viewer"):
+    """Fetch and authorize through the project that owns it."""
+    return scoping.require_entity(
+        db, Experiment, experiment_id, user, label="Experiment", required_role=role
+    )
 
 
 def _audit(db, user, eid, action, before=None, after=None, reason=None):
@@ -47,12 +50,16 @@ def list_experiments(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    q = db.query(Experiment)
+    # Experiments reach their project through Study, so the scope is applied on the join
+    # rather than on the row -- and it is applied whether or not project_id was supplied.
+    from shared.db.models import Study
+
+    q = scoping.scope_query(
+        db, db.query(Experiment).join(Study, Study.id == Experiment.study_id),
+        Study.project_id, project_id, current_user,
+    )
     if study_id:
         q = q.filter(Experiment.study_id == study_id)
-    if project_id:
-        from app.db.models import Study
-        q = q.join(Study).filter(Study.project_id == project_id)
     return q.order_by(Experiment.created_at).offset(skip).limit(limit).all()
 
 
@@ -84,7 +91,7 @@ def get_experiment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return _get_or_404(experiment_id, db)
+    return _get_or_404(experiment_id, db, current_user)
 
 
 @router.patch("/{experiment_id}", response_model=ExperimentOut)
@@ -95,7 +102,7 @@ def update_experiment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    exp = _get_or_404(experiment_id, db)
+    exp = _get_or_404(experiment_id, db, current_user)
     data = payload.model_dump(exclude_none=True)
     if "gas_composition" in data:
         exp.gas_composition_json = json.dumps(data.pop("gas_composition"))
@@ -118,7 +125,7 @@ def delete_experiment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    exp = _get_or_404(experiment_id, db)
+    exp = _get_or_404(experiment_id, db, current_user)
     _audit(db, current_user, experiment_id, "delete", {"product": exp.product_name_normalized}, None)
     db.delete(exp)
     db.commit()
@@ -135,7 +142,7 @@ def assign_microorganism(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    _get_or_404(experiment_id, db)
+    _get_or_404(experiment_id, db, current_user)
     link = ExperimentMicroorganism(
         experiment_id=experiment_id,
         microorganism_id=payload.microorganism_id,
@@ -161,6 +168,6 @@ def remove_microorganism(
             .filter_by(experiment_id=experiment_id, microorganism_id=micro_id)
             .first())
     if not link:
-        raise HTTPException(status_code=404, detail="Assignment not found")
+        raise NotFoundError("Assignment not found")
     db.delete(link)
     db.commit()

@@ -2,22 +2,25 @@
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
-from app.db.database import get_db
-from app.db.models import ImputationProposal, User
-from app.schemas.canonical import ImputationProposalOut, ImputationReview
+from shared.auth import get_current_user
+from shared.db.database import get_db
+from shared.errors import BusinessRuleError
+from shared.db.models import ImputationProposal, User
+from shared.schemas.canonical import ImputationProposalOut, ImputationReview
+
+from app.services import scoping
 
 router = APIRouter(prefix="/imputations", tags=["imputations"])
 
 
-def _get_or_404(imp_id: int, db: Session) -> ImputationProposal:
-    p = db.query(ImputationProposal).filter(ImputationProposal.id == imp_id).first()
-    if not p:
-        raise HTTPException(status_code=404, detail="Imputation proposal not found")
-    return p
+def _get_or_404(imp_id: int, db: Session, user: User, role: str = "viewer"):
+    """Fetch and authorize through the project that owns it."""
+    return scoping.require_entity(
+        db, ImputationProposal, imp_id, user, label="Imputation proposal", required_role=role
+    )
 
 
 @router.get("", response_model=list[ImputationProposalOut])
@@ -31,9 +34,10 @@ def list_proposals(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    q = db.query(ImputationProposal)
-    if project_id:
-        q = q.filter(ImputationProposal.project_id == project_id)
+    q = scoping.scope_query(
+        db, db.query(ImputationProposal), ImputationProposal.project_id,
+        project_id, current_user,
+    )
     if trajectory_id:
         q = q.filter(ImputationProposal.trajectory_id == trajectory_id)
     if reviewer_decision:
@@ -49,7 +53,7 @@ def get_proposal(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return _get_or_404(imp_id, db)
+    return _get_or_404(imp_id, db, current_user)
 
 
 @router.post("/{imp_id}/review", response_model=ImputationProposalOut)
@@ -61,8 +65,8 @@ def review_proposal(
 ):
     from datetime import datetime
     if payload.decision not in ("accepted", "rejected"):
-        raise HTTPException(status_code=400, detail="Decision must be 'accepted' or 'rejected'")
-    proposal = _get_or_404(imp_id, db)
+        raise BusinessRuleError("Decision must be 'accepted' or 'rejected'")
+    proposal = _get_or_404(imp_id, db, current_user)
     proposal.reviewer_decision = payload.decision
     proposal.reviewer_id = current_user.id
     proposal.reviewer_note = payload.note

@@ -1,133 +1,107 @@
-import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+/**
+ * Project overview: the papers in a project and what has been extracted from them.
+ *
+ * Previously this page polled `GET /projects/{id}` and `GET /projects/{id}/papers` every
+ * five seconds for as long as the tab was open — through a `setPapers` callback abused as
+ * a state read — and carried the legacy "Extract All" and "Export to Excel" actions that
+ * drove the deleted flat-extraction path.
+ */
+
+import { useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
 import {
-  Upload, Settings, Eye, BarChart2, Download, FileText,
-  CheckCircle, XCircle, Clock, Zap, ChevronRight, AlertCircle
+  AlertCircle, CheckCircle, ChevronRight, Clock, FileText, Microscope, Upload,
+  XCircle,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { projectsApi, papersApi, extractionApi, exportApi } from '../services/api'
-import { Project, Paper } from '../types'
 
-const StatusBadge = ({ status }: { status: Paper['status'] }) => {
-  const map: Record<string, string> = {
-    uploaded: 'badge-pending',
-    extracting: 'badge-uploading',
-    extracted: 'badge-extracted',
-    reviewed: 'badge-approved',
-    error: 'badge-error',
-  }
-  const labels: Record<string, string> = {
-    uploaded: 'Pending',
-    extracting: 'Extracting…',
-    extracted: 'Extracted',
-    reviewed: 'Reviewed',
-    error: 'Error',
-  }
-  return <span className={map[status] || 'badge-pending'}>{labels[status] ?? status}</span>
+import { useProject, useProjectStats } from '../api/projects'
+import { useDeletePaper, usePapers } from '../api/papers'
+import { errorMessage } from '../api/errors'
+import type { Paper } from '../types'
+
+const STATUS_STYLES: Record<string, { className: string; label: string }> = {
+  uploaded: { className: 'badge-pending', label: 'Not analysed' },
+  extracting: { className: 'badge-uploading', label: 'Extracting…' },
+  extracted: { className: 'badge-extracted', label: 'Extracted' },
+  reviewed: { className: 'badge-approved', label: 'Reviewed' },
+  error: { className: 'badge-error', label: 'Failed' },
+}
+
+function StatusBadge({ status }: { status: Paper['status'] }) {
+  const style = STATUS_STYLES[status] ?? STATUS_STYLES.uploaded
+  return <span className={style.className}>{style.label}</span>
 }
 
 export default function ProjectView() {
   const { projectId } = useParams<{ projectId: string }>()
   const pid = Number(projectId)
+  const [deleting, setDeleting] = useState<number | null>(null)
 
-  const [project, setProject] = useState<Project | null>(null)
-  const [papers, setPapers] = useState<Paper[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data: project, isLoading, isError } = useProject(pid)
+  const { data: papers = [] } = usePapers(pid)
+  const { data: stats } = useProjectStats(pid)
+  const deletePaper = useDeletePaper(pid)
 
-  const load = async () => {
+  const handleDelete = async (paper: Paper) => {
+    if (!confirm(`Delete "${paper.original_name}"? This also removes its extracted data.`)) return
+    setDeleting(paper.id)
     try {
-      const [proj, paps] = await Promise.all([projectsApi.get(pid), papersApi.list(pid)])
-      setProject(proj)
-      setPapers(paps)
-    } catch {
-      toast.error('Failed to load project')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    load()
-    const interval = setInterval(() => {
-      setPapers((prev) => {
-        if (prev.some((p) => p.status === 'extracting')) { load() }
-        return prev
-      })
-    }, 5000)
-    return () => clearInterval(interval)
-  }, [pid])
-
-  const handleExtractAll = async () => {
-    try {
-      await extractionApi.extractAll(pid)
-      toast.success('AI extraction started')
-      setTimeout(load, 2000)
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Extraction failed')
-    }
-  }
-
-  const handleExtractOne = async (paperId: number) => {
-    try {
-      await extractionApi.extractOne(pid, paperId)
-      toast.success('Extraction started')
-      setTimeout(load, 2000)
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Extraction failed')
-    }
-  }
-
-  const handleDelete = async (paperId: number, name: string) => {
-    if (!confirm(`Delete "${name}"?`)) return
-    try {
-      await papersApi.delete(pid, paperId)
-      setPapers((prev) => prev.filter((p) => p.id !== paperId))
+      await deletePaper.mutateAsync(paper.id)
       toast.success('Paper deleted')
-    } catch {
-      toast.error('Failed to delete paper')
+    } catch (error) {
+      toast.error(errorMessage(error, 'Could not delete the paper'))
+    } finally {
+      setDeleting(null)
     }
   }
 
-  const handleExport = async () => {
-    try {
-      await exportApi.excel(pid)
-      toast.success('Excel exported')
-    } catch {
-      toast.error('Export failed')
-    }
-  }
-
-  if (loading) return (
-    <div className="flex items-center justify-center py-24">
-      <div className="text-center">
-        <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-        <p className="text-sm text-slate-500">Loading project…</p>
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm text-slate-500">Loading project…</p>
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
 
-  if (!project) return (
-    <div className="text-center py-24">
-      <AlertCircle size={32} className="text-red-400 mx-auto mb-3" />
-      <p className="text-slate-600">Project not found</p>
-    </div>
-  )
+  if (isError || !project) {
+    return (
+      <div className="text-center py-24">
+        <AlertCircle size={32} className="text-red-400 mx-auto mb-3" />
+        <p className="text-slate-600">This project could not be loaded.</p>
+      </div>
+    )
+  }
 
   const pending = papers.filter((p) => p.status === 'uploaded' || p.status === 'error')
   const extracted = papers.filter((p) => p.status === 'extracted' || p.status === 'reviewed')
-  const errors = papers.filter((p) => p.status === 'error')
-  const totalRows = papers.reduce((s, p) => s + (p.row_count || 0), 0)
+  const errored = papers.filter((p) => p.status === 'error')
+
+  const tiles = [
+    { label: 'Papers', value: papers.length, icon: FileText, tone: 'bg-blue-50 text-blue-600' },
+    { label: 'Extracted', value: extracted.length, icon: CheckCircle, tone: 'bg-emerald-50 text-emerald-600' },
+    {
+      label: 'Observations',
+      value: stats?.observation_count ?? 0,
+      icon: CheckCircle,
+      tone: 'bg-violet-50 text-violet-600',
+    },
+    errored.length > 0
+      ? { label: 'Failed', value: errored.length, icon: XCircle, tone: 'bg-red-50 text-red-500' }
+      : { label: 'Not analysed', value: pending.length, icon: Clock, tone: 'bg-amber-50 text-amber-600' },
+  ]
 
   return (
     <div className="space-y-6">
-      {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm text-slate-500">
         <Link to="/" className="hover:text-slate-700 transition-colors">Projects</Link>
         <ChevronRight size={14} />
         <span className="text-slate-900 font-medium">{project.name}</span>
       </nav>
 
-      {/* Header */}
       <div className="flex flex-wrap items-start gap-4 justify-between">
         <div>
           <h1 className="page-title">{project.name}</h1>
@@ -137,32 +111,14 @@ export default function ProjectView() {
           <Link to={`/projects/${pid}/upload`} className="btn-primary">
             <Upload size={15} /> Upload PDFs
           </Link>
-          <Link to={`/projects/${pid}/schema`} className="btn-secondary">
-            <Settings size={15} /> Schema
-          </Link>
-          <Link to={`/projects/${pid}/review`} className="btn-secondary">
-            <Eye size={15} /> Review
-          </Link>
-          <Link to={`/projects/${pid}/analytics`} className="btn-secondary">
-            <BarChart2 size={15} /> Analytics
-          </Link>
-          <button onClick={handleExport} className="btn-secondary">
-            <Download size={15} /> Export
-          </button>
         </div>
       </div>
 
-      {/* Stats row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: 'Total Papers', value: papers.length, icon: FileText, color: 'bg-blue-50', iconColor: 'text-blue-600' },
-          { label: 'Extracted', value: extracted.length, icon: CheckCircle, color: 'bg-emerald-50', iconColor: 'text-emerald-600' },
-          { label: 'Total Rows', value: totalRows, icon: CheckCircle, color: 'bg-violet-50', iconColor: 'text-violet-600' },
-          { label: errors.length > 0 ? 'Errors' : 'Pending', value: errors.length > 0 ? errors.length : pending.length, icon: errors.length > 0 ? XCircle : Clock, color: errors.length > 0 ? 'bg-red-50' : 'bg-amber-50', iconColor: errors.length > 0 ? 'text-red-500' : 'text-amber-600' },
-        ].map(({ label, value, icon: Icon, color, iconColor }) => (
+        {tiles.map(({ label, value, icon: Icon, tone }) => (
           <div key={label} className="stat-card">
-            <div className={`stat-icon ${color}`}>
-              <Icon size={18} className={iconColor} />
+            <div className={`stat-icon ${tone.split(' ')[0]}`}>
+              <Icon size={18} className={tone.split(' ')[1]} />
             </div>
             <div>
               <div className="text-2xl font-bold text-slate-900">{value}</div>
@@ -172,17 +128,11 @@ export default function ProjectView() {
         ))}
       </div>
 
-      {/* Papers table */}
       <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <h2 className="section-title">Papers</h2>
-          {pending.length > 0 && (
-            <button onClick={handleExtractAll} className="btn-primary text-xs py-1.5 gap-1.5">
-              <Zap size={13} />
-              Extract All ({pending.length})
-            </button>
-          )}
         </div>
+
         {papers.length === 0 ? (
           <div className="text-center py-16">
             <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center mx-auto mb-4">
@@ -204,10 +154,17 @@ export default function ProjectView() {
                   <FileText size={14} className="text-blue-500" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-slate-900 truncate">{paper.original_name}</div>
+                  <div className="text-sm font-medium text-slate-900 truncate">
+                    {paper.original_name}
+                  </div>
                   <div className="text-xs text-slate-400 mt-0.5">
                     {paper.page_count} pages
-                    {(paper.row_count ?? 0) > 0 && <> · <span className="text-emerald-600 font-medium">{paper.row_count} rows extracted</span></>}
+                    {paper.asset_count > 0 && <> · {paper.asset_count} elements</>}
+                    {paper.experiment_count > 0 && (
+                      <> · <span className="text-emerald-600 font-medium">
+                        {paper.experiment_count} experiments
+                      </span></>
+                    )}
                   </div>
                   {paper.error_message && (
                     <div className="text-xs text-red-500 mt-1 flex items-center gap-1">
@@ -215,19 +172,20 @@ export default function ProjectView() {
                     </div>
                   )}
                 </div>
+
                 <StatusBadge status={paper.status} />
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {(paper.status === 'uploaded' || paper.status === 'error') && (
-                    <button
-                      onClick={() => handleExtractOne(paper.id)}
-                      className="btn-ghost text-xs py-1 px-2 text-blue-600 hover:bg-blue-50"
-                    >
-                      <Zap size={11} /> Extract
-                    </button>
-                  )}
+
+                <div className="flex items-center gap-1">
+                  <Link
+                    to={`/projects/${pid}/papers/${paper.id}/workspace`}
+                    className="btn-ghost text-xs py-1 px-2 text-blue-600 hover:bg-blue-50"
+                  >
+                    <Microscope size={11} /> Workspace
+                  </Link>
                   <button
-                    onClick={() => handleDelete(paper.id, paper.original_name)}
-                    className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    onClick={() => handleDelete(paper)}
+                    disabled={deleting === paper.id}
+                    className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
                   >
                     <XCircle size={14} />
                   </button>

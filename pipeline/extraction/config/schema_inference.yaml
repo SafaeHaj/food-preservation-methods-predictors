@@ -1,0 +1,50 @@
+# Rules for inferring a project schema from an uploaded spreadsheet's columns.
+#
+# Previously a chain of `if any(k in col_lower for k in (...))` branches inside the route
+# handler, so adding a domain unit or a plausible range meant editing and redeploying code.
+#
+# Matching is by substring against the lower-cased, underscore-normalised column name, and
+# the first match in each list wins -- order the specific before the general.
+
+# Numeric columns whose name matches get plausible bounds, so the UI can reject typos at
+# entry rather than after they reach the dataset.
+numeric_ranges:
+  - keywords: [ph]
+    min: 0
+    max: 14
+  - keywords: [cfu, count, log]
+    min: 0
+    max: 12
+  - keywords: [percent, pct, humidity, moisture]
+    min: 0
+    max: 100
+  - keywords: [temp, temperature]
+    min: -40
+    max: 150
+  - keywords: [conc, concentration, dose]
+    min: 0
+
+# Display units inferred from the column name.
+units:
+  - keywords: ["g/100g", g_per_100g]
+    unit: g/100g
+  - keywords: ["mg/l", "mg/ml"]
+    unit: mg/L
+  - keywords: [log_cfu, "log cfu"]
+    unit: log CFU/g
+  - keywords: [temp, temperature, _c]
+    unit: "°C"
+  - keywords: [day, time]
+    unit: days
+  - keywords: [aw, water_activity]
+    unit: aw
+
+# A text column becomes a dropdown when its distinct values fall in this range: too few and
+# it is a constant, too many and it is free text rather than a category.
+select_detection:
+  min_distinct: 2
+  max_distinct: 8
+  max_options: 10
+
+# Rows read to infer types. Enough to be representative without loading a large workbook.
+sample_rows: 50

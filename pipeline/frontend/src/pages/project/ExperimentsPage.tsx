@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { experimentsApi, studiesApi } from '../../services/api'
-import type { Experiment, Study } from '../../types'
-import { RefreshCw, Plus, X, AlertCircle } from 'lucide-react'
+import { useCreateExperiment, useExperiments, useStudies } from '../../api/canonical'
+import { errorMessage } from '../../api/errors'
+import { Plus, X, AlertCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface ExpForm {
@@ -19,34 +19,27 @@ const EMPTY: ExpForm = { study_id: '', experiment_label: '', food_category: '', 
 
 export default function ExperimentsPage() {
   const { projectId } = useParams<{ projectId: string }>()
-  const [experiments, setExperiments] = useState<Experiment[]>([])
-  const [studies, setStudies] = useState<Study[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState<ExpForm>(EMPTY)
   const [saving, setSaving] = useState(false)
 
-  const load = () => {
-    if (!projectId) return
-    setLoading(true)
-    setError(null)
-    Promise.all([
-      experimentsApi.list({ project_id: Number(projectId), limit: 200 }),
-      studiesApi.list(Number(projectId)),
-    ])
-      .then(([exps, studs]) => { setExperiments(exps); setStudies(studs) })
-      .catch((e) => setError(e?.response?.data?.detail ?? 'Failed to load experiments'))
-      .finally(() => setLoading(false))
-  }
+  // Two independent queries rather than one Promise.all: each is cached under its own key,
+  // so the study list is shared with the studies page instead of being fetched twice.
+  const experimentsQuery = useExperiments(Number(projectId))
+  const studiesQuery = useStudies(Number(projectId))
+  const experiments = experimentsQuery.data ?? []
+  const studies = studiesQuery.data ?? []
+  const loading = experimentsQuery.isLoading || studiesQuery.isLoading
+  const loadError = experimentsQuery.error ?? studiesQuery.error
+  const error = loadError ? errorMessage(loadError, 'Could not load experiments') : null
 
-  useEffect(() => { load() }, [projectId])
+  const createExperiment = useCreateExperiment(Number(projectId))
 
   const handleCreate = async () => {
     if (!form.study_id) { toast.error('Select a study first'); return }
     setSaving(true)
     try {
-      await experimentsApi.create({
+      await createExperiment.mutateAsync({
         study_id: Number(form.study_id),
         experiment_label: form.experiment_label.trim() || undefined,
         food_category: form.food_category.trim() || undefined,
@@ -59,10 +52,8 @@ export default function ExperimentsPage() {
       toast.success('Experiment created')
       setShowForm(false)
       setForm(EMPTY)
-      load()
-    } catch (e: unknown) {
-      const msg = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? 'Failed to create'
-      toast.error(msg)
+    } catch (mutationError) {
+      toast.error(errorMessage(mutationError, 'Could not create the experiment'))
     } finally {
       setSaving(false)
     }
@@ -81,9 +72,6 @@ export default function ExperimentsPage() {
             className="flex items-center gap-1 text-sm bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700"
           >
             <Plus size={14} /> New Experiment
-          </button>
-          <button onClick={load} className="flex items-center gap-1 text-sm text-gray-600 border border-gray-300 rounded px-2 py-1">
-            <RefreshCw size={14} />
           </button>
         </div>
       </div>

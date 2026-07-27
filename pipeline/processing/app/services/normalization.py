@@ -74,7 +74,7 @@ def run_normalization(project_id: int, db: "Session") -> dict:
     Apply all normalization mappings for a project.
     Returns counts of records updated.
     """
-    from app.db.models import (
+    from shared.db.models import (
         NormalizationMapping, Experiment, TreatmentArm, Observation
     )
 

@@ -1,0 +1,85 @@
+# Default extraction schema applied to a new project when the caller supplies none.
+#
+# Previously 22 lines of Python literals inside the projects route module, which meant
+# changing the fields a research project starts with required a code change and a redeploy.
+# Editing this file (or mounting a replacement over it) is enough.
+#
+# Field grammar -- see shared.schemas.projects.SchemaField:
+#   name        machine key stored on the extracted record
+#   label       shown in the UI
+#   type        text | number | select | boolean
+#   unit        optional display unit for numbers
+#   required    refuse to save the record without it
+#   options     allowed values, for type: select
+#   validation  {min, max} bounds for numbers
+
+fields:
+  - name: ingredient_name
+    label: Ingredient / Antimicrobial
+    type: text
+    required: true
+
+  - name: concentration
+    label: Concentration
+    type: number
+    unit: g/100g
+    validation: {min: 0, max: 100}
+
+  - name: concentration_unit
+    label: Concentration Unit
+    type: text
+
+  - name: microbial_indicator
+    label: Microbial Indicator
+    type: text
+
+  - name: initial_count_log_cfu_g
+    label: Initial Count (log CFU/g)
+    type: number
+    validation: {min: 0, max: 12}
+
+  - name: treatment_day
+    label: Treatment Day
+    type: number
+    validation: {min: 0}
+
+  - name: final_count_log_cfu_g
+    label: Final Count (log CFU/g)
+    type: number
+    validation: {min: 0, max: 12}
+
+  - name: ph
+    label: pH
+    type: number
+    validation: {min: 3.0, max: 8.5}
+
+  - name: temperature_c
+    label: Temperature (°C)
+    type: number
+    validation: {min: -20, max: 60}
+
+  - name: storage_conditions
+    label: Storage Conditions
+    type: text
+
+  - name: product_type
+    label: Product / Matrix
+    type: text
+
+  - name: efficacy_class
+    label: Efficacy Class
+    type: select
+    options: [bacteriostatic, bactericidal, fungistatic, fungicidal, not_reported]
+
+  - name: study_design
+    label: Study Design
+    type: select
+    options: [in_vitro, in_vivo, challenge_study, field_study]
+
+  - name: doi
+    label: DOI
+    type: text
+
+  - name: notes
+    label: Notes
+    type: text
