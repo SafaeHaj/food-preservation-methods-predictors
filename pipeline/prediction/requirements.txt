@@ -1,0 +1,43 @@
+numpy
+pandas
+matplotlib
+seaborn
+scipy
+torch
+sdv
+scikit-learn
+rapidfuzz
+sentence-transformers
+PyMuPDF
+plotdigitizer
+fastapi
+uvicorn[standard]
+sqlalchemy
+alembic
+pydantic
+pydantic-settings
+httpx
+
+# --- survival modelling module (src/shelflife_survival) ---
+# Installs cleanly on Python 3.14:
+lifelines
+xgboost
+pytest
+# scikit-survival dependencies that ship cp314 wheels (listed explicitly, see below):
+joblib
+narwhals
+numexpr
+osqp
+
+# scikit-survival must be installed WITHOUT its dependency resolution on Python 3.14:
+#
+#     pip install --no-deps scikit-survival
+#
+# Why: sksurv hard-requires `ecos`, which publishes no cp314 wheel and therefore builds
+# from source, which needs a Windows SDK this machine does not have. `ecos` is imported
+# only by sksurv/svm/minlip.py (verified against the 0.28.0 wheel); this module uses only
+# sksurv.ensemble.RandomSurvivalForest and sksurv.metrics, neither of which touches it.
+# Its real deps are pinned above, so --no-deps loses nothing we use.
+# Revisit once ecos publishes a cp314 wheel, then this can move back to a plain entry.
+#
+# R side (Weibull shared-frailty stage 2) is not pip-installable -- see README.

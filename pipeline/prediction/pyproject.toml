@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "shelflife-survival"
+version = "0.1.0"
+description = "Survival-modelling / scoring engine for shelf-life formulation screening"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=2.0",
+    "pandas>=2.2",
+    "scipy>=1.13",
+    "scikit-learn>=1.9,<1.10",
+    "pyyaml",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "sqlalchemy>=2.0",
+    "alembic>=1.13",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+]
+
+# NOTE: the survival engines are deliberately NOT hard dependencies.
+#   - lifelines / xgboost install cleanly.
+#   - scikit-survival needs `pip install --no-deps scikit-survival` on Python 3.14
+#     (its `ecos` dep has no cp314 wheel; see requirements.txt for the full reason).
+# Declaring them here would make `pip install -e .` drag in ecos and fail, so they are
+# extras and each engine imports its backend lazily.
+[project.optional-dependencies]
+engines = ["lifelines", "xgboost"]
+dev = ["pytest", "httpx"]
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"app.r" = ["*.R"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]

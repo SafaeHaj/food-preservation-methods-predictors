@@ -1,0 +1,5 @@
+# Runtime artifacts and local databases for the prediction service
+data/artifacts/
+data/**/*.db
+*.joblib
+__pycache__/

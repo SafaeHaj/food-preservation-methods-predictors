@@ -1,0 +1,5 @@
+# Development overrides, applied over base.yaml.
+model:
+  weibull_aft:
+    # Skip the R shared-frailty stage locally; report the stage-1 refit instead.
+    use_r_frailty: false

@@ -1,0 +1,90 @@
+# Configuration for the survival-modelling module.
+
+pillars:
+  leaf_to_tier:
+    carbohydrate: Macronutrient
+    protein: Macronutrient
+    fiber: Macronutrient
+    mineral: Micronutrient
+    phenol: Bioactive
+    essential_oil: Bioactive
+    organic_acid: Bioactive
+
+  # leaf | tier | both
+  output_level: leaf
+
+  unmapped_bucket: Unmapped
+  # bucket | error
+  unmapped_policy: bucket 
+
+features:
+  # Conditioning context -- the (matrix, treatment) the optimizer will query against.
+  context_columns: [meat_matrix, treatment]
+
+  # Required interactions.
+  interactions:
+    ingredient_x_matrix: true
+    ingredient_x_treatment: true
+    pillar_x_matrix: false
+    pillar_x_treatment: false
+
+  # Identifiability / coverage guardrail. For every interaction column we count the
+  # independent studies (and non-censored events) that support it; columns below these
+  # thresholds are dropped or flagged
+  coverage:
+    min_support_studies: 3
+    min_support_events: 2
+    action: drop   # drop | flag
+
+  # Standardize numeric columns before the penalized fit. Required for a group penalty to
+  # be scale-fair across blocks.
+  standardize: true
+
+model:
+  # Which engine the demo/optimizer uses by default. Registered in models/registry.py:
+  # weibull_aft | rsf | gbs | bayesian
+  engine: weibull_aft
+
+  # Study-grouped CV, shared across engines. A fold never splits one study.
+  cv:
+    n_splits: 5
+    seed: 0
+
+  uncertainty:
+    level: 0.95
+    # analytic (delta method, AFT only) | bootstrap
+    method: analytic
+    n_boot: 200
+    resample_unit: study
+
+  weibull_aft:
+    # Stage 1: group-lasso selection (Python, FISTA).
+    lambda_path_length: 25
+    lambda_min_ratio: 0.01
+    max_iter: 2000
+    tol: 1.0e-7
+    # Stage 2: refit surviving features with a Weibull shared gamma frailty in R.
+    # When false, stage 1's unpenalized refit is reported instead.
+    use_r_frailty: true
+
+  tree_engines:
+    # Neither RSF nor gradient boosting has a native frailty term. We honour the study
+    # structure via grouped CV, and optionally by exposing experiment_ID as a feature.
+    include_experiment_id_as_feature: false
+    rsf:
+      n_estimators: 200
+      min_samples_leaf: 3
+      seed: 0
+    gbs:
+      n_rounds: 200
+      max_depth: 3
+      learning_rate: 0.05
+      aft_loss_distribution: normal
+      aft_loss_distribution_scale: 1.0
+      seed: 0
+
+r:
+  # Leave null to auto-resolve.
+  rscript_path: null
+  lib_path: null
+  timeout_seconds: 600
