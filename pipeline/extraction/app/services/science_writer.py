@@ -1,4 +1,4 @@
-"""Persist an LLM extraction result into the `ext_*` tables.
+"""Persist an LLM extraction result into the scientific schema.
 
 There were two copies of this logic -- one in `extraction_workspace._run_llm_validation`,
 one in `food_extraction._run_food_extraction` -- and the first even carried the comment
@@ -21,7 +21,7 @@ from typing import Any, Callable, Optional
 from sqlalchemy.orm import Session
 
 from shared.db.models import (
-    ExtExperiment, ExtExperimentIngredient, ExtIndicator, ExtIngredient, ExtMeasurement,
+    Experiment, ExperimentIngredient, Indicator, Ingredient, Measurement,
 )
 
 logger = logging.getLogger(__name__)
@@ -57,15 +57,15 @@ def _coerce_int(value: Any) -> Optional[int]:
 
 def _get_or_create_ingredient(
     db: Session, project_id: int, name: str, functional_class: str, source: str
-) -> ExtIngredient:
+) -> Ingredient:
     ingredient = (
-        db.query(ExtIngredient)
-        .filter(ExtIngredient.project_id == project_id, ExtIngredient.ingredient_name == name)
+        db.query(Ingredient)
+        .filter(Ingredient.project_id == project_id, Ingredient.ingredient_name == name)
         .first()
     )
     if ingredient:
         return ingredient
-    ingredient = ExtIngredient(
+    ingredient = Ingredient(
         project_id=project_id,
         ingredient_name=name,
         functional_class=functional_class or "unknown",
@@ -79,18 +79,18 @@ def _get_or_create_ingredient(
 def _get_or_create_indicator(
     db: Session, project_id: int, indicator_type: str, indicator_unit: str,
     threshold: Optional[float],
-) -> ExtIndicator:
+) -> Indicator:
     indicator = (
-        db.query(ExtIndicator)
+        db.query(Indicator)
         .filter(
-            ExtIndicator.project_id == project_id,
-            ExtIndicator.indicator_type == indicator_type,
-            ExtIndicator.indicator_unit == indicator_unit,
+            Indicator.project_id == project_id,
+            Indicator.indicator_type == indicator_type,
+            Indicator.indicator_unit == indicator_unit,
         )
         .first()
     )
     if not indicator:
-        indicator = ExtIndicator(
+        indicator = Indicator(
             project_id=project_id,
             indicator_type=indicator_type,
             indicator_unit=indicator_unit,
@@ -105,7 +105,7 @@ def _get_or_create_indicator(
 
 
 def _write_ingredients(
-    db: Session, project_id: int, experiment: ExtExperiment,
+    db: Session, project_id: int, experiment: Experiment,
     ingredient_dicts: list[dict], evidence_sink: Optional[EvidenceSink],
 ) -> None:
     for ingredient_dict in ingredient_dicts:
@@ -121,16 +121,16 @@ def _write_ingredients(
         )
 
         link_exists = (
-            db.query(ExtExperimentIngredient)
+            db.query(ExperimentIngredient)
             .filter(
-                ExtExperimentIngredient.experiment_id == experiment.id,
-                ExtExperimentIngredient.ingredient_id == ingredient.id,
+                ExperimentIngredient.experiment_id == experiment.id,
+                ExperimentIngredient.ingredient_id == ingredient.id,
             )
             .first()
         )
         if not link_exists:
             db.add(
-                ExtExperimentIngredient(
+                ExperimentIngredient(
                     experiment_id=experiment.id,
                     ingredient_id=ingredient.id,
                     concentration=concentration,
@@ -150,7 +150,7 @@ def _write_ingredients(
 
 
 def _write_measurements(
-    db: Session, project_id: int, experiment: ExtExperiment,
+    db: Session, project_id: int, experiment: Experiment,
     measurement_dicts: list[dict], evidence_sink: Optional[EvidenceSink],
 ) -> int:
     written = 0
@@ -170,11 +170,11 @@ def _write_measurements(
         # (experiment, day, indicator) is the composite primary key; a re-run of the same
         # paper must not raise on the duplicate.
         exists = (
-            db.query(ExtMeasurement)
+            db.query(Measurement)
             .filter(
-                ExtMeasurement.experiment_id == experiment.id,
-                ExtMeasurement.day == day,
-                ExtMeasurement.indicator_id == indicator.id,
+                Measurement.experiment_id == experiment.id,
+                Measurement.day == day,
+                Measurement.indicator_id == indicator.id,
             )
             .first()
         )
@@ -182,7 +182,7 @@ def _write_measurements(
             continue
 
         db.add(
-            ExtMeasurement(
+            Measurement(
                 experiment_id=experiment.id,
                 day=day,
                 indicator_id=indicator.id,
@@ -227,7 +227,7 @@ def write_experiments(
             )
             continue
 
-        experiment = ExtExperiment(
+        experiment = Experiment(
             project_id=project_id,
             paper_id=paper_id,
             job_id=job_id,

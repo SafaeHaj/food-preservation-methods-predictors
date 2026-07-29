@@ -84,8 +84,8 @@ export default function ProjectView() {
     { label: 'Papers', value: papers.length, icon: FileText, tone: 'bg-blue-50 text-blue-600' },
     { label: 'Extracted', value: extracted.length, icon: CheckCircle, tone: 'bg-emerald-50 text-emerald-600' },
     {
-      label: 'Observations',
-      value: stats?.observation_count ?? 0,
+      label: 'Measurements',
+      value: stats?.measurement_count ?? 0,
       icon: CheckCircle,
       tone: 'bg-violet-50 text-violet-600',
     },

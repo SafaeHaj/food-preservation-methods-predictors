@@ -2,8 +2,8 @@
 #   frontend -> gateway (:8000, the ONLY published app service; verifies the JWT once)
 #            -> extraction (:8001) | processing (:8002) -> prediction (:8100)
 #
-# All services share one Postgres. Long-running work (Docling parses, LLM ingestion, model
-# fitting, exports) runs in the Celery workers, never in an API container.
+# All services share one Postgres. Long-running work (Docling parses, LLM ingestion, dataset
+# builds) runs in the Celery workers, never in an API container.
 #
 # Values like ${SECRET_KEY} come from an optional pipeline/.env file; see .env.example.
 
@@ -40,7 +40,8 @@ x-extraction-env: &extraction-env
 x-processing-env: &processing-env
   PROCESSING_PREDICTION_SERVICE_URL: http://prediction:8100
   PROCESSING_PREDICTION_TIMEOUT_SECONDS: ${PROCESSING_PREDICTION_TIMEOUT_SECONDS:-600}
-  PROCESSING_EXPORT_DIR: /app/exports
+  # Datasets are staged on the shared uploads volume, so the API and the worker see the
+  # same files. The separate exports volume went with the snapshot-export flow.
   STORAGE_DIR: /app/uploads
 
 services:
@@ -112,15 +113,14 @@ services:
 
   # Runs as root, chowns the shared volumes to the workers' UID, exits. Docker creates a
   # named volume owned by root, and the workers run as 1000:1000 (see extraction-worker),
-  # so without this they cannot write Docling caches, page images or exports. The API
-  # containers cannot do this job: the `./extraction:/app` bind mount shadows the image's
-  # /app/uploads, and nothing orders the workers after the APIs anyway.
+  # so without this they cannot write Docling caches, page images or staged datasets. The
+  # API containers cannot do this job: the `./extraction:/app` bind mount shadows the
+  # image's /app/uploads, and nothing orders the workers after the APIs anyway.
   volume-init:
     image: alpine:3
-    command: sh -c "chown -R 1000:1000 /uploads /exports && echo 'shared volumes chowned to 1000:1000'"
+    command: sh -c "chown -R 1000:1000 /uploads && echo 'shared volume chowned to 1000:1000'"
     volumes:
       - uploads:/uploads
-      - exports:/exports
 
   gateway:
     build:
@@ -193,7 +193,6 @@ services:
     volumes:
       - ./processing:/app
       - ./shared:/shared
-      - exports:/app/exports
       - uploads:/app/uploads
     command: uvicorn app.main:app --host 0.0.0.0 --port 8002 --reload
     healthcheck:
@@ -220,9 +219,10 @@ services:
       SURVIVAL_ARTIFACT_DIR: /artifacts
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       # Only the secret, NOT the whole *common-env anchor. This service keeps its own
-      # database (its models declare `experiments`, `ingredients` and `measurements`,
-      # which collide by name with the platform schema); handing it DATABASE_URL would
-      # point create_all at the shared Postgres and silently bind it to the wrong tables.
+      # database, and its models declare `experiments`, `ingredients`, `indicators` and
+      # `measurements` — now an exact name collision with the platform schema, which took
+      # those names when the `ext_` prefix was dropped. Handing it DATABASE_URL would point
+      # create_all at the shared Postgres and silently bind it to the wrong tables.
       INTERNAL_SECRET: ${INTERNAL_SECRET:-}
     volumes:
       - ./prediction:/app
@@ -282,7 +282,6 @@ services:
     volumes:
       - ./processing:/app
       - ./shared:/shared
-      - exports:/app/exports
       - uploads:/app/uploads
     user: "1000:1000"          # see extraction-worker
     command: celery -A app.tasks worker -Q processing --loglevel=info --concurrency=2
@@ -307,6 +306,10 @@ services:
     environment:
       # The browser talks to the gateway directly.
       VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+      # Where the dev server itself forwards /api. Not the same address as the one above:
+      # that one is resolved by the browser on the host, this one from inside this
+      # container, where "localhost" is the dev server and nothing listens on 8000.
+      VITE_PROXY_TARGET: http://gateway:8000
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -319,7 +322,6 @@ services:
 
 volumes:
   uploads:
-  exports:
   redis_data:
   pgdata:
   prediction_artifacts:

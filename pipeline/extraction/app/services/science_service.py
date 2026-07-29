@@ -1,4 +1,4 @@
-"""Read access to the structured extraction output."""
+"""Access to the scientific schema — read throughout, plus the indicator threshold edit."""
 
 from __future__ import annotations
 
@@ -11,14 +11,15 @@ from sqlalchemy.orm import Session
 
 from shared.access import authorize_project
 from shared.config import get_common_settings, get_gateway_settings
-from shared.db.models import ExtEvidence, ExtExperiment, User
+from shared.db.models import Evidence, Experiment, User
 from shared.errors import NotFoundError
 from shared.signing import sign_path
+from shared.uow import unit_of_work
 
-from app.repositories import ext_repo
-from app.schemas.ext_data import (
+from app.repositories import science_repo
+from app.schemas.science import (
     BoundingBox, EvidenceOut, ExperimentDetailOut, ExperimentIngredientOut,
-    ExperimentSummaryOut, IndicatorOut, IngredientOut, MeasurementOut,
+    ExperimentSummaryOut, IndicatorOut, IndicatorUpdate, IngredientOut, MeasurementOut,
 )
 
 logger = logging.getLogger(__name__)
@@ -56,7 +57,7 @@ def _measurement_entries(rows: list[tuple]) -> list[MeasurementOut]:
     ]
 
 
-def _evidence_out(record: ExtEvidence) -> EvidenceOut:
+def _evidence_out(record: Evidence) -> EvidenceOut:
     try:
         entity_key = json.loads(record.entity_key) if record.entity_key else {}
     except (TypeError, ValueError):
@@ -102,10 +103,10 @@ def _evidence_out(record: ExtEvidence) -> EvidenceOut:
 def list_experiments(
     db: Session, project_id: int, paper_id: Optional[int] = None
 ) -> list[ExperimentSummaryOut]:
-    experiments = ext_repo.list_experiments(db, project_id, paper_id)
+    experiments = science_repo.list_experiments(db, project_id, paper_id)
     experiment_ids = [experiment.id for experiment in experiments]
-    ingredients = ext_repo.ingredients_for(db, experiment_ids)
-    counts = ext_repo.measurement_counts(db, experiment_ids)
+    ingredients = science_repo.ingredients_for(db, experiment_ids)
+    counts = science_repo.measurement_counts(db, experiment_ids)
 
     return [
         ExperimentSummaryOut(
@@ -121,8 +122,8 @@ def list_experiments(
     ]
 
 
-def _require_experiment(db: Session, project_id: int, experiment_id: int) -> ExtExperiment:
-    experiment = ext_repo.get_experiment(db, project_id, experiment_id)
+def _require_experiment(db: Session, project_id: int, experiment_id: int) -> Experiment:
+    experiment = science_repo.get_experiment(db, project_id, experiment_id)
     if not experiment:
         raise NotFoundError.for_resource("Experiment", experiment_id)
     return experiment
@@ -130,7 +131,7 @@ def _require_experiment(db: Session, project_id: int, experiment_id: int) -> Ext
 
 def get_experiment(db: Session, project_id: int, experiment_id: int) -> ExperimentDetailOut:
     experiment = _require_experiment(db, project_id, experiment_id)
-    ingredients = ext_repo.ingredients_for(db, [experiment_id])
+    ingredients = science_repo.ingredients_for(db, [experiment_id])
 
     return ExperimentDetailOut(
         id=experiment.id,
@@ -139,25 +140,46 @@ def get_experiment(db: Session, project_id: int, experiment_id: int) -> Experime
         treatment=experiment.treatment,
         created_at=experiment.created_at,
         ingredients=_ingredient_entries(ingredients.get(experiment_id, [])),
-        measurements=_measurement_entries(ext_repo.measurements_for(db, experiment_id)),
+        measurements=_measurement_entries(science_repo.measurements_for(db, experiment_id)),
         evidence=[
             _evidence_out(record)
-            for record in ext_repo.evidence_for_experiment(db, experiment_id)
+            for record in science_repo.evidence_for_experiment(db, experiment_id)
         ],
     )
 
 
 def list_measurements(db: Session, project_id: int, experiment_id: int) -> list[MeasurementOut]:
     _require_experiment(db, project_id, experiment_id)
-    return _measurement_entries(ext_repo.measurements_for(db, experiment_id))
+    return _measurement_entries(science_repo.measurements_for(db, experiment_id))
 
 
 def list_ingredients(db: Session, project_id: int) -> list[IngredientOut]:
-    return [IngredientOut.model_validate(row) for row in ext_repo.list_ingredients(db, project_id)]
+    return [IngredientOut.model_validate(row) for row in science_repo.list_ingredients(db, project_id)]
 
 
 def list_indicators(db: Session, project_id: int) -> list[IndicatorOut]:
-    return [IndicatorOut.model_validate(row) for row in ext_repo.list_indicators(db, project_id)]
+    return [IndicatorOut.model_validate(row) for row in science_repo.list_indicators(db, project_id)]
+
+
+def update_indicator(
+    db: Session, project_id: int, indicator_id: int, body: IndicatorUpdate
+) -> IndicatorOut:
+    """Edit an indicator's threshold.
+
+    The threshold is the one field on the scientific schema a human is expected to set
+    rather than the LLM: papers rarely state the regulatory limit their measurements are
+    judged against, and shelf life is defined as the day that limit is crossed. Clearing it
+    back to null is a real edit, hence `exclude_unset` rather than a None check.
+    """
+    indicator = science_repo.get_indicator(db, project_id, indicator_id)
+    if not indicator:
+        raise NotFoundError.for_resource("Indicator", indicator_id)
+
+    with unit_of_work(db):
+        for field, value in body.model_dump(exclude_unset=True).items():
+            setattr(indicator, field, value)
+
+    return IndicatorOut.model_validate(indicator)
 
 
 def get_evidence(db: Session, evidence_id: int, user: User) -> EvidenceOut:
@@ -166,12 +188,12 @@ def get_evidence(db: Session, evidence_id: int, user: User) -> EvidenceOut:
     Previously unauthorized entirely: `/api/evidence/{id}` served any record to any
     authenticated user, including the extracted text of other tenants' papers.
     """
-    project_id = ext_repo.project_id_for_evidence(db, evidence_id)
+    project_id = science_repo.project_id_for_evidence(db, evidence_id)
     if project_id is None:
         raise NotFoundError.for_resource("Evidence record", evidence_id)
     authorize_project(db, project_id, user)
 
-    record = ext_repo.get_evidence(db, evidence_id)
+    record = science_repo.get_evidence(db, evidence_id)
     if not record:
         raise NotFoundError.for_resource("Evidence record", evidence_id)
     return _evidence_out(record)
@@ -179,7 +201,7 @@ def get_evidence(db: Session, evidence_id: int, user: User) -> EvidenceOut:
 
 def get_evidence_file(db: Session, evidence_id: int, thumbnail: bool) -> Path:
     """Resolve an evidence crop to disk. Authorized by the URL signature."""
-    record = ext_repo.get_evidence(db, evidence_id)
+    record = science_repo.get_evidence(db, evidence_id)
     stored = (record.evidence_thumbnail_path if thumbnail else record.evidence_image_path) if record else None
     if not stored or not Path(stored).exists():
         raise NotFoundError("No image is available for this evidence record")

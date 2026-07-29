@@ -90,7 +90,8 @@ def _items_for(asset: ExtractionAsset) -> list[EvidenceItem]:
                     content=content,
                     bbox=_bbox(asset),
                     # Values read off a plot are estimates; the flag propagates all the way
-                    # to Observation.value_origin so modelling can weight them accordingly.
+                    # to Measurement.value_is_approximate so modelling can weight them
+                    # accordingly.
                     is_approximate=True,
                 )
             )

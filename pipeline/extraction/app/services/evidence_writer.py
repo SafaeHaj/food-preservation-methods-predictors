@@ -4,7 +4,7 @@ Evidence capture existed only on the `food_extraction` path, which also re-ran D
 scratch. The workspace path -- the one the UI actually drives -- produced no provenance at
 all, so extracted numbers had nothing tying them to a page and a bounding box.
 
-This builds the sink `ext_writer` accepts, sourcing bounding boxes from the already-stored
+This builds the sink `science_writer` accepts, sourcing bounding boxes from the already-stored
 `ExtractionAsset` rows instead of a fresh parse. Same provenance, no second Docling run.
 """
 
@@ -18,7 +18,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from shared.config import get_common_settings
-from shared.db.models import ExtEvidence, ExtractionAsset
+from shared.db.models import Evidence, ExtractionAsset
 
 from app.services.evidence_capture import save_evidence_crop
 
@@ -71,7 +71,7 @@ def make_sink(
             bbox = known.get("bbox") or evidence.get("bounding_box") or {}
             page_number = evidence.get("page_number") or known.get("page_number")
 
-            record = ExtEvidence(
+            record = Evidence(
                 paper_id=paper_id,
                 entity_type=entity_type,
                 entity_key=json.dumps(entity_key),

@@ -8,14 +8,15 @@ import {
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
 import { usePapers } from '../../api/papers'
-import { useEvidencePackages, useSendToLlm } from '../../api/workspace'
+import { useEvidencePackages, useSendToLlm, useUpdateAsset } from '../../api/workspace'
 import { errorMessage } from '../../api/errors'
 import type {
-  EvidenceAsset, EvidencePackages, EvidenceParagraph,
+  EvidenceAsset, EvidencePackages, EvidenceParagraph, ExtractionAsset,
 } from '../../types/workspace'
 import { keys } from '../../api/keys'
 import { useJobStream } from '../../hooks/useJobStream'
 import { useLatestJob } from '../../hooks/useLatestJob'
+import AssetDetailPanel from '../../components/AssetDetailPanel'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -178,7 +179,7 @@ function EvidenceSection({
 
 // ─── Paragraph row ──────────────────────────────────────────────────────────────
 
-function ParagraphRow({ item }: { item: EvidenceParagraph }) {
+function ParagraphRow({ item, onOpen }: { item: EvidenceParagraph; onOpen: () => void }) {
   const [expanded, setExpanded] = useState(false)
   const badge = {
     neighbor_before: 'Before',
@@ -188,7 +189,11 @@ function ParagraphRow({ item }: { item: EvidenceParagraph }) {
   }[item.link_type] || item.link_type
 
   return (
-    <div className="px-4 py-3 bg-white hover:bg-slate-50 transition-colors">
+    <div
+      onClick={onOpen}
+      title="Open the figure or table this text was linked to"
+      className="px-4 py-3 bg-white hover:bg-slate-50 transition-colors cursor-pointer"
+    >
       <div className="flex items-start gap-3">
         <div className="shrink-0 mt-0.5">
           <AlignLeft size={13} className="text-indigo-400" />
@@ -208,7 +213,10 @@ function ParagraphRow({ item }: { item: EvidenceParagraph }) {
           </p>
           {item.text.length > 160 && (
             <button
-              onClick={() => setExpanded(!expanded)}
+              onClick={(event) => {
+                event.stopPropagation()
+                setExpanded(!expanded)
+              }}
               className="text-[10px] text-blue-500 hover:text-blue-700 mt-1"
             >
               {expanded ? 'Show less' : 'Show more'}
@@ -222,7 +230,11 @@ function ParagraphRow({ item }: { item: EvidenceParagraph }) {
 
 // ─── Asset row ─────────────────────────────────────────────────────────────────
 
-function AssetRow({ item, type }: { item: EvidenceAsset; type: 'table' | 'chart' | 'excluded' }) {
+function AssetRow({ item, type, onOpen }: {
+  item: EvidenceAsset
+  type: 'table' | 'chart' | 'excluded'
+  onOpen: () => void
+}) {
   const [expanded, setExpanded] = useState(false)
   const colorMap = {
     table: 'text-emerald-500',
@@ -232,7 +244,11 @@ function AssetRow({ item, type }: { item: EvidenceAsset; type: 'table' | 'chart'
   const Icon = type === 'table' ? Table2 : type === 'chart' ? BarChart3 : FileText
 
   return (
-    <div className="px-4 py-3 bg-white hover:bg-slate-50 transition-colors">
+    <div
+      onClick={onOpen}
+      title="Open this element"
+      className="px-4 py-3 bg-white hover:bg-slate-50 transition-colors cursor-pointer"
+    >
       <div className="flex items-start gap-3">
         <Icon size={14} className={clsx('mt-0.5 shrink-0', colorMap[type])} />
         <div className="flex-1 min-w-0">
@@ -261,7 +277,10 @@ function AssetRow({ item, type }: { item: EvidenceAsset; type: 'table' | 'chart'
           {item.context_links.length > 0 && (
             <>
               <button
-                onClick={() => setExpanded(!expanded)}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  setExpanded(!expanded)
+                }}
                 className="text-[10px] text-blue-500 hover:text-blue-700 mt-1"
               >
                 {expanded ? 'Hide context' : `Show ${item.context_links.length} context link(s)`}
@@ -292,6 +311,14 @@ export default function ValidationPage() {
   const pid = Number(projectId)
 
   const [paperId, setPaperId] = useState<number | null>(null)
+
+  // The evidence rows are the same extracted elements the workspace shows as cards, so
+  // clicking one here opens the same detail panel rather than a second, lesser rendering of
+  // the same asset. Held as an id plus, when the row already carries it, the asset itself:
+  // table and chart rows are full assets, but a paragraph only names the asset it came from.
+  const [openAsset, setOpenAsset] = useState<
+    { id: number; asset: ExtractionAsset | null } | null
+  >(null)
   // ── Papers ──────────────────────────────────────────────────────────────────
 
   const { data: allPapers = [] } = usePapers(pid)
@@ -323,12 +350,12 @@ export default function ValidationPage() {
   const jobId = sendToLlm.data?.job_id ?? existingJobId
 
   const { progress: job } = useJobStream(jobId, {
-    // The ingestion job writes ext_* rows and promotes them into the canonical hierarchy,
-    // so the scientific database views are stale the moment it finishes.
+    // The ingestion job writes the scientific schema, so every view over it — and the
+    // dataset built from it — is stale the moment the job finishes.
     invalidateOnComplete: [
       keys.workspace.all(pid, paperId ?? 0),
-      keys.studies.all(pid),
-      keys.observations.all(pid),
+      keys.science.all(pid),
+      keys.dataset.all(pid),
       keys.projects.stats(pid),
     ],
     onComplete: (final) => {
@@ -338,6 +365,19 @@ export default function ValidationPage() {
   })
 
   const sending = sendToLlm.isPending
+
+  // Starring from the panel writes through the same mutation the workspace uses; its
+  // `onSettled` invalidates the evidence packages, so the sections, the donut and the checks
+  // all re-derive from the new selection.
+  const updateAsset = useUpdateAsset(pid, paperId ?? 0)
+  const handleToggleSelect = (asset: ExtractionAsset, value: boolean) =>
+    updateAsset
+      .mutateAsync({ assetId: asset.id, selected_for_llm: value })
+      .catch((error) => toast.error(errorMessage(error, 'Could not update the selection')))
+
+  // A stale panel over a different paper's evidence would be confusing, and the asset id
+  // would not resolve against the newly selected paper.
+  useEffect(() => setOpenAsset(null), [paperId])
 
   // The job result is an untyped payload on the wire; narrow it once here rather than
   // casting at each of the four places it is rendered.
@@ -511,7 +551,11 @@ export default function ValidationPage() {
                       </div>
                     ) : (
                       pkgData.paragraphs.slice(0, 30).map((item, i) => (
-                        <ParagraphRow key={`${item.asset_id}-${item.link_id}-${i}`} item={item} />
+                        <ParagraphRow
+                          key={`${item.asset_id}-${item.link_id}-${i}`}
+                          item={item}
+                          onOpen={() => setOpenAsset({ id: item.asset_id, asset: null })}
+                        />
                       ))
                     )}
                     {pkgData.paragraphs.length > 30 && (
@@ -532,7 +576,12 @@ export default function ValidationPage() {
                       <div className="px-4 py-3 text-xs text-slate-400">No native tables found</div>
                     ) : (
                       pkgData.native_tables.map((item) => (
-                        <AssetRow key={item.id} item={item} type="table" />
+                        <AssetRow
+                          key={item.id}
+                          item={item}
+                          type="table"
+                          onOpen={() => setOpenAsset({ id: item.id, asset: item })}
+                        />
                       ))
                     )}
                   </EvidenceSection>
@@ -550,7 +599,12 @@ export default function ValidationPage() {
                       </div>
                     ) : (
                       pkgData.chart_csvs.map((item) => (
-                        <AssetRow key={item.id} item={item} type="chart" />
+                        <AssetRow
+                          key={item.id}
+                          item={item}
+                          type="chart"
+                          onOpen={() => setOpenAsset({ id: item.id, asset: item })}
+                        />
                       ))
                     )}
                   </EvidenceSection>
@@ -565,7 +619,12 @@ export default function ValidationPage() {
                       defaultOpen={false}
                     >
                       {pkgData.excluded.map((item) => (
-                        <AssetRow key={item.id} item={item} type="excluded" />
+                        <AssetRow
+                          key={item.id}
+                          item={item}
+                          type="excluded"
+                          onOpen={() => setOpenAsset({ id: item.id, asset: item })}
+                        />
                       ))}
                     </EvidenceSection>
                   )}
@@ -689,6 +748,17 @@ export default function ValidationPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {openAsset && paperId !== null && (
+        <AssetDetailPanel
+          asset={openAsset.asset}
+          assetId={openAsset.id}
+          projectId={pid}
+          paperId={paperId}
+          onClose={() => setOpenAsset(null)}
+          onToggleSelect={handleToggleSelect}
+        />
       )}
     </div>
   )

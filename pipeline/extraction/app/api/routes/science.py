@@ -1,6 +1,9 @@
-"""Read routes over the structured extraction output (`ext_*`).
+"""Routes over the scientific schema — experiments, ingredients, indicators, measurements.
 
-There is deliberately no trigger endpoint here. Extraction is started through the workspace
+Read-only except for one field: an indicator's threshold. Everything else here is
+extraction output and is corrected by re-extracting, not by editing rows.
+
+There is deliberately no trigger endpoint. Extraction is started through the workspace
 (`POST .../workspace` then `POST .../send-to-llm`), which is the same pipeline this data
 comes from; the previous `POST /food-extract/{paper_id}` ran a second, separately-written
 copy of it.
@@ -17,27 +20,29 @@ from sqlalchemy.orm import Session
 from shared.db.database import get_db
 from shared.db.models import Project, User
 
-from app.api.deps import get_current_user, require_project, verify_signed_asset
-from app.schemas.ext_data import (
-    EvidenceOut, ExperimentDetailOut, ExperimentSummaryOut, IndicatorOut, IngredientOut,
-    MeasurementOut,
+from app.api.deps import (
+    get_current_user, require_project, require_project_contributor, verify_signed_asset,
 )
-from app.services import ext_data_service
+from app.schemas.science import (
+    EvidenceOut, ExperimentDetailOut, ExperimentSummaryOut, IndicatorOut, IndicatorUpdate,
+    IngredientOut, MeasurementOut,
+)
+from app.services import science_service
 
-router = APIRouter(tags=["extracted-data"])
+router = APIRouter(tags=["science"])
 
 
-@router.get("/projects/{project_id}/food-experiments", response_model=list[ExperimentSummaryOut])
+@router.get("/projects/{project_id}/experiments", response_model=list[ExperimentSummaryOut])
 def list_experiments(
     paper_id: Optional[int] = Query(None),
     project: Project = Depends(require_project),
     db: Session = Depends(get_db),
 ):
-    return ext_data_service.list_experiments(db, project.id, paper_id)
+    return science_service.list_experiments(db, project.id, paper_id)
 
 
 @router.get(
-    "/projects/{project_id}/food-experiments/{experiment_id}",
+    "/projects/{project_id}/experiments/{experiment_id}",
     response_model=ExperimentDetailOut,
 )
 def get_experiment(
@@ -45,11 +50,11 @@ def get_experiment(
     project: Project = Depends(require_project),
     db: Session = Depends(get_db),
 ):
-    return ext_data_service.get_experiment(db, project.id, experiment_id)
+    return science_service.get_experiment(db, project.id, experiment_id)
 
 
 @router.get(
-    "/projects/{project_id}/food-experiments/{experiment_id}/measurements",
+    "/projects/{project_id}/experiments/{experiment_id}/measurements",
     response_model=list[MeasurementOut],
 )
 def list_measurements(
@@ -57,7 +62,7 @@ def list_measurements(
     project: Project = Depends(require_project),
     db: Session = Depends(get_db),
 ):
-    return ext_data_service.list_measurements(db, project.id, experiment_id)
+    return science_service.list_measurements(db, project.id, experiment_id)
 
 
 @router.get("/projects/{project_id}/ingredients", response_model=list[IngredientOut])
@@ -65,7 +70,7 @@ def list_ingredients(
     project: Project = Depends(require_project),
     db: Session = Depends(get_db),
 ):
-    return ext_data_service.list_ingredients(db, project.id)
+    return science_service.list_ingredients(db, project.id)
 
 
 @router.get("/projects/{project_id}/indicators", response_model=list[IndicatorOut])
@@ -73,7 +78,21 @@ def list_indicators(
     project: Project = Depends(require_project),
     db: Session = Depends(get_db),
 ):
-    return ext_data_service.list_indicators(db, project.id)
+    return science_service.list_indicators(db, project.id)
+
+
+@router.patch(
+    "/projects/{project_id}/indicators/{indicator_id}",
+    response_model=IndicatorOut,
+)
+def update_indicator(
+    indicator_id: int,
+    body: IndicatorUpdate,
+    project: Project = Depends(require_project_contributor),
+    db: Session = Depends(get_db),
+):
+    """Set or clear an indicator's threshold — the one editable field in the schema."""
+    return science_service.update_indicator(db, project.id, indicator_id, body)
 
 
 @router.get("/evidence/{evidence_id}", response_model=EvidenceOut)
@@ -82,16 +101,16 @@ def get_evidence(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    return ext_data_service.get_evidence(db, evidence_id, user)
+    return science_service.get_evidence(db, evidence_id, user)
 
 
 @router.get("/evidence/{evidence_id}/image", dependencies=[Depends(verify_signed_asset)])
 def get_evidence_image(evidence_id: int, db: Session = Depends(get_db)):
-    path = ext_data_service.get_evidence_file(db, evidence_id, thumbnail=False)
+    path = science_service.get_evidence_file(db, evidence_id, thumbnail=False)
     return FileResponse(str(path), media_type="image/png")
 
 
 @router.get("/evidence/{evidence_id}/thumbnail", dependencies=[Depends(verify_signed_asset)])
 def get_evidence_thumbnail(evidence_id: int, db: Session = Depends(get_db)):
-    path = ext_data_service.get_evidence_file(db, evidence_id, thumbnail=True)
+    path = science_service.get_evidence_file(db, evidence_id, thumbnail=True)
     return FileResponse(str(path), media_type="image/png")

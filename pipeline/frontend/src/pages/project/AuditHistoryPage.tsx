@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { useAuditEvents } from '../../api/canonical'
+import { useAuditEvents } from '../../api/audit'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 
 const ACTION_COLORS: Record<string, string> = {

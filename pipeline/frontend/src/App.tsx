@@ -1,11 +1,15 @@
 /**
  * Routes.
  *
- * Every project page is code-split. Previously all 25 page modules were imported eagerly,
- * so opening the extraction workspace parsed and evaluated the model lab, the dataset
- * browser and the audit log too — module-level work for screens the user never opened.
+ * Every project page is code-split. Previously all page modules were imported eagerly, so
+ * opening the extraction workspace parsed and evaluated the dataset browser and the audit
+ * log too — module-level work for screens the user never opened.
  *
- * The legacy Review and Analytics pages are gone with the flat-extraction path they read.
+ * Thirteen pages went with the parallel scientific hierarchy they read: studies,
+ * experiments, treatments, observations, trajectories, kinetic fits, normalization,
+ * missing-data, imputations, thresholds, the CSV-upload model lab and the snapshot export.
+ * What they showed now lives in two screens — Extracted Data and the Scientific Database —
+ * reading the extraction output directly.
  */
 
 import { Suspense, lazy } from 'react'
@@ -24,25 +28,15 @@ const Dashboard = lazy(() => import('./pages/Dashboard'))
 const ProjectView = lazy(() => import('./pages/ProjectView'))
 const Upload = lazy(() => import('./pages/Upload'))
 
-const StudiesPage = lazy(() => import('./pages/project/StudiesPage'))
-const ExperimentsPage = lazy(() => import('./pages/project/ExperimentsPage'))
-const DatasetPage = lazy(() => import('./pages/project/DatasetPage'))
-const NormalizationPage = lazy(() => import('./pages/project/NormalizationPage'))
-const MissingDataPage = lazy(() => import('./pages/project/MissingDataPage'))
-const TrajectoriesPage = lazy(() => import('./pages/project/TrajectoriesPage'))
-const ModelLabPage = lazy(() => import('./pages/project/ModelLabPage'))
-const ModelTrainingPage = lazy(() => import('./pages/project/ModelTrainingPage'))
-const ModelGuidePage = lazy(() => import('./pages/project/ModelGuidePage'))
-const ImputationsPage = lazy(() => import('./pages/project/ImputationsPage'))
-const TreatmentsPage = lazy(() => import('./pages/project/TreatmentsPage'))
-const ThresholdShelfLifePage = lazy(() => import('./pages/project/ThresholdShelfLifePage'))
 const ExtractionJobsPage = lazy(() => import('./pages/project/ExtractionJobsPage'))
 const ExtractionWorkspacePage = lazy(() => import('./pages/project/ExtractionWorkspacePage'))
 const ExtractedDataPage = lazy(() => import('./pages/project/ExtractedDataPage'))
 const PPChart2TablePage = lazy(() => import('./pages/project/PPChart2TablePage'))
 const ValidationPage = lazy(() => import('./pages/project/ValidationPage'))
+const ScientificDatabasePage = lazy(() => import('./pages/project/ScientificDatabasePage'))
+const ModelLabPage = lazy(() => import('./pages/project/ModelLabPage'))
+const PredictionPage = lazy(() => import('./pages/project/PredictionPage'))
 const AuditHistoryPage = lazy(() => import('./pages/project/AuditHistoryPage'))
-const ExportPage = lazy(() => import('./pages/project/ExportPage'))
 const TeamPage = lazy(() => import('./pages/project/TeamPage'))
 const ProjectSettingsPage = lazy(() => import('./pages/project/ProjectSettingsPage'))
 
@@ -76,37 +70,25 @@ export default function App() {
         >
           <Route index element={<ProjectView />} />
 
-          {/* Extraction */}
+          {/* Extraction pipeline */}
           <Route path="upload" element={<Upload />} />
           <Route path="jobs" element={<ExtractionJobsPage />} />
+          <Route path="extracted" element={<ExtractedDataPage />} />
           <Route path="papers/:paperId/workspace" element={<ExtractionWorkspacePage />} />
           <Route path="papers/:paperId/chart2table" element={<PPChart2TablePage />} />
           <Route path="validation" element={<ValidationPage />} />
-          <Route path="extracted" element={<ExtractedDataPage />} />
 
           {/* Scientific database */}
-          <Route path="studies" element={<StudiesPage />} />
-          <Route path="experiments" element={<ExperimentsPage />} />
-          <Route path="treatments" element={<TreatmentsPage />} />
-          <Route path="dataset" element={<DatasetPage />} />
+          <Route path="database" element={<ScientificDatabasePage />} />
 
-          {/* Data quality */}
-          <Route path="normalization" element={<NormalizationPage />} />
-          <Route path="missing" element={<MissingDataPage />} />
-          <Route path="imputations" element={<ImputationsPage />} />
+          {/* Model lab */}
+          <Route path="model-lab" element={<ModelLabPage />} />
+          <Route path="prediction" element={<PredictionPage />} />
 
-          {/* Analysis */}
-          <Route path="trajectories" element={<TrajectoriesPage />} />
-          <Route path="models" element={<ModelLabPage />} />
-          <Route path="model-lab" element={<ModelTrainingPage />} />
-          <Route path="model-lab/guide/:modelId" element={<ModelGuidePage />} />
-          <Route path="thresholds" element={<ThresholdShelfLifePage />} />
-
-          {/* Operations */}
-          <Route path="audit" element={<AuditHistoryPage />} />
-          <Route path="export" element={<ExportPage />} />
+          {/* Administration */}
           <Route path="team" element={<TeamPage />} />
           <Route path="settings" element={<ProjectSettingsPage />} />
+          <Route path="audit" element={<AuditHistoryPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,34 +1,32 @@
 import { NavLink, useParams, useNavigate } from 'react-router-dom'
 import {
-  LayoutDashboard, Upload, Cpu, ShieldCheck, ClipboardList,
-  Database, FlaskConical, Activity, GitBranch, Download, Users, Settings,
+  LayoutDashboard, Upload, Cpu, ShieldCheck, Brain,
+  Database, GitBranch, Users, Settings,
   History, LogOut, ChevronRight, Table2,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useAuthStore } from '../store/auth'
 
-// "Extraction Review" pointed at the legacy flat-row review screen, which was removed
-// along with the extraction path that produced its data. Curation now happens on the
-// Validation screen (before the LLM runs) and in the Scientific Database (after).
+// The order is the pipeline: upload a paper, watch it parse, look at what came out, then
+// curate what goes to the LLM. Validation is last because it is the hand-off, not the
+// first thing anyone does.
 const EXTRACTION_NAV = [
   { to: '',          end: true, label: 'Dashboard',      Icon: LayoutDashboard },
   { to: 'upload',              label: 'Upload Papers',   Icon: Upload },
   { to: 'jobs',                label: 'Extraction Jobs', Icon: Cpu },
-  { to: 'validation',          label: 'Validation',      Icon: ShieldCheck },
   { to: 'extracted',           label: 'Extracted Data',  Icon: Table2 },
+  { to: 'validation',          label: 'Validation',      Icon: ShieldCheck },
 ]
 
+// One screen, because there is one schema. Studies, Experiments and Trajectories were
+// three views onto a second hierarchy that only ever held a transcription of this one.
 const DATABASE_NAV = [
-  { to: 'studies',      label: 'Studies',             Icon: ClipboardList },
-  { to: 'dataset',      label: 'Scientific Database', Icon: Database },
-  { to: 'experiments',  label: 'Experiments',         Icon: FlaskConical },
-  { to: 'trajectories', label: 'Trajectories',        Icon: Activity },
+  { to: 'database', label: 'Scientific Database', Icon: Database },
 ]
 
 const MODELS_NAV = [
-  { to: 'model-lab',  label: 'Kinetic Models',   Icon: GitBranch },
-  { to: 'thresholds', label: 'Shelf-Life Models', Icon: Activity },
-  { to: 'export',     label: 'Model Registry',    Icon: Download },
+  { to: 'model-lab',  label: 'Processed Dataset', Icon: GitBranch },
+  { to: 'prediction', label: 'Prediction',        Icon: Brain },
 ]
 
 const ADMIN_NAV = [
@@ -124,7 +122,7 @@ export default function ProjectSidebar() {
           ))}
         </div>
 
-        <SectionLabel label="Analysis & Models" />
+        <SectionLabel label="Model Lab" />
         <div className="space-y-0.5">
           {MODELS_NAV.map(({ to, label, Icon }) => (
             <NavItem key={label} to={`${base}/${to}`} label={label} Icon={Icon} />

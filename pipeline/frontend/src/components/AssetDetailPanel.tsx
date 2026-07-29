@@ -100,22 +100,36 @@ function ContextItem({ link, expanded, toggle }: ContextBlock) {
 }
 
 interface Props {
-  asset: ExtractionAsset
+  /**
+   * The asset to show. Optional: a caller that already holds the row — the workspace
+   * gallery, the evidence packages — passes it so the panel paints immediately, while one
+   * that only knows an id (a Validation paragraph names its source asset and nothing else)
+   * passes just `assetId` and lets the panel load it.
+   */
+  asset?: ExtractionAsset | null
+  assetId: number
   projectId: number
   paperId: number
   onClose: () => void
-  onToggleSelect: (asset: ExtractionAsset, val: boolean) => void
+  /** Omitted where curating the LLM selection is not offered. */
+  onToggleSelect?: (asset: ExtractionAsset, val: boolean) => void
 }
 
-export default function AssetDetailPanel({ asset, projectId, paperId, onClose, onToggleSelect }: Props) {
+export default function AssetDetailPanel({
+  asset: provided, assetId, projectId, paperId, onClose, onToggleSelect,
+}: Props) {
   const [imgTab, setImgTab] = useState<'figure' | 'page'>('figure')
   const [expanded, setExpanded] = useState<Record<number, boolean>>({})
   const [selecting, setSelecting] = useState(false)
   const [imgError, setImgError] = useState(false)
 
-  const { data: detail } = useAsset(projectId, paperId, asset.id)
+  // Fetched either way: it is the only source of context links, and it refreshes whatever
+  // the caller passed in.
+  const { data: detail } = useAsset(projectId, paperId, assetId)
+  const asset = provided ?? detail ?? null
 
   const handleSelect = async () => {
+    if (!asset || !onToggleSelect) return
     setSelecting(true)
     try {
       await onToggleSelect(asset, !asset.selected_for_llm)
@@ -127,9 +141,32 @@ export default function AssetDetailPanel({ asset, projectId, paperId, onClose, o
   const toggleExpand = (i: number) =>
     setExpanded((prev) => ({ ...prev, [i]: !prev[i] }))
 
-  const imgUrl = imgTab === 'figure' ? asset.links.image : asset.links.page_image
+  const imgUrl = asset ? (imgTab === 'figure' ? asset.links.image : asset.links.page_image) : null
 
-  const typeLabel = asset.asset_type === 'native_table' ? 'Table' : 'Figure'
+  const typeLabel = asset?.asset_type === 'native_table' ? 'Table' : 'Figure'
+
+  if (!asset) {
+    return (
+      <div className="fixed inset-0 z-50 flex">
+        <div className="flex-1 bg-black/30" onClick={onClose} />
+        <div className="w-full max-w-3xl bg-white h-full shadow-2xl flex flex-col">
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200">
+            <span className="text-sm text-slate-400">Loading element…</span>
+            <button onClick={onClose} className="p-1.5 hover:bg-slate-100 rounded-lg">
+              <X size={18} className="text-slate-500" />
+            </button>
+          </div>
+          <div className="flex-1 flex items-center justify-center">
+            <div className="w-full max-w-md px-6 space-y-3">
+              <div className="h-40 bg-slate-100 rounded-lg animate-pulse" />
+              <div className="h-3 bg-slate-100 rounded animate-pulse" />
+              <div className="h-3 w-2/3 bg-slate-100 rounded animate-pulse" />
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex">
@@ -154,19 +191,21 @@ export default function AssetDetailPanel({ asset, projectId, paperId, onClose, o
             )}
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={handleSelect}
-              disabled={selecting}
-              className={clsx(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors',
-                asset.selected_for_llm
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
-              )}
-            >
-              {asset.selected_for_llm ? <CheckCircle size={13} /> : <Star size={13} />}
-              {asset.selected_for_llm ? 'In LLM package' : 'Add to LLM'}
-            </button>
+            {onToggleSelect && (
+              <button
+                onClick={handleSelect}
+                disabled={selecting}
+                className={clsx(
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors',
+                  asset.selected_for_llm
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+                )}
+              >
+                {asset.selected_for_llm ? <CheckCircle size={13} /> : <Star size={13} />}
+                {asset.selected_for_llm ? 'In LLM package' : 'Add to LLM'}
+              </button>
+            )}
             <button onClick={onClose} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors">
               <X size={18} className="text-slate-500" />
             </button>

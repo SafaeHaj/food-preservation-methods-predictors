@@ -15,9 +15,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { get, patch, post } from './client'
 import { keys } from './keys'
-import { config } from '../config'
+import { assetUrl, config } from '../config'
 import type {
-  AssetDetail, AssetPage, EvidencePackages, ExtractionAsset, JobAccepted,
+  AssetDetail, AssetPage, EvidenceAsset, EvidencePackages, ExtractionAsset, JobAccepted,
 } from '../types/workspace'
 
 const base = (projectId: number, paperId: number) =>
@@ -30,6 +30,31 @@ export interface AssetFilters {
   limit?: number
 }
 
+/**
+ * Absolutise an asset's signed links as they cross the API boundary.
+ *
+ * Done here, once per response, rather than at each `<img>`/`<a>`/fetch: the components
+ * consuming these are spread over four pages, and a call site that forgets the helper fails
+ * silently — a broken thumbnail looks exactly like an asset that has no image. Normalising
+ * on the way in makes "a link held in app state is fetchable as-is" an invariant instead of
+ * a convention.
+ */
+function withResolvedLinks<T extends ExtractionAsset>(asset: T): T {
+  return {
+    ...asset,
+    links: {
+      image: assetUrl(asset.links.image),
+      page_image: assetUrl(asset.links.page_image),
+      csv: assetUrl(asset.links.csv),
+    },
+  }
+}
+
+const resolvePage = (page: AssetPage): AssetPage => ({
+  ...page,
+  items: page.items.map(withResolvedLinks),
+})
+
 export function useAssets(
   projectId: number,
   paperId: number,
@@ -39,7 +64,8 @@ export function useAssets(
   const params = { limit: config.pageSize.assets, ...filters }
   return useQuery({
     queryKey: keys.workspace.assets(projectId, paperId, params),
-    queryFn: () => get<AssetPage>(`${base(projectId, paperId)}/assets`, params),
+    queryFn: async () =>
+      resolvePage(await get<AssetPage>(`${base(projectId, paperId)}/assets`, params)),
     // Gated, not conditional-inside-the-component: a disabled query issues no request at
     // all, which is what keeps the asset list from being fetched during extraction.
     enabled: options.enabled !== false && Number.isFinite(projectId) && Number.isFinite(paperId),
@@ -49,7 +75,10 @@ export function useAssets(
 export function useAsset(projectId: number, paperId: number, assetId: number | null) {
   return useQuery({
     queryKey: keys.workspace.asset(projectId, paperId, assetId ?? 0),
-    queryFn: () => get<AssetDetail>(`${base(projectId, paperId)}/assets/${assetId}`),
+    queryFn: async () =>
+      withResolvedLinks(
+        await get<AssetDetail>(`${base(projectId, paperId)}/assets/${assetId}`),
+      ),
     enabled: assetId !== null,
   })
 }
@@ -58,7 +87,8 @@ export function useProjectAssets(projectId: number, filters: AssetFilters = {}) 
   const params = { limit: config.pageSize.assets, ...filters }
   return useQuery({
     queryKey: keys.workspace.projectAssets(projectId, params),
-    queryFn: () => get<AssetPage>(`/projects/${projectId}/assets`, params),
+    queryFn: async () =>
+      resolvePage(await get<AssetPage>(`/projects/${projectId}/assets`, params)),
     enabled: Number.isFinite(projectId),
   })
 }
@@ -66,7 +96,16 @@ export function useProjectAssets(projectId: number, filters: AssetFilters = {}) 
 export function useEvidencePackages(projectId: number, paperId: number, enabled = true) {
   return useQuery({
     queryKey: keys.workspace.evidence(projectId, paperId),
-    queryFn: () => get<EvidencePackages>(`${base(projectId, paperId)}/evidence-packages`),
+    queryFn: async () => {
+      const pkg = await get<EvidencePackages>(`${base(projectId, paperId)}/evidence-packages`)
+      const resolve = (assets: EvidenceAsset[]) => assets.map(withResolvedLinks)
+      return {
+        ...pkg,
+        native_tables: resolve(pkg.native_tables),
+        chart_csvs: resolve(pkg.chart_csvs),
+        excluded: resolve(pkg.excluded),
+      }
+    },
     enabled: enabled && Number.isFinite(projectId) && Number.isFinite(paperId),
   })
 }
@@ -129,6 +168,28 @@ export function useStartExtraction(projectId: number, paperId: number) {
     mutationFn: () => post<JobAccepted>(`${base(projectId, paperId)}/workspace`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: keys.jobs.all() })
+    },
+  })
+}
+
+/**
+ * Start the Docling pipeline for a paper named at call time.
+ *
+ * The workspace knows its paper before it renders; the upload flow does not — the ids only
+ * exist once the files are stored, which is after every hook has been called. Same endpoint,
+ * paper as a mutation variable.
+ *
+ * Starting twice for one paper is safe: the service returns the job already running rather
+ * than parsing the PDF a second time.
+ */
+export function useStartPaperExtraction(projectId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (paperId: number) =>
+      post<JobAccepted>(`${base(projectId, paperId)}/workspace`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: keys.jobs.all() })
+      queryClient.invalidateQueries({ queryKey: keys.papers.all(projectId) })
     },
   })
 }

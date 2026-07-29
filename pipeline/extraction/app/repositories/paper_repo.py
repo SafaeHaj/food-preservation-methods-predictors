@@ -5,7 +5,7 @@ from __future__ import annotations
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from shared.db.models import ExtExperiment, ExtractionAsset, Paper
+from shared.db.models import Experiment, ExtractionAsset, Paper
 
 
 def list_for_project(db: Session, project_id: int) -> list[Paper]:
@@ -58,9 +58,9 @@ def counts_by_paper(db: Session, paper_ids: list[int]) -> dict[int, dict[str, in
         counts[paper_id]["asset_count"] = count
 
     experiment_rows = (
-        db.query(ExtExperiment.paper_id, func.count(ExtExperiment.id))
-        .filter(ExtExperiment.paper_id.in_(paper_ids))
-        .group_by(ExtExperiment.paper_id)
+        db.query(Experiment.paper_id, func.count(Experiment.id))
+        .filter(Experiment.paper_id.in_(paper_ids))
+        .group_by(Experiment.paper_id)
         .all()
     )
     for paper_id, count in experiment_rows:

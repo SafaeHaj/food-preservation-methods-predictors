@@ -10,7 +10,7 @@ Layout::
     CommonSettings       everything shares: database, JWT, logging, storage roots
     GatewaySettings      service URLs, CORS, proxy behaviour, asset-URL signing
     ExtractionSettings   LLM providers, upload limits, Docling/chart caches, scoring
-    ProcessingSettings   export dir, prediction service client, model families
+    ProcessingSettings   dataset staging, prediction service client, engine names
 
 Every field is environment-driven and prefixed (`EXTRACTION_`, `PROCESSING_`, ...) except
 the common ones, which keep their historical unprefixed names so existing deployments and

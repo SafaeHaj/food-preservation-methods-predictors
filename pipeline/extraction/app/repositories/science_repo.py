@@ -1,4 +1,4 @@
-"""Queries over the structured extraction output (`ext_*` tables)."""
+"""Queries over the scientific schema — experiments, ingredients, indicators, measurements."""
 
 from __future__ import annotations
 
@@ -9,24 +9,24 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from shared.db.models import (
-    ExtEvidence, ExtExperiment, ExtExperimentIngredient, ExtIndicator, ExtIngredient,
-    ExtMeasurement, Paper,
+    Evidence, Experiment, ExperimentIngredient, Indicator, Ingredient,
+    Measurement, Paper,
 )
 
 
 def list_experiments(
     db: Session, project_id: int, paper_id: Optional[int] = None
-) -> list[ExtExperiment]:
-    query = db.query(ExtExperiment).filter(ExtExperiment.project_id == project_id)
+) -> list[Experiment]:
+    query = db.query(Experiment).filter(Experiment.project_id == project_id)
     if paper_id is not None:
-        query = query.filter(ExtExperiment.paper_id == paper_id)
-    return query.order_by(ExtExperiment.id.desc()).all()
+        query = query.filter(Experiment.paper_id == paper_id)
+    return query.order_by(Experiment.id.desc()).all()
 
 
-def get_experiment(db: Session, project_id: int, experiment_id: int) -> ExtExperiment | None:
+def get_experiment(db: Session, project_id: int, experiment_id: int) -> Experiment | None:
     return (
-        db.query(ExtExperiment)
-        .filter(ExtExperiment.id == experiment_id, ExtExperiment.project_id == project_id)
+        db.query(Experiment)
+        .filter(Experiment.id == experiment_id, Experiment.project_id == project_id)
         .first()
     )
 
@@ -41,9 +41,9 @@ def ingredients_for(db: Session, experiment_ids: list[int]) -> dict[int, list[tu
         return {}
 
     rows = (
-        db.query(ExtExperimentIngredient, ExtIngredient)
-        .join(ExtIngredient, ExtIngredient.id == ExtExperimentIngredient.ingredient_id)
-        .filter(ExtExperimentIngredient.experiment_id.in_(experiment_ids))
+        db.query(ExperimentIngredient, Ingredient)
+        .join(Ingredient, Ingredient.id == ExperimentIngredient.ingredient_id)
+        .filter(ExperimentIngredient.experiment_id.in_(experiment_ids))
         .all()
     )
     grouped: dict[int, list[tuple]] = {experiment_id: [] for experiment_id in experiment_ids}
@@ -56,9 +56,9 @@ def measurement_counts(db: Session, experiment_ids: list[int]) -> dict[int, int]
     if not experiment_ids:
         return {}
     rows = (
-        db.query(ExtMeasurement.experiment_id, func.count())
-        .filter(ExtMeasurement.experiment_id.in_(experiment_ids))
-        .group_by(ExtMeasurement.experiment_id)
+        db.query(Measurement.experiment_id, func.count())
+        .filter(Measurement.experiment_id.in_(experiment_ids))
+        .group_by(Measurement.experiment_id)
         .all()
     )
     counts = {experiment_id: 0 for experiment_id in experiment_ids}
@@ -68,45 +68,55 @@ def measurement_counts(db: Session, experiment_ids: list[int]) -> dict[int, int]
 
 def measurements_for(db: Session, experiment_id: int) -> list[tuple]:
     return (
-        db.query(ExtMeasurement, ExtIndicator)
-        .join(ExtIndicator, ExtIndicator.id == ExtMeasurement.indicator_id)
-        .filter(ExtMeasurement.experiment_id == experiment_id)
-        .order_by(ExtMeasurement.day, ExtIndicator.indicator_type)
+        db.query(Measurement, Indicator)
+        .join(Indicator, Indicator.id == Measurement.indicator_id)
+        .filter(Measurement.experiment_id == experiment_id)
+        .order_by(Measurement.day, Indicator.indicator_type)
         .all()
     )
 
 
-def list_ingredients(db: Session, project_id: int) -> list[ExtIngredient]:
+def list_ingredients(db: Session, project_id: int) -> list[Ingredient]:
     return (
-        db.query(ExtIngredient)
-        .filter(ExtIngredient.project_id == project_id)
-        .order_by(ExtIngredient.ingredient_name)
+        db.query(Ingredient)
+        .filter(Ingredient.project_id == project_id)
+        .order_by(Ingredient.ingredient_name)
         .all()
     )
 
 
-def list_indicators(db: Session, project_id: int) -> list[ExtIndicator]:
+def list_indicators(db: Session, project_id: int) -> list[Indicator]:
     return (
-        db.query(ExtIndicator)
-        .filter(ExtIndicator.project_id == project_id)
-        .order_by(ExtIndicator.indicator_type)
+        db.query(Indicator)
+        .filter(Indicator.project_id == project_id)
+        .order_by(Indicator.indicator_type)
         .all()
     )
 
 
-def evidence_for_experiment(db: Session, experiment_id: int) -> list[ExtEvidence]:
+def get_indicator(db: Session, project_id: int, indicator_id: int) -> Indicator | None:
+    # Filtered by project, not just id: this backs a write, and an id-only lookup would let
+    # one tenant set thresholds on another's indicators.
+    return (
+        db.query(Indicator)
+        .filter(Indicator.id == indicator_id, Indicator.project_id == project_id)
+        .first()
+    )
+
+
+def evidence_for_experiment(db: Session, experiment_id: int) -> list[Evidence]:
     """Evidence anchored to one experiment.
 
     `entity_key` is a JSON string, so this filters in Python after a paper-scoped fetch.
     The previous implementation used `LIKE '%"experiment_id": 1%'`, which also matched
     experiments 10, 12 and 199 -- returning another experiment's provenance as this one's.
     """
-    experiment = db.query(ExtExperiment).filter(ExtExperiment.id == experiment_id).first()
+    experiment = db.query(Experiment).filter(Experiment.id == experiment_id).first()
     if not experiment:
         return []
 
     candidates = (
-        db.query(ExtEvidence).filter(ExtEvidence.paper_id == experiment.paper_id).all()
+        db.query(Evidence).filter(Evidence.paper_id == experiment.paper_id).all()
     )
     matched = []
     for record in candidates:
@@ -119,8 +129,8 @@ def evidence_for_experiment(db: Session, experiment_id: int) -> list[ExtEvidence
     return matched
 
 
-def get_evidence(db: Session, evidence_id: int) -> ExtEvidence | None:
-    return db.query(ExtEvidence).filter(ExtEvidence.id == evidence_id).first()
+def get_evidence(db: Session, evidence_id: int) -> Evidence | None:
+    return db.query(Evidence).filter(Evidence.id == evidence_id).first()
 
 
 def project_id_for_evidence(db: Session, evidence_id: int) -> int | None:
@@ -131,8 +141,8 @@ def project_id_for_evidence(db: Session, evidence_id: int) -> int | None:
     """
     row = (
         db.query(Paper.project_id)
-        .join(ExtEvidence, ExtEvidence.paper_id == Paper.id)
-        .filter(ExtEvidence.id == evidence_id)
+        .join(Evidence, Evidence.paper_id == Paper.id)
+        .filter(Evidence.id == evidence_id)
         .first()
     )
     return row[0] if row else None

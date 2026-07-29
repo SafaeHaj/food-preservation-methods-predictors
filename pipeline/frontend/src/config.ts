@@ -11,9 +11,14 @@ function num(value: string | undefined, fallback: number): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
 }
 
+/** Gateway origin, without a trailing slash. Empty means same-origin. */
+const apiOrigin = (import.meta.env.VITE_API_URL ?? '').replace(/\/+$/, '')
+
 export const config = {
+  apiOrigin,
+
   /** Gateway origin. Empty means same-origin, which is what the dev proxy serves. */
-  apiBaseUrl: import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api',
+  apiBaseUrl: apiOrigin ? `${apiOrigin}/api` : '/api',
 
   /**
    * How long a fetched resource is considered fresh. Within this window a remount reads
@@ -46,3 +51,21 @@ export const config = {
    */
   streamSilenceTimeoutMs: num(import.meta.env.VITE_STREAM_SILENCE_TIMEOUT_MS, 25_000),
 } as const
+
+/**
+ * Resolve a server-minted binary URL against the gateway origin.
+ *
+ * The extraction service signs *paths* (`/api/projects/1/papers/2/assets/3/image?exp=…&sig=…`)
+ * because the signature must cover exactly what the server will verify, and it does not know
+ * which origin the SPA is served from. A relative path is then resolved by the browser
+ * against the *page's* origin — which is the SPA, not the API. Wherever the two differ, as
+ * they do under `VITE_API_URL`, every `<img src>`, `<a href>` and CSV fetch silently 404s or
+ * 500s while the JSON calls beside them work, because those go through axios and its
+ * `baseURL`. Hence: everything that leaves the API layer carries an absolute URL.
+ */
+export function assetUrl<T extends string | null | undefined>(path: T): T {
+  if (!path || !apiOrigin) return path
+  // Already absolute (or a data: URI): leave it alone.
+  if (/^[a-z][a-z0-9+.-]*:/i.test(path) || path.startsWith('//')) return path
+  return `${apiOrigin}${path.startsWith('/') ? '' : '/'}${path}` as T
+}

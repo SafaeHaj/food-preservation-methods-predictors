@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from shared.access import authorize_project
 from shared.db.models import AuditEvent, ProjectMember, User
 from shared.db.database import get_db
-from shared.schemas.canonical import AuditEventOut
+from shared.schemas.platform import AuditEventOut
 
 from app.api.deps import get_current_user
 

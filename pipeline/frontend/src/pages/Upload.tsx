@@ -5,6 +5,7 @@ import { Upload as UploadIcon, FileText, X, ArrowLeft, CloudUpload, Microscope, 
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
 import { useUploadPapers } from '../api/papers'
+import { useStartPaperExtraction } from '../api/workspace'
 import { errorMessage } from '../api/errors'
 
 /** Mirrors EXTRACTION_MAX_PAPERS_PER_UPLOAD on the extraction service. */
@@ -17,6 +18,7 @@ export default function Upload() {
 
   const [files, setFiles] = useState<File[]>([])
   const uploadPapers = useUploadPapers(pid)
+  const startExtraction = useStartPaperExtraction(pid)
 
   // The "batch" mode is gone with the legacy flat-extraction path it fed. Papers are
   // uploaded here and analysed in the workspace; several at once is still supported, it
@@ -41,22 +43,48 @@ export default function Upload() {
 
   const handleUpload = async () => {
     if (!files.length) return
+
+    let created
     try {
-      const created = await uploadPapers.mutateAsync(files)
-      // A single paper goes straight into the workspace: uploading one PDF is almost
-      // always the first half of "analyse this PDF".
-      if (created.length === 1) {
-        navigate(`/projects/${pid}/papers/${created[0].id}/workspace`)
-      } else {
-        toast.success(`${created.length} papers uploaded`)
-        navigate(`/projects/${pid}`)
-      }
+      created = await uploadPapers.mutateAsync(files)
     } catch (error) {
       toast.error(errorMessage(error, 'Upload failed'))
+      return
+    }
+
+    // Uploading is the first half of "analyse this PDF", so the parse is queued here rather
+    // than waiting for a second click on a page the user has not seen yet. Queued for every
+    // paper, in parallel: they run on the extraction workers, not in this request.
+    const starts = await Promise.allSettled(
+      created.map((paper) => startExtraction.mutateAsync(paper.id)),
+    )
+    const failed = starts.filter((result) => result.status === 'rejected').length
+
+    // A paper that failed to start is still uploaded, and still has its own "Analyse
+    // document" button — so this is a warning, not a dead end.
+    if (failed) {
+      toast.error(
+        failed === created.length
+          ? errorMessage(
+              (starts[0] as PromiseRejectedResult).reason,
+              'Uploaded, but the analysis could not be started',
+            )
+          : `${failed} of ${created.length} papers could not be queued for analysis`,
+      )
+    }
+
+    if (created.length === 1) {
+      navigate(`/projects/${pid}/papers/${created[0].id}/workspace`)
+    } else {
+      if (!failed) toast.success(`${created.length} papers uploaded and queued for analysis`)
+      // The jobs page, not the project: it is where the runs just queued are visible, and
+      // it now updates itself as they progress.
+      navigate(`/projects/${pid}/jobs`)
     }
   }
 
   const totalMB = files.reduce((s, f) => s + f.size, 0) / (1024 * 1024)
+  const busy = uploadPapers.isPending || startExtraction.isPending
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -153,15 +181,18 @@ export default function Upload() {
         <Link to={`/projects/${pid}`} className="btn-secondary">Cancel</Link>
         <button
           onClick={handleUpload}
-          disabled={!files.length || uploadPapers.isPending}
+          disabled={!files.length || busy}
           className="btn-primary min-w-40 justify-center"
         >
-          {uploadPapers.isPending ? (
-            <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Uploading…</>
+          {busy ? (
+            <>
+              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              {uploadPapers.isPending ? 'Uploading…' : 'Starting analysis…'}
+            </>
           ) : files.length === 1 ? (
             <><Microscope size={14} /> Upload &amp; analyse</>
           ) : (
-            <><UploadIcon size={14} /> Upload {files.length || ''} PDF{files.length !== 1 ? 's' : ''}</>
+            <><UploadIcon size={14} /> Upload &amp; analyse {files.length || ''} PDF{files.length !== 1 ? 's' : ''}</>
           )}
         </button>
       </div>

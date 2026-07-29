@@ -1,8 +1,9 @@
 import { useParams, Link } from 'react-router-dom'
 import { useCancelJob, useJobs } from '../../api/jobs'
+import { useJobsStream } from '../../hooks/useJobsStream'
 import { errorMessage } from '../../api/errors'
 import type { Job } from '../../types'
-import { XCircle, Cpu, FlaskConical, Layers, ChevronRight, Loader2 } from 'lucide-react'
+import { XCircle, Cpu, FlaskConical, Layers, ChevronRight, Loader2, Radio } from 'lucide-react'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
@@ -143,12 +144,15 @@ function PaperJobGroup({ group, onCancel, projectId }: { group: PaperGroup; onCa
 
 export default function ExtractionJobsPage() {
   const { projectId } = useParams<{ projectId: string }>()
-  // No interval. The list is invalidated whenever a job stream reaches a terminal state,
-  // so it stays current without polling every eight seconds for the life of the tab.
-  const { data: jobs = [], isLoading: loading } = useJobs({
-    project_id: Number(projectId),
-    limit: 100,
-  })
+
+  // No interval, and no invalidation to wait for either. The list is *pushed*: the stream
+  // below writes every change into this exact cache entry. Before, nothing on this page
+  // observed anything — the client defaults disable refetch-on-mount and on-focus, and the
+  // only code that invalidates the job list is a job stream mounted on some other page — so
+  // a status change reached the screen only on a full browser reload.
+  const filters = { project_id: Number(projectId), limit: 100 }
+  const { data: jobs = [], isLoading: loading } = useJobs(filters)
+  const { live } = useJobsStream(filters)
   const cancelJob = useCancelJob()
 
   const handleCancel = async (id: number) => {
@@ -187,6 +191,14 @@ export default function ExtractionJobsPage() {
           <h1 className="text-xl font-bold text-slate-900">Extraction Jobs</h1>
           <p className="text-xs text-slate-400 mt-0.5">All pipeline runs, grouped by paper</p>
         </div>
+        {live && (
+          <span
+            className="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-full"
+            title="Statuses update as they change; no refresh needed"
+          >
+            <Radio size={10} /> Live
+          </span>
+        )}
       </div>
 
       {loading && jobs.length === 0 ? (

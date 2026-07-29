@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from shared.db.database import get_db
 from shared.db.models import User
-from shared.schemas.canonical import JobOut
+from shared.schemas.platform import JobOut
 
 from app.api.deps import get_current_user
 from app.services import job_service
@@ -33,6 +33,36 @@ def list_jobs(
         db, user,
         project_id=project_id, paper_id=paper_id, job_type=job_type,
         status=status, skip=skip, limit=limit,
+    )
+
+
+#: Declared before `/{job_id}`: routes are matched in registration order, so the reverse
+#: would resolve this path as a job whose id is the string "events".
+@router.get("/events")
+def stream_project_jobs(
+    project_id: int = Query(..., description="Project whose job list to follow"),
+    job_type: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    limit: int = Query(50, le=200),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Server-Sent Events for a project's whole job list.
+
+    What a jobs *list* needs and `/{job_id}/events` cannot give it: progress for every job at
+    once, over one connection, including jobs that did not exist when the page loaded.
+    """
+    job_service.assert_project_visible(db, project_id, user)
+    return StreamingResponse(
+        job_service.stream_project_job_events(
+            project_id, user.id, job_type=job_type, status=status, limit=limit,
+        ),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
     )
 
 

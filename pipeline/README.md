@@ -99,16 +99,20 @@ configured, rather than failing opaquely.
        ↓
 3. Docling extraction  — figures, tables, captions and context links into the workspace
        ↓
-4. Curate assets       — classify, score, pick what goes to the LLM
+4. Extracted Data      — see what came out, across every paper in the project
        ↓
-5. LLM ingestion       — structured rows into the ext_* tables
+5. Validation          — pick what goes to the LLM, then send it
        ↓
-6. Validate & promote  — into the canonical Study → Experiment → TreatmentArm → Observation
+6. Scientific database — experiments, ingredients, indicators (set their thresholds here),
+                         measurements, each traceable back to its place in the PDF
        ↓
-7. Model lab           — trajectories, thresholds, shelf-life prediction
+7. Model lab           — flatten that into a training dataset
        ↓
-8. Export
+8. Prediction          — fit shelf-life models and score new formulations
 ```
+
+Steps 6-8 read one schema. There is no promotion step: what the LLM writes is what
+everything downstream reads.
 
 ---
 
@@ -119,12 +123,12 @@ pipeline/
 ├── gateway/            # :8000 — auth, projects, members, jobs (SSE), audit; proxies the rest
 ├── extraction/         # :8001 — papers, Docling workspace, assets, LLM ingestion
 │   └── app/services/   #   docling_pipeline, context_linker, chart_converter, evidence_*
-├── processing/         # :8002 — studies, experiments, observations, normalization,
-│                       #         trajectories, thresholds, imputations, model lab, exports
+├── processing/         # :8002 — flattens the scientific schema into a training dataset,
+│                       #         and drives prediction. Dataset builder is still a stub.
 ├── prediction/         # :8100 — survival engines (Weibull-AFT / RSF / GBS) + R frailtypack.
 │                       #         Standalone: its own DB and models, no `shared` dependency.
 ├── shared/             # installed into gateway/extraction/processing as `shared`
-│   ├── shared/db/models.py    # the platform schema (FK deletion policy documented here)
+│   ├── shared/db/models.py    # platform + scientific schema (FK deletion policy documented here)
 │   ├── shared/config/         # per-service settings classes
 │   ├── shared/auth.py         # X-User-Id resolution + internal-secret guard
 │   └── alembic/               # migrations — the gateway runs these on startup

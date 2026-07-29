@@ -41,70 +41,16 @@ export const keys = {
     detail: (jobId: number) => ['jobs', 'detail', jobId] as const,
   },
 
-  // The structured five-table extraction output (`ext_*`). Addressed by project, then by
-  // paper filter, so switching the paper dropdown reads its own cache entry.
-  extracted: {
-    all: (projectId: number) => ['extracted', projectId] as const,
+  // The scientific schema. Addressed by project, then by paper filter, so switching the
+  // paper dropdown reads its own cache entry.
+  science: {
+    all: (projectId: number) => ['science', projectId] as const,
     experiments: (projectId: number, paperId?: number) =>
-      ['extracted', projectId, 'experiments', paperId ?? 'all'] as const,
+      ['science', projectId, 'experiments', paperId ?? 'all'] as const,
     experiment: (projectId: number, experimentId: number) =>
-      ['extracted', projectId, 'experiment', experimentId] as const,
-    ingredients: (projectId: number) => ['extracted', projectId, 'ingredients'] as const,
-    indicators: (projectId: number) => ['extracted', projectId, 'indicators'] as const,
-  },
-
-  studies: {
-    all: (projectId: number) => ['studies', projectId] as const,
-    list: (projectId: number, filters?: object) =>
-      ['studies', projectId, 'list', filters ?? {}] as const,
-    detail: (studyId: number) => ['studies', 'detail', studyId] as const,
-  },
-
-  experiments: {
-    all: (projectId: number) => ['experiments', projectId] as const,
-    list: (projectId: number, filters?: object) =>
-      ['experiments', projectId, 'list', filters ?? {}] as const,
-  },
-
-  arms: {
-    all: (projectId: number) => ['arms', projectId] as const,
-    list: (projectId: number, filters?: object) =>
-      ['arms', projectId, 'list', filters ?? {}] as const,
-  },
-
-  observations: {
-    all: (projectId: number) => ['observations', projectId] as const,
-    list: (projectId: number, filters?: object) =>
-      ['observations', projectId, 'list', filters ?? {}] as const,
-  },
-
-  trajectories: {
-    all: (projectId: number) => ['trajectories', projectId] as const,
-    list: (projectId: number, filters?: object) =>
-      ['trajectories', projectId, 'list', filters ?? {}] as const,
-    runs: (trajectoryId: number) => ['trajectories', 'runs', trajectoryId] as const,
-  },
-
-  thresholds: {
-    all: (projectId: number) => ['thresholds', projectId] as const,
-    list: (projectId: number) => ['thresholds', projectId, 'list'] as const,
-    crossings: (thresholdId: number, projectId: number) =>
-      ['thresholds', projectId, 'crossings', thresholdId] as const,
-  },
-
-  imputations: {
-    all: (projectId: number) => ['imputations', projectId] as const,
-    list: (projectId: number, filters?: object) =>
-      ['imputations', projectId, 'list', filters ?? {}] as const,
-  },
-
-  normalization: {
-    all: (projectId: number) => ['normalization', projectId] as const,
-    mappings: (projectId: number) => ['normalization', projectId, 'mappings'] as const,
-  },
-
-  microorganisms: {
-    list: (projectId: number) => ['microorganisms', projectId] as const,
+      ['science', projectId, 'experiment', experimentId] as const,
+    ingredients: (projectId: number) => ['science', projectId, 'ingredients'] as const,
+    indicators: (projectId: number) => ['science', projectId, 'indicators'] as const,
   },
 
   members: {
@@ -116,18 +62,15 @@ export const keys = {
       ['audit', projectId, filters ?? {}] as const,
   },
 
-  snapshots: {
-    all: (projectId: number) => ['snapshots', projectId] as const,
-    exportRun: (runId: number) => ['snapshots', 'export-run', runId] as const,
+  // The processed dataset the processing service builds from the scientific schema, and
+  // the prediction surface on top of it.
+  dataset: {
+    all: (projectId: number) => ['dataset', projectId] as const,
+    preview: (projectId: number) => ['dataset', projectId, 'preview'] as const,
   },
 
-  modelLab: {
-    all: (projectId: number) => ['model-lab', projectId] as const,
-    datasets: (projectId: number) => ['model-lab', projectId, 'datasets'] as const,
-    runs: (projectId: number) => ['model-lab', projectId, 'runs'] as const,
-    run: (projectId: number, runId: number) => ['model-lab', projectId, 'run', runId] as const,
-    models: (projectId: number) => ['model-lab', projectId, 'models'] as const,
-    model: (projectId: number, modelId: number) =>
-      ['model-lab', projectId, 'model', modelId] as const,
+  prediction: {
+    all: (projectId: number) => ['prediction', projectId] as const,
+    status: (projectId: number) => ['prediction', projectId, 'status'] as const,
   },
 } as const

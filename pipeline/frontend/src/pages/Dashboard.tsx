@@ -157,20 +157,33 @@ export default function Dashboard() {
                     <FileText size={12} />
                     <span>{p.paper_count ?? 0} papers</span>
                   </span>
-                  <span className="flex items-center gap-1.5">
-                    <CheckSquare size={12} />
-                    <span>{p.row_count ?? 0} rows</span>
-                  </span>
+                  {p.your_role && p.your_role !== 'owner' && (
+                    <span className="flex items-center gap-1.5">
+                      <CheckSquare size={12} />
+                      <span>{p.your_role}</span>
+                    </span>
+                  )}
                 </div>
               </div>
+              {/* The Review and Analytics shortcuts here pointed at two pages deleted with
+                  the flat-extraction path, and had been resolving to the catch-all redirect
+                  ever since. */}
               <div className="px-5 pb-4 flex gap-2">
                 <Link to={`/projects/${p.id}`} className="btn-primary text-xs py-1.5 px-3 flex-1 justify-center">
                   Open
                 </Link>
-                <Link to={`/projects/${p.id}/review`} className="btn-secondary text-xs py-1.5 px-3" title="Review">
+                <Link
+                  to={`/projects/${p.id}/extracted`}
+                  className="btn-secondary text-xs py-1.5 px-3"
+                  title="Extracted data"
+                >
                   <Eye size={12} />
                 </Link>
-                <Link to={`/projects/${p.id}/analytics`} className="btn-secondary text-xs py-1.5 px-3" title="Analytics">
+                <Link
+                  to={`/projects/${p.id}/database`}
+                  className="btn-secondary text-xs py-1.5 px-3"
+                  title="Scientific database"
+                >
                   <BarChart2 size={12} />
                 </Link>
               </div>

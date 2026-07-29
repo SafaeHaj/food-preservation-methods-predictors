@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from shared.db.database import get_db
 from shared.db.models import User
-from shared.schemas.canonical import (
+from shared.schemas.platform import (
     ProjectMemberCreate, ProjectMemberOut, ProjectMemberUpdate,
 )
 

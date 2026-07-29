@@ -20,7 +20,7 @@ from shared.config import get_gateway_settings
 from shared.db.database import SessionLocal
 from shared.db.models import Job, ProjectMember, User
 from shared.errors import BusinessRuleError
-from shared.schemas.canonical import JobOut
+from shared.schemas.platform import JobOut
 from shared.uow import unit_of_work
 
 logger = logging.getLogger(__name__)
@@ -76,6 +76,16 @@ def list_jobs(
 
 def get_job(db: Session, job_id: int, user: User) -> Job:
     return authorize_job(db, job_id, user)
+
+
+def assert_project_visible(db: Session, project_id: int, user: User) -> None:
+    """Fail a project-scoped request before it becomes a stream.
+
+    Once the response is a `StreamingResponse` the status line is already sent, so an
+    authorization failure could only be reported as an event frame the client has to know to
+    interpret. Checking here keeps it an ordinary 404.
+    """
+    authorize_project(db, project_id, user)
 
 
 def cancel_job(db: Session, job_id: int, user: User) -> Job:
@@ -165,6 +175,79 @@ async def stream_job_events(job_id: int, user_id: int) -> AsyncIterator[str]:
             yield ": keepalive\n\n"
 
     yield _frame("error", {"message": "Job stream timed out; poll /api/jobs/{id} instead"})
+
+
+async def stream_project_job_events(
+    project_id: int,
+    user_id: int,
+    *,
+    job_type: Optional[str] = None,
+    status: Optional[str] = None,
+    limit: int = 50,
+) -> AsyncIterator[str]:
+    """Server-Sent Events for *every* job in a project, as a list.
+
+    `stream_job_events` follows a job whose id the client already has, which is the right
+    shape for a page that started one. A page that merely *lists* jobs has a different
+    problem: it does not know which ids to watch, one of them finishing is not the end of
+    the story, and a job created elsewhere must appear without a reload. Subscribing per row
+    answers none of those and costs a connection per running job.
+
+    So the unit here is the list. A frame carries the whole page of jobs and the client
+    writes it straight into its cache -- no refetch, and creations and deletions arrive on
+    the same channel as progress. Like the single-job stream this diffs before sending, so a
+    project with nothing running is silent apart from keepalives, and it does not close on a
+    terminal status: the next job is what the page is waiting for.
+    """
+    loop = asyncio.get_running_loop()
+    last_payload: str | None = None
+    elapsed = 0.0
+    since_keepalive = 0.0
+
+    def read_jobs() -> list[dict] | None:
+        db = SessionLocal()
+        try:
+            user = db.query(User).filter(User.id == user_id).first()
+            if not user:
+                return None
+            # Re-authorized every tick, on its own session: access revoked mid-stream must
+            # close the stream rather than keep feeding a former member.
+            jobs = list_jobs(
+                db, user,
+                project_id=project_id, job_type=job_type, status=status, limit=limit,
+            )
+            return [JobOut.model_validate(job).model_dump() for job in jobs]
+        finally:
+            db.close()
+
+    while elapsed < _settings.JOB_STREAM_MAX_SECONDS:
+        try:
+            jobs = await loop.run_in_executor(None, read_jobs)
+        except Exception:
+            logger.exception("Project job stream %s failed to read state", project_id)
+            yield _frame("error", {"message": "Could not read job state"})
+            return
+
+        if jobs is None:
+            yield _frame("error", {"message": "This project is no longer accessible"})
+            return
+
+        payload = json.dumps(jobs, default=str)
+        if payload != last_payload:
+            last_payload = payload
+            since_keepalive = 0.0
+            yield f"event: jobs\ndata: {payload}\n\n"
+
+        await asyncio.sleep(_settings.JOB_STREAM_POLL_SECONDS)
+        elapsed += _settings.JOB_STREAM_POLL_SECONDS
+        since_keepalive += _settings.JOB_STREAM_POLL_SECONDS
+
+        if since_keepalive >= _settings.JOB_STREAM_KEEPALIVE_SECONDS:
+            since_keepalive = 0.0
+            yield ": keepalive\n\n"
+
+    # Not an error the client must act on: it reconnects and carries on.
+    yield _frame("expired", {"message": "Stream lifetime reached; reconnect to continue"})
 
 
 def _frame(event: str, data: dict) -> str:

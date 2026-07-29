@@ -362,6 +362,7 @@ export default function ExtractionWorkspacePage() {
       {selectedAsset && (
         <AssetDetailPanel
           asset={selectedAsset}
+          assetId={selectedAsset.id}
           projectId={pid}
           paperId={paperIdNum}
           onClose={() => setSelectedAsset(null)}

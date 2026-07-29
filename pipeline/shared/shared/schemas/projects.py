@@ -43,13 +43,21 @@ class ProjectOut(BaseModel):
 
 
 class ProjectStats(BaseModel):
-    """Aggregates for the project overview."""
+    """Aggregates for the project overview.
 
-    study_count: int = 0
-    experiment_count: int = 0
-    observation_count: int = 0
+    Counted over the scientific schema. The previous set (`study_count`, `observation_count`,
+    `approved_count`, `needs_review_count`) counted rows in the parallel hierarchy that has
+    since been deleted, and the two review counters described a per-row approval workflow
+    that no longer exists -- curation happens on the validation screen, before the LLM runs.
+    """
+
     paper_count: int = 0
-    approved_count: int = 0
-    needs_review_count: int = 0
+    experiment_count: int = 0
+    measurement_count: int = 0
+    ingredient_count: int = 0
+    indicator_count: int = 0
+    #: Indicators carrying a threshold. Shelf life is the day a threshold is crossed, so
+    #: this is the count that says whether the project can be modelled at all.
+    indicators_with_threshold: int = 0
     member_count: int = 0
     last_extraction_at: Optional[str] = None

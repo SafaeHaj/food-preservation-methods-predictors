@@ -1,26 +1,34 @@
 /**
- * Extracted Data — the structured five-table schema (`ext_*`) the LLM pipeline produces.
+ * Scientific Database — the five-table schema the LLM pipeline produces.
  *
- * This is the raw extraction record, shown verbatim: experiments (meat matrix × treatment)
- * with their ingredient links and their day/indicator measurement grid, plus the reusable
- * ingredient and indicator catalogues, and the row-level evidence tying values back to the
- * PDF. It reads the `ext_*` endpoints directly and never touches the canonical hierarchy.
+ * Experiments (meat matrix × treatment) with their ingredient links and their day/indicator
+ * measurement grid, plus the reusable ingredient and indicator catalogues, and the
+ * row-level evidence tying every value back to the PDF it came from.
+ *
+ * One field here is editable: an indicator's threshold. Papers rarely state the regulatory
+ * limit their measurements are judged against, and shelf life is defined as the day that
+ * limit is crossed — so without it nothing downstream can label an experiment. It used to
+ * live on a separate "threshold definitions" screen, detached from the indicators it
+ * applied to and matched back to them by string comparison on the measurement type.
  */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import {
   AlertCircle, Beaker, ChevronDown, ChevronRight, FileText, FlaskConical, Gauge, Image as ImageIcon,
   Layers, Loader2, Quote, Table2,
 } from 'lucide-react'
 import clsx from 'clsx'
+import toast from 'react-hot-toast'
 
 import { usePapers } from '../../api/papers'
 import {
-  useExtIndicators, useExtIngredients, useFoodExperiment, useFoodExperiments,
-} from '../../api/extractedData'
+  useExperiment, useExperiments, useIndicators, useIngredients, useUpdateIndicator,
+} from '../../api/science'
 import { errorMessage } from '../../api/errors'
-import type { Evidence, ExperimentSummary, Measurement } from '../../types/extracted'
+import type {
+  Evidence, ExperimentSummary, Indicator, Measurement,
+} from '../../types/science'
 
 type Tab = 'experiments' | 'ingredients' | 'indicators'
 
@@ -166,7 +174,7 @@ function ExperimentRow({
   projectId, experiment,
 }: { projectId: number; experiment: ExperimentSummary }) {
   const [open, setOpen] = useState(false)
-  const { data: detail, isLoading } = useFoodExperiment(projectId, open ? experiment.id : null)
+  const { data: detail, isLoading } = useExperiment(projectId, open ? experiment.id : null)
 
   return (
     <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
@@ -236,6 +244,79 @@ function ExperimentRow({
   )
 }
 
+// ─── Editable threshold ────────────────────────────────────────────────────────
+
+/**
+ * One indicator's threshold, edited in place.
+ *
+ * The draft is local until blur or Enter, so a partially-typed "1" on the way to "10" is
+ * never sent — and never briefly makes the indicator look labelable at the wrong limit.
+ * Escape restores the saved value. An empty field clears the threshold rather than saving
+ * zero, which is a meaningful limit for several indicators.
+ */
+function ThresholdCell({
+  projectId, indicator,
+}: { projectId: number; indicator: Indicator }) {
+  const saved = indicator.indicator_threshold
+  const [draft, setDraft] = useState<string>(saved != null ? String(saved) : '')
+  const [editing, setEditing] = useState(false)
+  const update = useUpdateIndicator(projectId)
+
+  // Follow the server when this row changes underneath us (another tab, a re-extraction),
+  // but never while the field is focused — that would overwrite what is being typed.
+  useEffect(() => {
+    if (!editing) setDraft(saved != null ? String(saved) : '')
+  }, [saved, editing])
+
+  const commit = () => {
+    setEditing(false)
+    const trimmed = draft.trim()
+    const next = trimmed === '' ? null : Number(trimmed)
+    if (next !== null && !Number.isFinite(next)) {
+      setDraft(saved != null ? String(saved) : '')
+      return
+    }
+    if (next === saved) return
+
+    update
+      .mutateAsync({ indicatorId: indicator.id, indicator_threshold: next })
+      .catch((error) => {
+        toast.error(errorMessage(error, 'Could not save the threshold'))
+        setDraft(saved != null ? String(saved) : '')
+      })
+  }
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <input
+        type="number"
+        step="any"
+        value={draft}
+        placeholder="—"
+        onFocus={() => setEditing(true)}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') e.currentTarget.blur()
+          if (e.key === 'Escape') {
+            setDraft(saved != null ? String(saved) : '')
+            setEditing(false)
+            e.currentTarget.blur()
+          }
+        }}
+        className={clsx(
+          'w-24 px-2 py-1 text-sm rounded-md border transition-colors',
+          'focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400',
+          saved != null
+            ? 'border-slate-200 text-slate-800'
+            : 'border-dashed border-slate-200 text-slate-400',
+        )}
+      />
+      <span className="text-[10px] text-slate-400">{indicator.indicator_unit}</span>
+    </div>
+  )
+}
+
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 function TabButton({ active, onClick, icon, label, count }: {
@@ -257,7 +338,7 @@ function TabButton({ active, onClick, icon, label, count }: {
   )
 }
 
-export default function ExtractedDataPage() {
+export default function ScientificDatabasePage() {
   const { projectId } = useParams<{ projectId: string }>()
   const pid = Number(projectId)
 
@@ -267,9 +348,9 @@ export default function ExtractedDataPage() {
   const { data: papers = [] } = usePapers(pid)
   const {
     data: experiments = [], isLoading: expLoading, error: expError,
-  } = useFoodExperiments(pid, paperFilter === 'all' ? undefined : paperFilter)
-  const { data: ingredients = [] } = useExtIngredients(pid)
-  const { data: indicators = [] } = useExtIndicators(pid)
+  } = useExperiments(pid, paperFilter === 'all' ? undefined : paperFilter)
+  const { data: ingredients = [] } = useIngredients(pid)
+  const { data: indicators = [] } = useIndicators(pid)
 
   const paperName = useMemo(() => {
     const map = new Map(papers.map((p) => [p.id, p.original_name]))
@@ -280,9 +361,9 @@ export default function ExtractedDataPage() {
     <div className="p-6 max-w-4xl mx-auto space-y-5">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Extracted Data</h1>
+          <h1 className="text-xl font-bold text-slate-900">Scientific Database</h1>
           <p className="text-xs text-slate-400 mt-0.5">
-            The structured five-table schema produced by the extraction pipeline, shown as extracted.
+            Every experiment, ingredient, indicator and measurement extracted across this project.
           </p>
         </div>
         {papers.length > 0 && (
@@ -389,27 +470,35 @@ export default function ExtractedDataPage() {
             <p className="text-sm text-slate-400">No indicators extracted yet.</p>
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
-            <table className="w-full text-sm" style={{ fontVariantNumeric: 'tabular-nums' }}>
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th className="px-3 py-2 text-left font-medium text-slate-600">Indicator</th>
-                  <th className="px-3 py-2 text-left font-medium text-slate-600">Unit</th>
-                  <th className="px-3 py-2 text-left font-medium text-slate-600">Threshold / limit</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {indicators.map((ind) => (
-                  <tr key={ind.id} className="hover:bg-slate-50">
-                    <td className="px-3 py-2 font-medium text-slate-800">{ind.indicator_type}</td>
-                    <td className="px-3 py-2 text-slate-600">{ind.indicator_unit}</td>
-                    <td className="px-3 py-2 text-slate-600">
-                      {ind.indicator_threshold != null ? fmt(ind.indicator_threshold) : '—'}
-                    </td>
+          <div className="space-y-2">
+            <p className="text-[11px] text-slate-400">
+              A threshold is the limit an indicator crosses to end shelf life. Set one to make
+              the indicator usable for modelling; leave it blank if the paper gives none.
+            </p>
+            <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
+              <table className="w-full text-sm" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                <thead className="bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-medium text-slate-600">Indicator</th>
+                    <th className="px-3 py-2 text-left font-medium text-slate-600">Unit</th>
+                    <th className="px-3 py-2 text-left font-medium text-slate-600">
+                      Threshold / limit
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {indicators.map((ind) => (
+                    <tr key={ind.id} className="hover:bg-slate-50">
+                      <td className="px-3 py-2 font-medium text-slate-800">{ind.indicator_type}</td>
+                      <td className="px-3 py-2 text-slate-600">{ind.indicator_unit}</td>
+                      <td className="px-3 py-2">
+                        <ThresholdCell projectId={pid} indicator={ind} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )
       )}

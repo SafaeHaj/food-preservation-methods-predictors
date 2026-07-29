@@ -6,18 +6,17 @@
  * every 8s forever; the project view polled every 5s whether or not anything was running.
  * None of them stopped reliably on unmount.
  *
- * `EventSource` is not usable here: it cannot send an `Authorization` header, and the only
- * ways around that are a token in the query string (which lands in logs and history) or a
- * cookie (which brings CSRF). `fetch` with a `ReadableStream` supports headers, is
- * cancellable via `AbortController`, and unwinds cleanly when the component unmounts.
+ * The transport lives in `api/sse`; this hook is the job-progress reading of it. A stream
+ * that cannot be established falls back to polling `GET /jobs/{id}` so a buffering proxy
+ * degrades the experience rather than breaking it.
  *
- * A stream that cannot be established falls back to polling `GET /jobs/{id}` so a
- * buffering proxy degrades the experience rather than breaking it.
+ * For a page that follows a *list* of jobs rather than one it started, see `useJobsStream`.
  */
 
 import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { config } from '../config'
+import { consumeEventStream } from '../api/sse'
 import { keys } from '../api/keys'
 import { useAuthStore } from '../store/auth'
 
@@ -40,23 +39,6 @@ interface Options {
   invalidateOnComplete?: readonly (readonly unknown[])[]
   onComplete?: (progress: JobProgress) => void
   onError?: (message: string) => void
-}
-
-/** Split an SSE byte stream into complete `event:`/`data:` frames. */
-function parseFrames(buffer: string): { frames: string[]; rest: string } {
-  const parts = buffer.split('\n\n')
-  return { frames: parts.slice(0, -1), rest: parts[parts.length - 1] }
-}
-
-function frameData(frame: string): JobProgress | null {
-  // Comment frames (": keepalive") carry no data and must not be parsed.
-  const dataLine = frame.split('\n').find((line) => line.startsWith('data:'))
-  if (!dataLine) return null
-  try {
-    return JSON.parse(dataLine.slice(5).trim()) as JobProgress
-  } catch {
-    return null
-  }
 }
 
 export function useJobStream(jobId: number | null | undefined, options: Options = {}) {
@@ -92,67 +74,25 @@ export function useJobStream(jobId: number | null | undefined, options: Options 
       }
     }
 
-    const consume = async () => {
-      const token = useAuthStore.getState().token
-      const response = await fetch(`${config.apiBaseUrl}/jobs/${jobId}/events`, {
-        headers: {
-          Accept: 'text/event-stream',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+    const consume = () =>
+      consumeEventStream(`/jobs/${jobId}/events`, {
         signal: controller.signal,
-      })
-
-      if (!response.ok || !response.body) {
-        throw new Error(`Stream unavailable (${response.status})`)
-      }
-
-      const reader = response.body.getReader()
-      const decoder = new TextDecoder()
-      let buffer = ''
-
-      // Watchdog: a stream held open by a buffering intermediary connects fine but never
-      // delivers a byte, so `reader.read()` blocks forever and nothing ever errors. Race
-      // each read against a silence timeout; on silence, cancel the reader (which does NOT
-      // abort the effect's controller) and throw so the outer catch falls back to polling.
-      // Any bytes — a progress frame or a keepalive comment — reset the timer.
-      let silenceTimer: ReturnType<typeof setTimeout> | null = null
-      const silence = () =>
-        new Promise<never>((_, reject) => {
-          silenceTimer = setTimeout(
-            () => reject(new Error('stream-silent')),
-            config.streamSilenceTimeoutMs,
-          )
-        })
-
-      for (;;) {
-        let result: ReadableStreamReadResult<Uint8Array>
-        try {
-          result = await Promise.race([reader.read(), silence()])
-        } catch (error) {
-          if (silenceTimer) clearTimeout(silenceTimer)
-          await reader.cancel().catch(() => {})
-          throw error
-        }
-        if (silenceTimer) clearTimeout(silenceTimer)
-
-        const { done, value } = result
-        if (done) break
-
-        buffer += decoder.decode(value, { stream: true })
-        const { frames, rest } = parseFrames(buffer)
-        buffer = rest
-
-        for (const frame of frames) {
-          const data = frameData(frame)
-          if (!data) continue
-          setProgress(data)
-          if (isTerminal(data.status)) {
-            settle(data)
-            return
+        onFrame: ({ event, data }) => {
+          // A server-side `error` frame is not a progress snapshot: reading it as one would
+          // leave the hook reporting a job with no status at all.
+          if (event === 'error') {
+            setStreamError(String((data as { message?: string })?.message ?? 'Stream failed'))
+            return false
           }
-        }
-      }
-    }
+          const snapshot = data as JobProgress
+          if (!snapshot?.status) return
+          setProgress(snapshot)
+          if (isTerminal(snapshot.status)) {
+            settle(snapshot)
+            return false
+          }
+        },
+      })
 
     /** Safety net for environments where the stream cannot be held open. */
     const poll = async () => {

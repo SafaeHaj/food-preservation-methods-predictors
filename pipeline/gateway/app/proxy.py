@@ -34,15 +34,16 @@ _common = get_common_settings()
 
 #: Path roots owned by each domain service. A path matching neither is a 404 here rather
 #: than being forwarded somewhere that would also not understand it.
-PROCESSING_ROOTS = frozenset({
-    "studies", "experiments", "treatment-arms", "observations", "microorganisms",
-    "normalization", "trajectories", "imputations", "thresholds", "snapshots",
-})
+#:
+#: Processing owns no bare roots any more. It used to own ten -- studies, observations,
+#: trajectories, thresholds and the rest -- backing a second scientific hierarchy that has
+#: since been deleted; everything it serves now hangs off a project.
+PROCESSING_ROOTS: frozenset[str] = frozenset()
 EXTRACTION_ROOTS = frozenset({"schema", "chart2table", "evidence"})
 EXTRACTION_PROJECT_SUBS = frozenset({
-    "papers", "assets", "food-extract", "food-experiments", "ingredients", "indicators",
+    "papers", "assets", "experiments", "ingredients", "indicators",
 })
-PROCESSING_PROJECT_SUBS = frozenset({"model-lab"})
+PROCESSING_PROJECT_SUBS = frozenset({"dataset", "prediction"})
 
 #: Requests whose authentication is a URL signature rather than a bearer token.
 SIGNED_ASSET_SUFFIXES = ("/image", "/page-image", "/csv", "/thumbnail")

@@ -1,15 +1,15 @@
 /**
- * The structured extraction output — the five-table `ext_*` schema, exactly as the
- * extraction service serialises it (see `extraction/app/schemas/ext_data.py`).
+ * The scientific schema, exactly as the extraction service serialises it
+ * (see `extraction/app/schemas/science.py`).
  *
- *   ext_experiments ─┬─ ext_experiment_ingredients ── ext_ingredients
- *                    └─ ext_measurements ── ext_indicators   (+ ext_evidence)
+ *   experiments ─┬─ experiment_ingredients ── ingredients
+ *                └─ measurements ── indicators   (+ evidence)
  *
- * These are the raw rows the LLM produced, before the canonical promotion reshapes them.
- * The UI reads them verbatim so a reviewer can see and trust what was extracted.
+ * These are the rows the LLM produced, read verbatim. There is no second, reshaped copy of
+ * them any more: what the reviewer sees here is what every downstream consumer reads.
  */
 
-export interface ExtIngredient {
+export interface Ingredient {
   id: number
   ingredient_name: string
   functional_class: string
@@ -17,7 +17,7 @@ export interface ExtIngredient {
   source: string
 }
 
-export interface ExtIndicator {
+export interface Indicator {
   id: number
   indicator_type: string
   indicator_unit: string

@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from shared.access import ROLES, authorize_project, get_membership
 from shared.db.models import ProjectMember, User
 from shared.errors import BusinessRuleError, ConflictError, NotFoundError, ValidationError
-from shared.schemas.canonical import ProjectMemberCreate, ProjectMemberUpdate
+from shared.schemas.platform import ProjectMemberCreate, ProjectMemberUpdate
 from shared.uow import unit_of_work
 
 

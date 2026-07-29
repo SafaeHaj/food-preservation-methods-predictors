@@ -1,4 +1,4 @@
-"""Response models for the structured extraction output (`ext_*` tables)."""
+"""Request and response models for the scientific schema."""
 
 from __future__ import annotations
 
@@ -23,6 +23,17 @@ class IndicatorOut(BaseModel):
     id: int
     indicator_type: str
     indicator_unit: str
+    indicator_threshold: Optional[float] = None
+
+
+class IndicatorUpdate(BaseModel):
+    """The threshold only.
+
+    Type and unit are extraction output and identify the row -- they form its uniqueness
+    constraint -- so editing them here would either collide with another indicator or
+    silently relabel every measurement pointing at this one.
+    """
+
     indicator_threshold: Optional[float] = None
 
 
