@@ -5,16 +5,22 @@ python-dotenv>=1.0.0
 aiofiles>=23.2.0
 httpx>=0.27.0
 
-pymupdf>=1.24.0
 Pillow>=10.0.0
 pandas>=2.2.0
 numpy>=1.26.0
 openpyxl>=3.1.0
 
-# LLM providers
-google-genai>=0.8.0
-openai>=1.30.0
-anthropic>=0.28.0
+# Silver: table cleaning, header promotion and footnote stripping. Kept rather than
+# rewritten in pandas — it is several hundred lines of tuned behaviour, and a rewrite is
+# where the port would acquire its bugs.
+polars>=1.0.0
+# The controlled vocabulary loader. Only transitive via docling today, which is not a
+# dependency to rely on.
+PyYAML>=6.0
+
+# No LLM SDKs: every model call moved to processing with the vocabulary and the gold stage.
+# Extraction reads documents and emits observations with their labels unresolved, which is
+# the whole point of the cut -- it needs no key and no provider.
 
 # async jobs
 redis>=5.0.0

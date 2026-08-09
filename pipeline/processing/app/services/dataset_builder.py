@@ -17,15 +17,25 @@ Target: one row per (experiment, day), which is the grain the survival engines e
 
     experiment_id | meat_matrix | treatment | day | <ingredient cols> | <indicator cols> | event | duration
 
-  * `meat_matrix`, `treatment`   categorical, straight from Experiment.
+  * `meat_matrix`, `treatment`   categorical, straight from Experiment. `treatment` is
+                                  nullable since the medallion pipeline landed -- a paper
+                                  that never describes an arm's handling leaves it null
+                                  rather than carrying an invented placeholder, so this
+                                  needs an explicit "not stated" category rather than a
+                                  dropna.
   * `<ingredient cols>`           one numeric column per Ingredient in the project, holding
                                   that experiment's concentration or 0. Concentrations must
                                   be unit-reconciled first -- `ExperimentIngredient` stores
                                   the paper's unit verbatim, so `2.0` can be % or mg/kg, and
-                                  pivoting without normalising silently mixes scales.
+                                  pivoting without normalising silently mixes scales. It is
+                                  also nullable now (an additive named without a dose), which
+                                  is distinct from a zero.
   * `<indicator cols>`            one numeric column per Indicator, holding the measurement
                                   at that day. Sparse: papers report different days for
-                                  different indicators.
+                                  different indicators. Pivot on `Indicator.indicator_name`,
+                                  not `indicator_type` -- the latter is now a two-valued
+                                  category (microbial | chemical) and would fold every
+                                  microbial count into one column.
   * `duration` / `event`          the survival label. `duration` is the first day at which
                                   an indicator crosses `Indicator.indicator_threshold`;
                                   `event=1` when a crossing was observed, `event=0` when the

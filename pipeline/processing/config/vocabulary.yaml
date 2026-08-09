@@ -1,0 +1,728 @@
+units:
+  log CFU/g: [log cfu/g, log cfu g, log10 cfu/g, log cfu/ml, log cfu/cm2]
+  mg N/100 g: [mg n/100g, mg n/100 g, mg/100g, mgn/100g, mg n per 100 g]
+  mg MDA/kg: [mg mda/kg, mg mda per kg, mda/kg, mg malondialdehyde/kg]
+  meq O2/kg: [meq o2/kg, meq/kg, meq o2/kg fat, meq o2/kg oil]
+  CFU/plate: [cfu/plate, cfu per plate]
+  "%": [percent, "% (w/w)", w/w %, percentage]
+  pH: [ph, ph units, ph value]
+  score: [sensory score, points]
+  ppm: [mg/l, µg/ml, ug/ml]
+
+discarded: [sensory score, sensory evaluation, sensory analysis, overall acceptability, overall acceptance,
+            acceptability, juiciness, tenderness, flavour, flavor, aroma, taste, odour, odor,
+            appearance, texture, hardness, chewiness, springiness, cohesiveness, gumminess,
+            colour, color, delta e, de, total colour difference, total color difference,
+            l value, a value, b value, whiteness, redness, yellowness, lightness, cooking loss,
+            cooking loss percentage, weight loss, drip loss, purge loss, water holding capacity,
+            whc]
+
+terms:
+  - name: Chicken fillet
+    kind: matrix
+    aliases: [chicken fillets, chicken breast fillet]
+
+  - name: Ground beef
+    kind: matrix
+    aliases: [minced beef, beef mince]
+
+  - name: Beef
+    kind: matrix
+    aliases: [beef meat]
+
+  - name: Chicken
+    kind: matrix
+    aliases: [chicken meat, poultry meat]
+
+  - name: Pork
+    kind: matrix
+    aliases: [pork meat, minced pork]
+
+  - name: Lamb
+    kind: matrix
+    aliases: [lamb meat, mutton]
+
+  - name: Fish fillet
+    kind: matrix
+    aliases: [fish fillets, carp fillets]
+
+  - name: Shrimp
+    kind: matrix
+    aliases: [prawn, shrimps, crevette]
+
+  - name: Total viable count
+    kind: indicator
+    unit: log CFU/g
+    threshold: 7.0
+    indicator_type: microbial
+    aliases: [tvc, tpc, tac, apc, total viable counts, total plate count, total bacterial count,
+              total bacteria count, aerobic plate count, total aerobic count,
+              aerobic mesophilic count, mesophilic count]
+
+  - name: Psychrotrophic bacteria count
+    kind: indicator
+    unit: log CFU/g
+    threshold: 7.0
+    indicator_type: microbial
+    aliases: [pbc, psy, psychrotrophic count, psychrotrophs]
+
+  - name: Lactic acid bacteria count
+    kind: indicator
+    unit: log CFU/g
+    indicator_type: microbial
+    aliases: [lab, labc, lactic acid bacteria]
+
+  - name: Enterobacteriaceae count
+    kind: indicator
+    unit: log CFU/g
+    indicator_type: microbial
+    aliases: [enterobacteriaceae, enterobacteria]
+
+  - name: Total coliform count
+    kind: indicator
+    unit: log CFU/g
+    indicator_type: microbial
+    aliases: [tcc, coliform count, total coliforms, coliforms]
+
+  - name: Escherichia coli count
+    kind: indicator
+    unit: log CFU/g
+    indicator_type: microbial
+    aliases: [e coli, e coli counts, escherichia coli, e coli o157 h7, e coli o157 h7 counts,
+              escherichia coli o157 h7 counts]
+
+  - name: Salmonella count
+    kind: indicator
+    unit: log CFU/g
+    indicator_type: microbial
+    aliases: [salmonella, salmonella counts, salmonella typhimurium counts,
+              salmonella enterica serovar typhimurium counts]
+
+  - name: Staphylococcus aureus count
+    kind: indicator
+    unit: log CFU/g
+    indicator_type: microbial
+    aliases: [s aureus, s aureus counts, staphylococcus aureus counts]
+
+  - name: Pseudomonas count
+    kind: indicator
+    unit: log CFU/g
+    indicator_type: microbial
+    aliases: [pseudomonas, pseudomonas spp, pseudomonas counts]
+
+  - name: Brochothrix thermosphacta count
+    kind: indicator
+    unit: log CFU/g
+    indicator_type: microbial
+    aliases: [b thermosphacta, brochothrix thermosphacta, brochothrix]
+
+  - name: Yeast and mould count
+    kind: indicator
+    unit: log CFU/g
+    indicator_type: microbial
+    aliases: [fungal count, yeast and mold count, yeasts and moulds, proteolytic fungal count,
+              lipolytic fungal count, mould count]
+
+  - name: Total volatile basic nitrogen
+    kind: indicator
+    unit: mg N/100 g
+    threshold: 25.0
+    indicator_type: chemical
+    aliases: [tvb n, tvbn, tvb, total volatile base nitrogen]
+
+  - name: Trimethylamine nitrogen
+    kind: indicator
+    unit: mg N/100 g
+    threshold: 15.0
+    indicator_type: chemical
+    aliases: [tma n, tman, tma, trimethylamine]
+
+  - name: Peroxide value
+    kind: indicator
+    unit: meq O2/kg
+    threshold: 10.0
+    indicator_type: chemical
+    aliases: [pv, peroxide values]
+
+  - name: Thiobarbituric acid reactive substances
+    kind: indicator
+    unit: mg MDA/kg
+    threshold: 2.0
+    indicator_type: chemical
+    aliases: [tbars, tba, tbars value, thiobarbituric acid]
+
+  - name: pH
+    kind: indicator
+    unit: pH
+    indicator_type: chemical
+    aliases: [ph value, ph values]
+
+  - name: Water activity
+    kind: indicator
+    unit: aw
+    indicator_type: chemical
+    aliases: [aw, a w]
+
+  - name: Hexanal content
+    kind: indicator
+    unit: ppm
+    indicator_type: chemical
+    aliases: [hc, hexanal]
+
+  - name: Conjugated diene value
+    kind: indicator
+    unit: absorbance
+    indicator_type: chemical
+    aliases: [e232, spectrophotometric indicies e232, conjugated dienes]
+
+  - name: Conjugated triene value
+    kind: indicator
+    unit: absorbance
+    indicator_type: chemical
+    aliases: [e270, spectrophotometric indicies e270, conjugated trienes]
+
+  - name: Thyme essential oil
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+    aliases: [teo, teo1, teo2, te0, thyme oil, thyme eo, thymus vulgaris oil, thyme leaves extract, thyme]
+
+  - name: Sage essential oil
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+    aliases: [seo, seo1, seo2, se0, seol, sage oil, sage, salvia officinalis oil]
+
+  - name: Oregano essential oil
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+    aliases: [oregano eo, organo eo, oregano oil, oregano extract, origanum vulgare oil]
+
+  - name: Clove essential oil
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+    aliases: [clove eo, clove oil, clove extract]
+
+  - name: Zataria multiflora essential oil
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+    aliases: [zataria multiflora oil, zataria eo, shirazi thyme oil]
+
+  - name: Turmeric essential oil
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+    aliases: [turmeric oil, curcuma oil]
+
+  - name: Rosemary essential oil
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+    aliases: [rosemary oil, oleroresin rosemary]
+
+  - name: Lemon essential oil
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+    aliases: [lemon oil]
+
+  - name: Lime essential oil
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+    aliases: [lime oil]
+
+  - name: Orange essential oil
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+    aliases: [orange oil]
+
+  - name: Carvacrol
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+    aliases: [carvacrol eo]
+
+  - name: Thymol
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+    aliases: [thymol eo]
+
+  - name: p-Cymene
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+    aliases: [p cymene, pcymene]
+
+  - name: α-Thujene
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+    aliases: [a thujene]
+
+  - name: α-Pinene
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+    aliases: [a pinene]
+
+  - name: β-Pinene
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+    aliases: [b pinene]
+
+  - name: Camphene
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+
+  - name: Camphor
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+
+  - name: Sabinene
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+
+  - name: Myrcene
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+    aliases: [myrecene, b myrcene]
+
+  - name: α-Terpinene
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+    aliases: [a terpinene]
+
+  - name: γ-Terpinene
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+    aliases: [g terpinene]
+
+  - name: α-Phellandrene
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+    aliases: [a phellandrene]
+
+  - name: β-Phellandrene
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+    aliases: [b phellandrene]
+
+  - name: Limonene
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+    aliases: [limonen, d limonene]
+
+  - name: Terpinolene
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+
+  - name: Linalool
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+
+  - name: Terpinen-4-ol
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+    aliases: [terpinene 4 ol]
+
+  - name: α-Terpineol
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+    aliases: [a terpineol]
+
+  - name: 1,8-Cineole
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+    aliases: [eucalyptol]
+
+  - name: 3-Octanone
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+
+  - name: Thymol methyl ether
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+
+  - name: Carvacrol methyl ether
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+
+  - name: Thymol acetate
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+
+  - name: Carvacrol acetate
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+
+  - name: β-Caryophyllene
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+    aliases: [b caryophyllene, e caryophyllene, caryophyllene]
+
+  - name: β-Bisabolene
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+    aliases: [b bisabolene]
+
+  - name: Spathulenol
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+
+  - name: Viridiflorene
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+
+  - name: Aromadendrene
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+
+  - name: Eugenol
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+
+  - name: Cinnamaldehyde
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+    aliases: [trans cinnamaldehyde]
+
+  - name: Menthol
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+
+  - name: Moringa oleifera leaves extract
+    kind: ingredient
+    functional_class: phenol
+    source: plant
+    aliases: [moringa extract, moringa oleifera extract, moringa, drumstick leaf,
+              dry drumstick flower moringa oleifera l]
+
+  - name: Rosemary extract
+    kind: ingredient
+    functional_class: phenol
+    source: plant
+    aliases: [rosemary, roremary, extract of rosemary, rosemary oil extract, rosemary water extract,
+              rosemary precooking, rosemary postcooking]
+
+  - name: Green tea extract
+    kind: ingredient
+    functional_class: phenol
+    source: plant
+    aliases: [tea polyphenol, tea polyphenols, tea catechins, green tea]
+
+  - name: Grape seed extract
+    kind: ingredient
+    functional_class: phenol
+    source: plant
+    aliases: [grape seed, activin, grape and blueberry]
+
+  - name: Grape pomace extract
+    kind: ingredient
+    functional_class: phenol
+    source: plant
+    aliases: [grape pomace extract 1, grape pomace extract 2]
+
+  - name: Pomegranate peel extract
+    kind: ingredient
+    functional_class: phenol
+    source: plant
+    aliases: [pomegranate fruit juice, pomegranate extract]
+
+  - name: Cranberry extract
+    kind: ingredient
+    functional_class: phenol
+    source: plant
+    aliases: [cranberry, cranberry pomace extracts]
+
+  - name: Lime extract
+    kind: ingredient
+    functional_class: phenol
+    source: plant
+    aliases: [lime]
+
+  - name: Garlic extract
+    kind: ingredient
+    functional_class: phenol
+    source: plant
+    aliases: [garlic]
+
+  - name: Olive leaf extract
+    kind: ingredient
+    functional_class: phenol
+    source: plant
+    aliases: [olive leaf, phenol extract from olive oil mill wastewater]
+
+  - name: Propolis extract
+    kind: ingredient
+    functional_class: phenol
+    source: animal
+    aliases: [ethanolic extract of propolis eep, eep, propolis]
+
+  - name: Ellagic acid
+    kind: ingredient
+    functional_class: phenol
+    source: plant
+
+  - name: Sesamol
+    kind: ingredient
+    functional_class: phenol
+    source: plant
+
+  - name: Pycnogenol
+    kind: ingredient
+    functional_class: phenol
+    source: plant
+
+  - name: Butylated hydroxytoluene
+    kind: ingredient
+    functional_class: phenol
+    source: other
+    aliases: [bht]
+
+  - name: Butylated hydroxyanisole
+    kind: ingredient
+    functional_class: phenol
+    source: other
+    aliases: [bha]
+
+  - name: Cacao bean husk powder
+    kind: ingredient
+    functional_class: phenol
+    source: plant
+    aliases: [cacao bean husk]
+
+  - name: Honeybush extract
+    kind: ingredient
+    functional_class: phenol
+    source: plant
+    aliases: [unfermented honeybush extract]
+
+  - name: Citrus peel extract
+    kind: ingredient
+    functional_class: phenol
+    source: plant
+
+  - name: Potato peel extract
+    kind: ingredient
+    functional_class: phenol
+    source: plant
+    aliases: [potato peel ethanol extract, potato peel water extract]
+
+  - name: Bee pollen
+    kind: ingredient
+    functional_class: phenol
+    source: animal
+    aliases: [lyophilized bee pollen]
+
+  - name: Lactic acid
+    kind: ingredient
+    functional_class: organic acid
+    source: microbial
+
+  - name: Peracetic acid
+    kind: ingredient
+    functional_class: organic acid
+    source: other
+    aliases: [acide peracetique, pa]
+
+  - name: Fumaric acid
+    kind: ingredient
+    functional_class: organic acid
+    source: other
+
+  - name: EDTA
+    kind: ingredient
+    functional_class: organic acid
+    source: other
+    aliases: [na2edta, disodium edta, ethylenediaminetetraacetic acid]
+
+  - name: Sodium benzoate
+    kind: ingredient
+    functional_class: organic acid
+    source: other
+
+  - name: Sodium ascorbate
+    kind: ingredient
+    functional_class: organic acid
+    source: other
+    aliases: [sodium erythorbate, ascorbate]
+
+  - name: Lemon juice
+    kind: ingredient
+    functional_class: organic acid
+    source: plant
+
+  - name: Nisin
+    kind: ingredient
+    functional_class: protein
+    source: microbial
+    aliases: [nisine, n5, n10]
+
+  - name: Brevibacillin
+    kind: ingredient
+    functional_class: protein
+    source: microbial
+    aliases: [brevibacilline, b5, b10]
+
+  - name: Lysozyme
+    kind: ingredient
+    functional_class: protein
+    source: animal
+    aliases: [lysozyme film]
+
+  - name: Lactoferrin
+    kind: ingredient
+    functional_class: protein
+    source: animal
+
+  - name: Whey protein concentrate
+    kind: ingredient
+    functional_class: protein
+    source: animal
+    aliases: [whey protein]
+
+  - name: Sodium caseinate
+    kind: ingredient
+    functional_class: protein
+    source: animal
+    aliases: [caseinate]
+
+  - name: Soy protein
+    kind: ingredient
+    functional_class: protein
+    source: plant
+    aliases: [soya protein]
+
+  - name: Chitosan
+    kind: ingredient
+    functional_class: carbohydrate
+    source: animal
+    aliases: [chitosane]
+
+  - name: Inulin
+    kind: ingredient
+    functional_class: fiber
+    source: plant
+
+  - name: Pea fibre
+    kind: ingredient
+    functional_class: fiber
+    source: plant
+    aliases: [pea fiber]
+
+  - name: Lemon fibre
+    kind: ingredient
+    functional_class: fiber
+    source: plant
+    aliases: [lemon fiber]
+
+  - name: Orange fibre
+    kind: ingredient
+    functional_class: fiber
+    source: plant
+    aliases: [orange fiber]
+
+  - name: Sodium chloride
+    kind: ingredient
+    functional_class: mineral
+    source: mineral
+    aliases: [nacl, salt, anodic nacl solution, cathodic nacl solution]
+
+  - name: Sodium tripolyphosphate
+    kind: ingredient
+    functional_class: mineral
+    source: mineral
+    aliases: [stpp]
+
+  - name: Sodium nitrate
+    kind: ingredient
+    functional_class: mineral
+    source: mineral
+    aliases: [nitrate]
+
+  - name: Sulphur dioxide
+    kind: ingredient
+    functional_class: mineral
+    source: mineral
+    aliases: [so2, sulfur dioxide]
+
+  - name: Chlorine dioxide
+    kind: ingredient
+    functional_class: mineral
+    source: mineral
+    aliases: [clo2]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Recognition rules for the two closed protocol vocabularies.
+#
+# The KEYS are the closed sets, declared in `shared.schemas.science` as TREATMENT_TYPES and
+# APPLICATION_METHODS -- they back CHECK constraints and pydantic Literals, so they cannot
+# live here. The PATTERNS are corpus data: they grow as papers are read, no constraint
+# references them, and tuning one is not a schema change.
+#
+# `test_vocabulary_keys_are_declared` asserts every key below is a member of its tuple, so
+# a typo fails the suite instead of silently never matching.
+#
+# Matching is substring, lowercased. Prefer stems ("irradiat", "pasteuri") over whole words
+# so a single entry covers the inflections a methods section actually uses.
+# ─────────────────────────────────────────────────────────────────────────────
+
+treatment_patterns:
+  High-pressure processing: [high pressure, high-pressure, hpp, hydrostatic pressure, mpa]
+  Irradiation: [irradiat, gamma ray, gamma-ray, kgy, e-beam, electron beam]
+  UV treatment: [uv-c, uv light, uv treatment, ultraviolet]
+  Ultrasound: [ultrasound, ultrasonic, sonicat]
+  Cold plasma: [cold plasma, atmospheric plasma, plasma treatment]
+  Ozone treatment: [ozone, ozonat, ozonis, ozoniz]
+  Electrolyzed water treatment: [electrolyzed water, electrolysed water, anodic, cathodic,
+                                 slightly acidic electrolyzed]
+  Water washing: [water wash, washed with water, rinsed with water, tap water rinse]
+  Surface trimming: [surface trimming, trimmed, trimming]
+  Heat treatment: [autoclav, blanch, pasteuri, precook, pre-cook, cooked, cooking, thermal
+                   treatment, boiled, boiling, fried, frying, sous vide]
+  Vacuum treatment: [vacuum tumbling, vacuum impregnat, vacuum drying]
+
+application_patterns:
+  Mixed: [added to, incorporat, blend, mixed with, mixing, homogeni, ground with,
+          film formulation]
+  Dipped: [dipp, dipping, dip treatment]
+  Sprayed: [spray]
+  Washed: [washing solution, washed in, rinse]
+  Coated: [coating, coated, edible film, film-forming, encapsulat]
+  Injected: [inject, brine injection]
+  Immersed: [immers, soak, submerg]
+  Vacuum-packed: [vacuum pack, vacuum-pack, vacuum packag]

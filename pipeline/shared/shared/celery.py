@@ -1,8 +1,11 @@
 """Shared Celery factory.
 
-Each service owns its own Celery app and task set (extraction: paper/food extraction;
-processing: trajectory fitting + export building) but they share one broker/result backend
-and the same serialization settings, so the config lives here rather than being duplicated.
+Each service owns its own Celery app and task set -- extraction parses documents,
+processing resolves them and builds datasets -- but they share one broker/result backend and
+the same serialization settings, so the config lives here rather than being duplicated.
+
+`processing.*` is wildcarded, so a new task named `processing.<x>` routes itself. The
+extraction entry is enumerated because there is only one.
 """
 
 import os
@@ -33,7 +36,6 @@ def make_celery(name: str) -> Celery:
         task_default_routing_key=name,
         task_routes={
             "extraction.workspace_extraction": {"queue": "extraction"},
-            "extraction.llm_ingestion": {"queue": "extraction"},
             "processing.*": {"queue": "processing"},
         },
     )

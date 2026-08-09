@@ -1,0 +1,350 @@
+matrices:
+  chicken:   {moisture_percent: 74.8, protein_percent: 22.5, fat_percent: 2.6,   salt_percent: 0.18, ph: 5.9, water_activity: 0.99}
+  pork:      {moisture_percent: 72.0, protein_percent: 20.9, fat_percent: 6.3,   salt_percent: 0.15, ph: 5.7, water_activity: 0.99}
+  beef:      {moisture_percent: 71.7, protein_percent: 21.4, fat_percent: 6.5,   salt_percent: 0.16, ph: 5.6, water_activity: 0.99}
+  lamb:      {moisture_percent: 73.4, protein_percent: 20.3, fat_percent: 5.3,   salt_percent: 0.18, ph: 5.8, water_activity: 0.99}
+  goat:      {moisture_percent: 75.8, protein_percent: 20.6, fat_percent: 2.3,   salt_percent: 0.20, ph: 5.9, water_activity: 0.99}
+  fish:      {moisture_percent: 76.3, protein_percent: 17.8, fat_percent: 5.6,   salt_percent: 0.12, ph: 6.4, water_activity: 0.99}
+  horse mackerel: {moisture_percent: 74.4, protein_percent: 20.1, fat_percent: 4.8, salt_percent: 0.19, ph: 6.3, water_activity: 0.99}
+  shrimp:    {moisture_percent: 79.0, protein_percent: 20.1, fat_percent: 0.5,   salt_percent: 0.30, ph: 7.2, water_activity: 0.99}
+  lard:      {moisture_percent: 0.2,  protein_percent: 0.0,  fat_percent: 100.0, salt_percent: 0.0,  ph: 6.0, water_activity: 0.30}
+  mixed:     {moisture_percent: 72.5, protein_percent: 21.6, fat_percent: 5.1,   salt_percent: 0.16, ph: 5.7, water_activity: 0.99}
+
+ingredients:
+  control:
+    functional_class: unclassified
+    source_category: unknown
+    aliases: [control, no ingredient, eau sterile]
+  carvacrol:
+    functional_class: phenol
+    source_category: plant
+    molecular_weight: 150.22
+    logp: 3.3
+    pka: 10.4
+    hbd_count: 1
+    hba_count: 1
+    aliases: [carvacrol, carvacrol eo]
+  thymol:
+    functional_class: phenol
+    source_category: plant
+    molecular_weight: 150.22
+    logp: 3.3
+    pka: 10.6
+    hbd_count: 1
+    hba_count: 1
+    aliases: [thymol, thymol eo]
+  sesamol:
+    functional_class: phenol
+    source_category: plant
+    molecular_weight: 138.12
+    logp: 1.3
+    pka: 9.4
+    hbd_count: 1
+    hba_count: 3
+    aliases: [sesamol]
+  ellagic acid:
+    functional_class: phenol
+    source_category: plant
+    molecular_weight: 302.19
+    logp: 1.1
+    pka: 5.4
+    hbd_count: 4
+    hba_count: 8
+    aliases: [ellagic acid]
+  tea catechins:
+    functional_class: phenol
+    source_category: plant
+    molecular_weight: 458.37
+    logp: 1.2
+    pka: 7.75
+    hbd_count: 8
+    hba_count: 11
+    aliases: [tea catechins, tea catechin, tea polyphenol, tea polyphenols, green tea extract, epigallocatechin]
+  lutein:
+    functional_class: phenol
+    source_category: plant
+    molecular_weight: 568.87
+    logp: 7.9
+    hbd_count: 2
+    hba_count: 2
+    aliases: [lutein]
+  alpha-tocopherol:
+    functional_class: phenol
+    source_category: plant
+    molecular_weight: 430.71
+    logp: 10.7
+    pka: 12.1
+    hbd_count: 1
+    hba_count: 2
+    aliases: [alpha-tocopherol, "α-tocopherol", tocopherols, natural tocopherols, vitamin e, tocopherol]
+  bha:
+    functional_class: phenol
+    source_category: other
+    molecular_weight: 180.24
+    logp: 3.5
+    pka: 10.9
+    hbd_count: 1
+    hba_count: 2
+    aliases: [bha, butylated hydroxyanisole]
+  bht:
+    functional_class: phenol
+    source_category: other
+    molecular_weight: 220.35
+    logp: 5.1
+    pka: 12.2
+    hbd_count: 1
+    hba_count: 1
+    aliases: [bht, butylated hydroxytoluene]
+  edta:
+    functional_class: organic acid
+    source_category: other
+    molecular_weight: 292.24
+    logp: -3.86
+    pka: 2.0
+    hbd_count: 4
+    hba_count: 10
+    aliases: [edta, na2edta, disodium edta]
+  lactic acid:
+    functional_class: organic acid
+    source_category: microbial
+    molecular_weight: 90.08
+    logp: -0.72
+    pka: 3.86
+    hbd_count: 2
+    hba_count: 3
+    aliases: [lactic acid]
+  fumaric acid:
+    functional_class: organic acid
+    source_category: plant
+    molecular_weight: 116.07
+    logp: 0.05
+    pka: 3.03
+    hbd_count: 2
+    hba_count: 4
+    aliases: [fumaric acid]
+  peracetic acid:
+    functional_class: organic acid
+    source_category: other
+    molecular_weight: 76.05
+    logp: -0.6
+    pka: 8.2
+    hbd_count: 1
+    hba_count: 3
+    aliases: [peracetic acid, acide peracetique]
+  sodium benzoate:
+    functional_class: organic acid
+    source_category: other
+    molecular_weight: 144.10
+    logp: -2.27
+    pka: 4.20
+    hbd_count: 0
+    hba_count: 2
+    aliases: [sodium benzoate]
+  sodium ascorbate:
+    functional_class: organic acid
+    source_category: plant
+    molecular_weight: 198.11
+    logp: -1.85
+    pka: 4.17
+    hbd_count: 3
+    hba_count: 6
+    aliases: [sodium ascorbate, ascorbic acid]
+  sodium erythorbate:
+    functional_class: organic acid
+    source_category: microbial
+    molecular_weight: 198.11
+    logp: -1.85
+    pka: 4.17
+    hbd_count: 3
+    hba_count: 6
+    aliases: [sodium erythorbate]
+  sodium chloride:
+    functional_class: mineral
+    source_category: other
+    molecular_weight: 58.44
+    hbd_count: 0
+    hba_count: 0
+    aliases: [sodium chloride, nacl, anodic nacl solution, cathodic nacl solution, salt]
+  chlorine dioxide:
+    functional_class: mineral
+    source_category: other
+    molecular_weight: 67.45
+    logp: 0.74
+    hbd_count: 0
+    hba_count: 2
+    aliases: [chlorine dioxide]
+  sulphur dioxide:
+    functional_class: mineral
+    source_category: other
+    molecular_weight: 64.07
+    logp: 0.30
+    pka: 1.86
+    hbd_count: 0
+    hba_count: 2
+    aliases: [so2, sulphur dioxide, sulfur dioxide]
+  nitrate:
+    functional_class: mineral
+    source_category: other
+    molecular_weight: 84.99
+    hbd_count: 0
+    hba_count: 3
+    aliases: [nitrate, sodium nitrate]
+  stpp:
+    functional_class: mineral
+    source_category: other
+    molecular_weight: 367.86
+    hbd_count: 0
+    hba_count: 10
+    aliases: [stpp, sodium tripolyphosphate]
+  nisin:
+    functional_class: protein
+    source_category: microbial
+    molecular_weight: 3354.07
+    aliases: [nisin, nisine]
+  brevibacillin:
+    functional_class: protein
+    source_category: microbial
+    molecular_weight: 1583.90
+    aliases: [brevibacillin, brevibacilline]
+  lysozyme:
+    functional_class: protein
+    source_category: animal
+    molecular_weight: 14300.0
+    aliases: [lysozyme, lysozym, lysozyme (film), lysozyme (no film)]
+  lactoferrin:
+    functional_class: protein
+    source_category: animal
+    molecular_weight: 80000.0
+    aliases: [lactoferrin]
+  chitosan:
+    functional_class: carbohydrate
+    source_category: animal
+    aliases: [chitosan]
+  sodium caseinate:
+    functional_class: protein
+    source_category: other
+    aliases: [sodium caseinate, caseinate]
+  whey protein:
+    functional_class: protein
+    source_category: other
+    aliases: [whey protein, whey protein concentrate]
+  soy protein:
+    functional_class: protein
+    source_category: plant
+    aliases: [soy protein, soya protein, texturized soy, texturized soya]
+  sunflower lecithin:
+    functional_class: unclassified
+    source_category: plant
+    aliases: [sunflower lecithin, lecithin]
+  pea fibre:
+    functional_class: fiber
+    source_category: plant
+    aliases: [pea fibre, pea fiber]
+  citrus fibre:
+    functional_class: fiber
+    source_category: plant
+    aliases: [orange fiber, lemon fiber, citrus fiber]
+  rosemary:
+    functional_class: essential oil
+    source_category: plant
+    aliases: [rosemary, roremary, rosemary extract, rosemary oil, oleroresin rosemary, extract of rosemary, rosemary water extract, rosemary oil extract]
+  oregano:
+    functional_class: essential oil
+    source_category: plant
+    aliases: [oregano eo, organo eo, oregano oil, oregano extract, oregano]
+  thyme:
+    functional_class: essential oil
+    source_category: plant
+    aliases: [thyme, thyme oil, thyme eo, thyme leaves extract, zataria multiflora essential oil]
+  clove:
+    functional_class: essential oil
+    source_category: plant
+    aliases: [clove eo, clove extract, clove oil, clove]
+  turmeric:
+    functional_class: essential oil
+    source_category: plant
+    aliases: [turmeric oil, tumeric oil, turmeric]
+  citrus oil:
+    functional_class: essential oil
+    source_category: plant
+    aliases: [lime oil, lemon oil, orange oil, citrus peel extract, citrus leaf extract]
+  sage:
+    functional_class: essential oil
+    source_category: plant
+    aliases: [sage]
+  mint:
+    functional_class: essential oil
+    source_category: plant
+    aliases: [mint leaf, mint leaf extract]
+  cinnamon:
+    functional_class: essential oil
+    source_category: plant
+    aliases: [cinnamon stick extract, cinnamon]
+  galangal:
+    functional_class: essential oil
+    source_category: plant
+    aliases: [galangal]
+  fenugreek:
+    functional_class: phenol
+    source_category: plant
+    aliases: [fenugreek]
+  ginseng:
+    functional_class: phenol
+    source_category: plant
+    aliases: [ginseng]
+  mustard:
+    functional_class: phenol
+    source_category: plant
+    aliases: [mustard]
+  aloe vera:
+    functional_class: carbohydrate
+    source_category: plant
+    aliases: [aloe vera]
+  grape extract:
+    functional_class: phenol
+    source_category: plant
+    aliases: [grape extract, grape seed extract, grape pomace extract, grape and blueberry, activin, pycnogenol]
+  pomegranate:
+    functional_class: phenol
+    source_category: plant
+    aliases: [pomegranate fruit juice, pomegranate peel extract, pomegranate]
+  cranberry:
+    functional_class: phenol
+    source_category: plant
+    aliases: [cranberry, cranberry pomace extracts]
+  olive polyphenols:
+    functional_class: phenol
+    source_category: plant
+    aliases: [olive leaf, phenol extract from olive oil mill wastewater]
+  propolis:
+    functional_class: phenol
+    source_category: other
+    aliases: [ethanolic extract of propolis (eep), propolis, lyophilized bee pollen]
+  honeybush:
+    functional_class: phenol
+    source_category: plant
+    aliases: [honeybush extract, unfermented honeybush extract]
+  cacao husk:
+    functional_class: phenol
+    source_category: plant
+    aliases: [cacao bean husk powder]
+  potato peel extract:
+    functional_class: phenol
+    source_category: plant
+    aliases: [potato peel water extract, potato peel ethanol extract]
+  quinoa:
+    functional_class: carbohydrate
+    source_category: plant
+    aliases: [black quinoa seeds, quinoa seeds, black quinoa wet-milling coproducts, quinoa wet milling coproducts]
+  moringa:
+    functional_class: phenol
+    source_category: plant
+    aliases: [dry drumstick flower (moringa oleifera l.), drumstick leaf, curry leaf]
+  lemon juice:
+    functional_class: organic acid
+    source_category: plant
+    aliases: [lemon juice, lime extract]
+  garlic extract:
+    functional_class: phenol
+    source_category: plant
+    aliases: [garlic extract]

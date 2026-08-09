@@ -8,7 +8,7 @@ from typing import Optional
 from sqlalchemy.orm import Session, selectinload
 
 from shared.config import get_extraction_settings
-from shared.db.models import AssetContextLink, ExtractionAsset, Job
+from shared.db.models import AssetContextLink, DoclingCache, ExtractionAsset, Job
 
 _settings = get_extraction_settings()
 
@@ -115,6 +115,17 @@ def all_for_paper_with_links(db: Session, paper_id: int) -> list[ExtractionAsset
     )
 
 
+def all_for_paper(db: Session, paper_id: int) -> list[ExtractionAsset]:
+    """Every asset for a paper, without its links. Use when only the row is needed --
+    stamping a gate verdict does not walk `context_links`, and eager-loading them is a
+    second query per hundred assets for nothing."""
+    return (
+        db.query(ExtractionAsset)
+        .filter(ExtractionAsset.paper_id == paper_id)
+        .all()
+    )
+
+
 def count_for_paper(db: Session, paper_id: int) -> int:
     return db.query(ExtractionAsset).filter(ExtractionAsset.paper_id == paper_id).count()
 
@@ -141,6 +152,23 @@ def delete_for_paper(db: Session, paper_id: int) -> None:
 #: than splatting blind means a linker that adds a transport-only key (a `same_page` flag, a
 #: debug score) can no longer take down the whole extraction with a TypeError.
 _LINK_FIELDS = frozenset({"link_type", "text", "item_ref", "page_number", "score"})
+
+
+def set_silver_package(db: Session, file_hash: str, path: str) -> None:
+    """Record where the gated package for this parse was staged.
+
+    Keyed on the file hash, like the Docling cache it sits beside, so re-uploading the same
+    paper into another project finds the work already done. Absent cache row is not an
+    error: the ingestion job recomputes Silver from the cached parse.
+    """
+    cache = db.query(DoclingCache).filter(DoclingCache.file_hash == file_hash).first()
+    if cache is not None:
+        cache.silver_package_path = path
+
+
+def silver_package_path(db: Session, file_hash: str) -> Optional[str]:
+    cache = db.query(DoclingCache).filter(DoclingCache.file_hash == file_hash).first()
+    return cache.silver_package_path if cache else None
 
 
 def add_context_links(db: Session, asset_id: int, link_dicts: list[dict]) -> None:

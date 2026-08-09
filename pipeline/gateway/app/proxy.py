@@ -35,15 +35,18 @@ _common = get_common_settings()
 #: Path roots owned by each domain service. A path matching neither is a 404 here rather
 #: than being forwarded somewhere that would also not understand it.
 #:
-#: Processing owns no bare roots any more. It used to own ten -- studies, observations,
-#: trajectories, thresholds and the rest -- backing a second scientific hierarchy that has
-#: since been deleted; everything it serves now hangs off a project.
-PROCESSING_ROOTS: frozenset[str] = frozenset()
-EXTRACTION_ROOTS = frozenset({"schema", "chart2table", "evidence"})
-EXTRACTION_PROJECT_SUBS = frozenset({
-    "papers", "assets", "experiments", "ingredients", "indicators",
+#: Extraction reads documents; processing owns the science. The scientific reads moved with
+#: the code that produces them, which is why `experiments`, `ingredients`, `indicators` and
+#: `evidence` sit on the processing side.
+PROCESSING_ROOTS = frozenset({"evidence", "reference"})
+EXTRACTION_ROOTS = frozenset({"schema", "chart2table"})
+EXTRACTION_PROJECT_SUBS = frozenset({"papers", "assets"})
+#: `ingestion` rather than `papers/{id}/ingest`: `_target_for` keys on the third segment,
+#: and `papers` already belongs to extraction. One URL cannot be owned by two services.
+PROCESSING_PROJECT_SUBS = frozenset({
+    "dataset", "prediction", "experiments", "ingredients", "indicators",
+    "ingestion", "reference",
 })
-PROCESSING_PROJECT_SUBS = frozenset({"dataset", "prediction"})
 
 #: Requests whose authentication is a URL signature rather than a bearer token.
 SIGNED_ASSET_SUFFIXES = ("/image", "/page-image", "/csv", "/thumbnail")

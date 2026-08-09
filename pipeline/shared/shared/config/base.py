@@ -39,9 +39,18 @@ class CommonSettings(BaseSettings):
     #: Root for all user-supplied and generated files. Relative resolves against BASE_DIR.
     STORAGE_DIR: str = "uploads"
 
+    #: Where extraction stages a paper's gated package and processing reads it back. Common
+    #: rather than per-service precisely because two services must agree on it: it is the
+    #: one file that crosses the extraction/processing boundary.
+    SILVER_CACHE_DIR: str = "silver_cache"
+
     @property
     def storage_root(self) -> Path:
         return storage_path(self.STORAGE_DIR)
+
+    @property
+    def silver_cache_path(self) -> Path:
+        return storage_subpath(self.SILVER_CACHE_DIR)
 
     @property
     def is_sqlite(self) -> bool:

@@ -20,7 +20,6 @@ from shared.schemas.papers import PaperOut
 from shared.uow import unit_of_work
 
 from app.repositories import paper_repo
-from app.services.pdf_extractor import extract_full_text
 
 logger = logging.getLogger(__name__)
 
@@ -74,17 +73,6 @@ def get_paper(db: Session, paper: Paper) -> PaperOut:
     return _to_out(paper, counts.get(paper.id, {}))
 
 
-def _page_count(path: Path) -> int:
-    """Best-effort page count. A PDF we cannot page-count is still worth storing --
-    Docling gets a second, more capable attempt at parse time."""
-    try:
-        _, page_count = extract_full_text(str(path))
-        return page_count
-    except Exception:
-        logger.warning("Could not read a page count from %s", path.name, exc_info=True)
-        return 0
-
-
 def upload_papers(db: Session, project_id: int, files: list[UploadedFile]) -> list[PaperOut]:
     """Validate, store and register a batch of PDFs."""
     if not files:
@@ -127,7 +115,10 @@ def upload_papers(db: Session, project_id: int, files: list[UploadedFile]) -> li
                         original_name=file.filename,
                         file_path=str(destination),
                         file_hash=file_hash,
-                        page_count=_page_count(destination),
+                        # Filled by the workspace job from the Docling parse. Reading it at
+                        # upload meant a second PDF library for one integer the parse then
+                        # overwrote.
+                        page_count=0,
                         status="uploaded",
                     ),
                 )

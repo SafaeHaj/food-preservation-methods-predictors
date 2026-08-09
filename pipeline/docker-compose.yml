@@ -6,22 +6,55 @@ x-common-env: &common-env
   ENVIRONMENT: ${ENVIRONMENT:-development}
   CELERY_BROKER_URL: redis://redis:6379/0
   CELERY_RESULT_BACKEND: redis://redis:6379/1
+  # Where extraction stages a paper's gated package and processing reads it back.
+  SILVER_CACHE_DIR: ${SILVER_CACHE_DIR:-silver_cache}
 
 x-extraction-env: &extraction-env
-  EXTRACTION_LLM_PROVIDER: ${EXTRACTION_LLM_PROVIDER:-ollama}
-  EXTRACTION_OLLAMA_BASE_URL: ${EXTRACTION_OLLAMA_BASE_URL:-http://ollama:11434/v1}
-  EXTRACTION_OLLAMA_MODEL: ${EXTRACTION_OLLAMA_MODEL:-llama3.2:3b}
-  EXTRACTION_GROQ_API_KEY: ${EXTRACTION_GROQ_API_KEY:-}
-  EXTRACTION_GROQ_FOOD_MODEL: ${EXTRACTION_GROQ_FOOD_MODEL:-llama-3.3-70b-versatile}
+  # Extraction reads documents: Docling, PP-Chart2Table and the schema gate. No LLM, no
+  # vocabulary -- both moved to the processing service with the code that uses them.
+  # The schema gate.
+  EXTRACTION_REQUIRE_FIGURE_DATA: ${EXTRACTION_REQUIRE_FIGURE_DATA:-1}
+  EXTRACTION_TABLE_STRUCTURE: ${EXTRACTION_TABLE_STRUCTURE:-1}
+  EXTRACTION_TABLE_STRUCTURE_MODE: ${EXTRACTION_TABLE_STRUCTURE_MODE:-fast}
+  EXTRACTION_IMAGES_SCALE: ${EXTRACTION_IMAGES_SCALE:-1.5}
+  EXTRACTION_CHART_BATCH_SIZE: ${EXTRACTION_CHART_BATCH_SIZE:-8}
+  EXTRACTION_CHART_MAX_PIXELS: ${EXTRACTION_CHART_MAX_PIXELS:-1024}
+  EXTRACTION_FIGURE_CONTEXT_CHARS: ${EXTRACTION_FIGURE_CONTEXT_CHARS:-1200}
   EXTRACTION_MAX_UPLOAD_SIZE_MB: ${EXTRACTION_MAX_UPLOAD_SIZE_MB:-50}
   EXTRACTION_MAX_PAPERS_PER_UPLOAD: ${EXTRACTION_MAX_PAPERS_PER_UPLOAD:-10}
-  EXTRACTION_PAGE_RENDER_ZOOM: ${EXTRACTION_PAGE_RENDER_ZOOM:-1.5}
-  EXTRACTION_DOCLING_CACHE_VERSION: ${EXTRACTION_DOCLING_CACHE_VERSION:-1}
+  EXTRACTION_DOCLING_CACHE_VERSION: ${EXTRACTION_DOCLING_CACHE_VERSION:-3}
   EXTRACTION_AUTO_SELECT_MIN_SCORE: ${EXTRACTION_AUTO_SELECT_MIN_SCORE:-3.0}
   EXTRACTION_AUTO_SELECT_MIN_TABLE_SCORE: ${EXTRACTION_AUTO_SELECT_MIN_TABLE_SCORE:-1.0}
   STORAGE_DIR: /app/uploads
 
 x-processing-env: &processing-env
+  # Which model answers, and how. Switching to a paid API is LLM_PROVIDER plus its key;
+  # model and base URL default per provider (processing/app/services/llm/registry.py).
+  PROCESSING_LLM_PROVIDER: ${PROCESSING_LLM_PROVIDER:-ollama}
+  PROCESSING_LLM_MODEL: ${PROCESSING_LLM_MODEL:-}
+  PROCESSING_LLM_BASE_URL: ${PROCESSING_LLM_BASE_URL:-}
+  PROCESSING_LLM_TEMPERATURE: ${PROCESSING_LLM_TEMPERATURE:-0.0}
+  PROCESSING_LLM_MAX_OUTPUT_TOKENS: ${PROCESSING_LLM_MAX_OUTPUT_TOKENS:-0}
+  PROCESSING_LLM_TIMEOUT_SECONDS: ${PROCESSING_LLM_TIMEOUT_SECONDS:-600}
+  PROCESSING_LLM_RETRIES: ${PROCESSING_LLM_RETRIES:-3}
+  PROCESSING_LLM_RETRY_BACKOFF: ${PROCESSING_LLM_RETRY_BACKOFF:-2.0}
+  PROCESSING_LLM_JSON_SCHEMA: ${PROCESSING_LLM_JSON_SCHEMA:-0}
+  PROCESSING_LLM_REASONING: ${PROCESSING_LLM_REASONING:-true}
+  PROCESSING_LLM_CACHE_ENABLED: ${PROCESSING_LLM_CACHE_ENABLED:-1}
+  PROCESSING_LLM_MAX_PROMPT_CHARS: ${PROCESSING_LLM_MAX_PROMPT_CHARS:-24000}
+  PROCESSING_OPENAI_API_KEY: ${PROCESSING_OPENAI_API_KEY:-}
+  PROCESSING_ANTHROPIC_API_KEY: ${PROCESSING_ANTHROPIC_API_KEY:-}
+  PROCESSING_GEMINI_API_KEY: ${PROCESSING_GEMINI_API_KEY:-}
+  PROCESSING_GROQ_API_KEY: ${PROCESSING_GROQ_API_KEY:-}
+  PROCESSING_OLLAMA_BASE_URL: ${PROCESSING_OLLAMA_BASE_URL:-http://ollama:11434}
+  PROCESSING_OLLAMA_MODEL: ${PROCESSING_OLLAMA_MODEL:-llama3.2:3b}
+  PROCESSING_OLLAMA_NUM_CTX: ${PROCESSING_OLLAMA_NUM_CTX:-16384}
+  PROCESSING_OLLAMA_NUM_PREDICT: ${PROCESSING_OLLAMA_NUM_PREDICT:-0}
+  PROCESSING_OLLAMA_KEEP_ALIVE: ${PROCESSING_OLLAMA_KEEP_ALIVE:--1}
+  # The controlled vocabulary and normalisation.
+  PROCESSING_VOCABULARY_PATH: ${PROCESSING_VOCABULARY_PATH:-}
+  PROCESSING_SECTION_SCAN_CHARS: ${PROCESSING_SECTION_SCAN_CHARS:-2000}
+  PROCESSING_CLASSIFY_WITH_LLM: ${PROCESSING_CLASSIFY_WITH_LLM:-1}
   PROCESSING_PREDICTION_SERVICE_URL: http://prediction:8100
   PROCESSING_PREDICTION_TIMEOUT_SECONDS: ${PROCESSING_PREDICTION_TIMEOUT_SECONDS:-600}
   STORAGE_DIR: /app/uploads
@@ -57,6 +90,15 @@ services:
     image: ollama/ollama:latest
     expose:
       - "11434"
+    environment:
+      # Must be >= processing-worker's --concurrency, or concurrent ingestions serialise
+      # behind one slot and each still carries the full LLM timeout.
+      OLLAMA_NUM_PARALLEL: ${OLLAMA_NUM_PARALLEL:-2}
+      # One model, resident, with a quantised KV cache: the difference between ~20 tok/s
+      # and ~4 is whether the weights fit in VRAM.
+      OLLAMA_MAX_LOADED_MODELS: 1
+      OLLAMA_FLASH_ATTENTION: 1
+      OLLAMA_KV_CACHE_TYPE: q8_0
     volumes:
       - ollama_models:/root/.ollama
     healthcheck:
@@ -73,7 +115,7 @@ services:
         condition: service_healthy
     environment:
       OLLAMA_HOST: http://ollama:11434
-    entrypoint: ["/bin/sh", "-c", "ollama pull ${EXTRACTION_OLLAMA_MODEL:-llama3.2:3b}"]
+    entrypoint: ["/bin/sh", "-c", "ollama pull ${PROCESSING_OLLAMA_MODEL:-llama3.2:3b}"]
     restart: "no"
 
   volume-init:
@@ -148,6 +190,11 @@ services:
       - ./processing:/app
       - ./shared:/shared
       - uploads:/app/uploads
+      # Extraction packages produced on another machine, for `app.cli import-packages`.
+      # Read-only: the importer stamps `package_version` into a package written before that
+      # field existed, and a corpus is worth failing loudly over rather than rewriting from
+      # inside a container. Stamp it once from the host, deliberately.
+      - ../data/extracted:/app/extracted:ro
     command: uvicorn app.main:app --host 0.0.0.0 --port 8002 --reload
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8002/health')"]
@@ -208,8 +255,6 @@ services:
         condition: service_healthy
       volume-init:
         condition: service_completed_successfully
-      ollama-pull:
-        condition: service_completed_successfully
 
   processing-worker:
     build:
@@ -221,6 +266,7 @@ services:
       - ./processing:/app
       - ./shared:/shared
       - uploads:/app/uploads
+      - ../data/extracted:/app/extracted:ro
     user: "1000:1000"
     command: celery -A app.tasks worker -Q processing --loglevel=info --concurrency=2
     healthcheck:
@@ -235,6 +281,8 @@ services:
       redis:
         condition: service_healthy
       volume-init:
+        condition: service_completed_successfully
+      ollama-pull:
         condition: service_completed_successfully
 
   frontend:

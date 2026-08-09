@@ -33,9 +33,10 @@ workers, never in an API container. The gateway is the sole migration writer: it
 | Database | PostgreSQL 16 (shared), Alembic migrations in `shared/alembic` |
 | Async work | Celery + Redis |
 | Auth | JWT (gateway only) + `INTERNAL_SECRET` between services |
-| PDF structure | Docling (figures, tables, captions); PyMuPDF renders page previews |
+| PDF structure | Docling (figures, tables, captions, page images) |
 | Charts | PP-Chart2Table (figure → CSV) |
-| LLM extraction | Groq (`llama-3.3-70b-versatile` by default) |
+| Data extraction | A deterministic schema gate + controlled vocabulary; see below |
+| LLM | Ollama by default; OpenAI / Anthropic / Groq / Gemini by config |
 | Modelling | Weibull-AFT / RSF / GBS, plus R `frailtypack` shared-frailty |
 
 ---
@@ -84,9 +85,44 @@ Two values have no working default:
 Anything omitted falls back to the default declared on the matching class in
 `shared/shared/config/`.
 
-Without `EXTRACTION_GROQ_API_KEY` the pipeline still runs Docling parsing, asset extraction
-and chart conversion; it stops at the LLM step and reports that extraction is not
-configured, rather than failing opaquely.
+### The LLM is not where the numbers come from
+
+A deterministic **schema gate** decides which tables and figures hold a data series, a
+**controlled vocabulary** (`extraction/config/vocabulary.yaml`) resolves every name and
+unit, and the backend assembles and validates each record. The model is asked for exactly
+two things:
+
+* `treatment` and `weight_g`, which exist only as prose in a methods section;
+* which column is the axis, on a table the gate could not key — a *column name*, never a
+  value, fed back into the gate so it re-reads the table itself.
+
+Two consequences worth knowing. With no provider configured the pipeline still produces
+every measurement, ingredient, indicator and dose; it loses only the protocol prose. And
+changing provider cannot change a number — `extraction/tests/test_pipeline.py` asserts
+exactly that.
+
+### Switching to a paid API
+
+Two lines in `.env`, because model and base URL default per provider:
+
+```bash
+EXTRACTION_LLM_PROVIDER=anthropic     # ollama | openai | anthropic | groq | gemini
+EXTRACTION_ANTHROPIC_API_KEY=sk-ant-…
+```
+
+`GET /health` on the extraction service reports which model would answer and whether it is
+reachable, so a switch is verifiable without running a paper through.
+
+Adding a fifth provider is one file in `extraction/app/services/llm/providers/` and one row
+in `registry.PROVIDER_DEFAULTS`. No pipeline module names a vendor.
+
+### Changing the schema
+
+`shared/shared/schemas/science.py` is the single edit point: the controlled vocabularies
+and the Pydantic records both live there, and `shared/db/models.py` builds its `CHECK`
+constraints from the same tuples. Editing a vocabulary means writing an Alembic revision
+that resyncs those constraints — `shared/tests/test_check_constraints.py` fails on the same
+commit if you forget, because `alembic --autogenerate` cannot detect CHECK drift.
 
 ---
 
@@ -97,7 +133,9 @@ configured, rather than failing opaquely.
        ↓
 2. Upload PDFs
        ↓
-3. Docling extraction  — figures, tables, captions and context links into the workspace
+3. Docling extraction  — figures, tables, captions and context links into the workspace,
+                         then the schema gate decides which of them hold a data series
+                         (`GET .../gate-report` says what it decided about each, and why)
        ↓
 4. Extracted Data      — see what came out, across every paper in the project
        ↓
@@ -121,13 +159,17 @@ everything downstream reads.
 ```
 pipeline/
 ├── gateway/            # :8000 — auth, projects, members, jobs (SSE), audit; proxies the rest
-├── extraction/         # :8001 — papers, Docling workspace, assets, LLM ingestion
-│   └── app/services/   #   docling_pipeline, context_linker, chart_converter, evidence_*
+├── extraction/         # :8001 — papers, Docling workspace, assets, the medallion pipeline
+│   ├── app/services/silver/   # clean, gate, convert charts, resolve names — no LLM, no SQL
+│   ├── app/services/gold/     # assemble validated records, ask for the two prose fields
+│   ├── app/services/llm/      # the one provider seam; providers/ holds one file each
+│   └── config/vocabulary.yaml # the controlled vocabulary: data, not code
 ├── processing/         # :8002 — flattens the scientific schema into a training dataset,
 │                       #         and drives prediction. Dataset builder is still a stub.
 ├── prediction/         # :8100 — survival engines (Weibull-AFT / RSF / GBS) + R frailtypack.
 │                       #         Standalone: its own DB and models, no `shared` dependency.
 ├── shared/             # installed into gateway/extraction/processing as `shared`
+│   ├── shared/schemas/science.py  # THE schema seam: vocabularies + records, one edit point
 │   ├── shared/db/models.py    # platform + scientific schema (FK deletion policy documented here)
 │   ├── shared/config/         # per-service settings classes
 │   ├── shared/auth.py         # X-User-Id resolution + internal-secret guard

@@ -1,8 +1,9 @@
-"""Extraction-service settings: uploads, Docling, chart conversion, LLM ingestion.
+"""Extraction-service settings: uploads, Docling, chart conversion, the schema gate.
 
-Fields here replace values that were previously literals inside route and service modules
-(relevance thresholds, the page-render zoom, the Groq base URL, CSV read chunk sizes), so
-tuning the pipeline no longer means editing source.
+Extraction reads documents. It has no LLM settings and no vocabulary path any more -- both
+moved to `ProcessingSettings` with the code that uses them, so a provider or a term is
+configured on the service that calls it rather than on the one that happens to have parsed
+the PDF.
 """
 
 from __future__ import annotations
@@ -37,50 +38,57 @@ class ExtractionSettings(BaseSettings):
     #: created happily, unshared and discarded on every recreate.
     DOCLING_CACHE_DIR: str = "docling_cache"
     CHART_CACHE_DIR: str = "chart_cache"
-    #: Bump to invalidate every cached extraction after a pipeline change.
-    DOCLING_CACHE_VERSION: str = "1"
+    #: Bump to invalidate every cached extraction after a pipeline change. At "3": text
+    #: items gained heading structure and reading order, and the parse now carries its own
+    #: page images. An older cache loads without error and is silently missing both.
+    DOCLING_CACHE_VERSION: str = "3"
 
-    #: PyMuPDF render scale for page previews. 1.5 ≈ 108 DPI: legible in the workspace
-    #: without producing multi-megabyte PNGs for every page of every paper.
-    PAGE_RENDER_ZOOM: float = 1.5
+    #: Docling's table-structure model. `accurate` reads merged headers better and costs
+    #: several times as long per page.
+    TABLE_STRUCTURE: bool = True
+    TABLE_STRUCTURE_MODE: str = "fast"   # fast | accurate
 
-    # ── LLM ─────────────────────────────────────────────────────────────────────
-    # The ingestion LLM speaks the OpenAI chat API. Two providers sit behind one client:
-    #   * ollama (default) — a local server in the `ollama` container, no API key, so the
-    #     stack extracts out of the box. Ollama exposes an OpenAI-compatible /v1 endpoint,
-    #     so the same client and the same JSON-mode prompt drive it unchanged.
-    #   * groq — Groq's hosted Llama, used when LLM_PROVIDER=groq and a key is set.
-    LLM_PROVIDER: str = "ollama"   # ollama | groq
+    #: OCR is decided per paper, not once for the deployment: a born-digital PDF already
+    #: carries its text, and running an OCR model over every bitmap region of every one of
+    #: its pages buys nothing. A paper is "native" when its first NATIVE_TEXT_SAMPLE_PAGES
+    #: pages already yield this many characters.
+    NATIVE_TEXT_THRESHOLD: int = 150
+    NATIVE_TEXT_SAMPLE_PAGES: int = 2
+    #: Resolution figures and page previews are exported at, relative to the page. Below
+    #: ~1.5 a chart's tick labels stop being legible to the converter. This replaced a
+    #: separate PyMuPDF render scale: Docling already rasterises every page, so a second
+    #: library rendering them again at its own zoom was work and a dependency for nothing.
+    IMAGES_SCALE: float = 1.5
 
-    # Ollama (local, default). A reduced Llama 3 (llama3.2:3b) runs on CPU in the ollama
-    # container; raise OLLAMA_MODEL to e.g. llama3.1:8b for better extraction accuracy where
-    # the host can afford it. Must match the tag pulled by the `ollama-pull` compose service.
-    OLLAMA_BASE_URL: str = "http://ollama:11434/v1"
-    OLLAMA_MODEL: str = "llama3.2:3b"
-    #: A local model on CPU is slower than a hosted one; give one package call room to finish.
-    LLM_TIMEOUT_SECONDS: float = 300.0
-
-    # Groq (hosted). Only consulted when LLM_PROVIDER=groq.
-    GROQ_API_KEY: str = ""
-    GROQ_BASE_URL: str = "https://api.groq.com/openai/v1"
-    #: llama-3.3-70b-versatile is used directly: 12 000 TPM and native JSON mode.
-    #: groq/compound misroutes response_format requests to a model with 8 000 TPM.
-    GROQ_FOOD_MODEL: str = "llama-3.3-70b-versatile"
-
-    LLM_ENABLE_VERIFICATION: bool = True
-
-    @property
-    def llm_base_url(self) -> str:
-        return self.OLLAMA_BASE_URL if self.LLM_PROVIDER == "ollama" else self.GROQ_BASE_URL
-
-    @property
-    def llm_model(self) -> str:
-        return self.OLLAMA_MODEL if self.LLM_PROVIDER == "ollama" else self.GROQ_FOOD_MODEL
-
-    @property
-    def llm_api_key(self) -> str:
-        # Ollama ignores the key, but the OpenAI SDK refuses to init without a non-empty one.
-        return "ollama" if self.LLM_PROVIDER == "ollama" else self.GROQ_API_KEY
+    # ── The schema gate ───────────────────────────────────────────────────────
+    #: Off, every figure that passes the geometry probe is admitted without its chart being
+    #: read. That changes what the data means, not only how long extraction takes, so it is
+    #: recorded in the job result rather than being a silent switch.
+    REQUIRE_FIGURE_DATA: bool = True
+    #: Three opt-in figure filters. All reject real charts along with photographs; the gate
+    #: report says what share each would have rejected, which is what to read before
+    #: enabling any of them.
+    FIGURE_EDGE_FILTER: bool = False
+    FIGURE_CAPTION_FILTER: bool = False
+    #: Stricter than FIGURE_CAPTION_FILTER, and judged on the caption alone rather than on
+    #: the caption plus its surrounding prose: admit only figures whose own caption names a
+    #: plotted quantity, so chart conversion -- by far the most expensive step per figure --
+    #: is spent on the measurement series and not on every diagram in the paper.
+    FIGURE_REQUIRE_PLOT_CAPTION: bool = False
+    #: How much surrounding prose a figure carries into interpretation.
+    FIGURE_CONTEXT_CHARS: int = 1200
+    #: How many figures the chart converter is given at once, and how large each may be.
+    #: The batch is halved and retried on an out-of-memory error, so this is a ceiling.
+    CHART_BATCH_SIZE: int = 8
+    CHART_MAX_PIXELS: int = 1024
+    #: Chart-to-table is long-output autoregressive generation. Without a bound, one figure
+    #: the model cannot read decodes until it stops itself, which on CPU is minutes; a real
+    #: chart's table is a few hundred tokens, so this cuts only the runaway case.
+    CHART_MAX_NEW_TOKENS: int = 1024
+    #: Rows of an unresolved asset kept in its preview. Processing shows that preview to a
+    #: model when it asks which column is the axis, but the preview is rendered here, when
+    #: the package is built.
+    REVIEW_PREVIEW_ROWS: int = 10
 
     # ── Evidence auto-selection ───────────────────────────────────────────────
     # Which assets are sent to the LLM when the user has not curated the selection by hand.

@@ -83,7 +83,12 @@ def _run_job(
 
 @celery_app.task(name="extraction.workspace_extraction", bind=True)
 def run_workspace_extraction(self, paper_id: int, project_id: int, job_id: int) -> dict:
-    """Docling parse -> page images -> assets -> context links -> charts -> scoring."""
+    """Parse, convert charts, and gate: everything that needs the PDF or the GPU.
+
+    Ends by staging the Silver package -- the gated assets with their observations -- which
+    the ingestion task picks up. Splitting there is what keeps the expensive vision work
+    from being repeated when a paper is re-ingested after a vocabulary change.
+    """
     from app.services import docling_pipeline
 
     def work(db: Session, paper: Paper, job: Job, progress: JobProgressReporter) -> dict:
@@ -91,20 +96,9 @@ def run_workspace_extraction(self, paper_id: int, project_id: int, job_id: int) 
         return {
             **outcome.as_dict(),
             "_step": (
-                f"Done — {outcome.figures} figures, {outcome.native_tables} tables, "
-                f"{outcome.charts} charts"
+                f"Done — {outcome.gated_tables} tables and {outcome.gated_figures} figures "
+                f"hold data ({outcome.observations} observations)"
             ),
         }
-
-    return _run_job(paper_id, job_id, work)
-
-
-@celery_app.task(name="extraction.llm_ingestion", bind=True)
-def run_llm_ingestion(self, paper_id: int, project_id: int, job_id: int) -> dict:
-    """Curated assets -> evidence packages -> LLM -> ext_* -> canonical hierarchy."""
-    from app.services import llm_ingestion
-
-    def work(db: Session, paper: Paper, job: Job, progress: JobProgressReporter) -> dict:
-        return llm_ingestion.run(db, paper, job.id, progress)
 
     return _run_job(paper_id, job_id, work)

@@ -1,0 +1,62 @@
+matrix_label: shrimp
+part_of_product: whole
+storage_text: "4"
+treatment_text: "sterile water wash, immersion"
+packaging_text: aerobic
+immersion_text: "-"
+study_id: SHRIMP-0001
+indicator_columns:
+  total_bacteria_count_log: tvc
+  tvb_n: tvbn
+  tma_n: tman
+  peroxide_value: pv
+
+arms:
+  NT:
+    label: sterile water control
+    ingredients:
+      - {name: control, concentration: 0, unit: "%"}
+  PA:
+    label: peracetic acid
+    ingredients:
+      - {name: peracetic acid, concentration: 500, unit: ppm}
+  N5:
+    label: nisin MIC x 500
+    ingredients:
+      - {name: nisin, concentration: 500, unit: mic}
+  N10:
+    label: nisin MIC x 1000
+    ingredients:
+      - {name: nisin, concentration: 1000, unit: mic}
+  PAN:
+    label: nisin + peracetic acid
+    ingredients:
+      - {name: nisin, concentration: 500, unit: mic}
+      - {name: peracetic acid, concentration: 250, unit: ppm}
+  B5:
+    label: brevibacillin MIC x 500
+    ingredients:
+      - {name: brevibacillin, concentration: 500, unit: mic}
+  B10:
+    label: brevibacillin MIC x 1000
+    ingredients:
+      - {name: brevibacillin, concentration: 1000, unit: mic}
+  NB:
+    label: brevibacillin + nisin
+    ingredients:
+      - {name: brevibacillin, concentration: 500, unit: mic}
+      - {name: nisin, concentration: 500, unit: mic}
+  F3:
+    label: emulsion F3
+    ingredients:
+      - {name: sunflower lecithin, concentration: 0.3, unit: "%"}
+      - {name: lime extract, concentration: 9.0, unit: "%"}
+      - {name: lime oil, concentration: 9.5, unit: "%"}
+      - {name: lemon oil, concentration: 0.5, unit: "%"}
+      - {name: orange oil, concentration: 1.3, unit: "%"}
+  F4:
+    label: emulsion F4
+    ingredients:
+      - {name: garlic extract, concentration: 0.025, unit: "%"}
+      - {name: grape and blueberry, concentration: 0.2, unit: "%"}
+      - {name: cranberry, concentration: 0.2, unit: "%"}

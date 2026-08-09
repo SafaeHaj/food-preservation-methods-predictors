@@ -15,6 +15,7 @@ transcribed these very tables into it -- so the prefix has gone with it. This IS
 canonical schema; there is no other.
 
 Supporting:
+  Section                     the paper's prose, as Silver segmented it
   Job, ExtractionRun          async work and its audit trail
   AuditEvent                  immutable action log
   ProjectMember               team roles
@@ -23,6 +24,19 @@ Supporting:
 
 Platform:
   User, Project, Paper
+
+──────────────────────────────────────────────────────────────────────────────
+Controlled vocabularies
+──────────────────────────────────────────────────────────────────────────────
+The `CHECK` constraints on ingredients, indicators and evidence are built from the tuples
+in `shared.schemas.science`, not written out here. The Pydantic records the pipeline
+validates against and the columns those records land in therefore cannot disagree: a value
+the models reject has no way into a column either.
+
+Alembic revisions inline the literals instead of importing them -- see the module docstring
+of `shared.schemas.science` for why -- so changing a vocabulary means writing a revision
+that resyncs the constraints. `pipeline/shared/tests/test_check_constraints.py` fails when
+that is forgotten, because `alembic --autogenerate` does not detect CHECK drift.
 
 ──────────────────────────────────────────────────────────────────────────────
 Foreign-key deletion policy
@@ -52,12 +66,18 @@ import json
 from datetime import datetime
 
 from sqlalchemy import (
-    Boolean, Column, DateTime, Float, ForeignKey,
+    Boolean, CheckConstraint, Column, DateTime, Float, ForeignKey,
     Index, Integer, String, Text, UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
 
 from shared.db.database import Base
+from shared.schemas.science import (
+    APPLICATION_METHODS, EVIDENCE_METHODS, EVIDENCE_SOURCE_TYPES, EXTERNAL_LOOKUP_STATUSES,
+    EXTERNAL_PROVIDERS, FUNCTIONAL_CLASSES, INDICATOR_TYPES, INGREDIENT_SOURCES,
+    MATRIX_PROFILE_SOURCES, REGULATORY_STATUSES, TREATMENT_TYPES, UNCLASSIFIED_CLASS,
+    UNKNOWN_SOURCE, UNSPECIFIED_APPLICATION, sql_values,
+)
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -119,12 +139,44 @@ class Paper(Base):
     error_message = Column(Text, default="")
     uploaded_at   = Column(DateTime, default=datetime.utcnow)
 
+    # Bibliography, read out of the parsed document. Nullable throughout: a paper exists
+    # from the moment it is uploaded, and that is before anything has read its title.
+    doi            = Column(String, index=True, nullable=True)
+    title          = Column(String, nullable=True)
+    abstract       = Column(Text, nullable=True)
+    published_year = Column(Integer, nullable=True)
+
     project         = relationship("Project", back_populates="papers")
+    sections        = relationship("Section", back_populates="paper", cascade="all, delete-orphan", passive_deletes=True)
     extraction_runs = relationship("ExtractionRun", back_populates="paper", cascade="all, delete-orphan", passive_deletes=True)
     # No cascade: jobs are the async audit trail and outlive the paper they ran on
     # (`jobs.paper_id` is ON DELETE SET NULL). This relationship exists so the ORM is aware
     # of the table at all -- its absence is what made deleting a paper fail on the FK.
     jobs            = relationship("Job", back_populates="paper", passive_deletes=True)
+
+
+class Section(Base):
+    """One heading-delimited stretch of a paper's prose.
+
+    `extraction_assets` holds the figures and the tables; nothing held the text between
+    them. Silver needs it to resolve a figure's local context, Gold's prompt is built from
+    it, and a `prose` evidence span's `docling_item_ref` resolves into it -- so a span
+    citing a sentence had no row to point at.
+    """
+    __tablename__ = "sections"
+
+    id               = Column(Integer, primary_key=True, index=True)
+    paper_id         = Column(Integer, ForeignKey("papers.id", ondelete="CASCADE"), nullable=False, index=True)
+    section_order    = Column(Integer, nullable=True)
+    section_title    = Column(String, nullable=False)
+    content_markdown = Column(Text, nullable=False)
+    page_number      = Column(Integer, nullable=True)
+    docling_item_ref = Column(String, nullable=True)
+    #: Reserved for a future semantic index; the pipeline writes null today.
+    embedding        = Column(Text, nullable=True)
+    created_at       = Column(DateTime, default=datetime.utcnow)
+
+    paper = relationship("Paper", back_populates="sections")
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -138,7 +190,8 @@ class Job(Base):
     id              = Column(Integer, primary_key=True, index=True)
     project_id      = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=True)
     paper_id        = Column(Integer, ForeignKey("papers.id", ondelete="SET NULL"), nullable=True)
-    job_type        = Column(String, nullable=False)   # workspace_extraction|llm_ingestion|dataset_build
+    job_type        = Column(String, nullable=False)
+    # workspace_extraction | paper_ingestion | ingredient_enrichment | dataset_build
     status          = Column(String, default="queued") # queued|running|completed|partial_success|failed|cancelled
     progress        = Column(Integer, default=0)        # 0-100
     current_step    = Column(String, default="")
@@ -257,81 +310,236 @@ class ProjectMember(Base):
 # downstream -- the scientific database screens, the dataset builder, prediction -- reads
 # these and nothing else.
 
+class MatrixProfile(Base):
+    """A named food matrix and its reference composition — global, not per project.
+
+    "Chicken breast" is the same food in every project, and its USDA composition is the
+    same number however many times it is looked up. Scoping it per project would mean one
+    outbound request per project per matrix and N copies of one fact, which then drift.
+
+    Every field here is the *reference* value. The measured counterparts live on
+    `experiments` under the same names, and a reader COALESCEs the two -- so a query can
+    always tell a value a paper reported from one a database supplied.
+    """
+    __tablename__ = "matrix_profiles"
+
+    id                    = Column(Integer, primary_key=True, index=True)
+    matrix_name           = Column(String, nullable=False, unique=True, index=True)
+    ph                    = Column(Float, nullable=True)
+    water_activity        = Column(Float, nullable=True)
+    moisture_percent      = Column(Float, nullable=True)
+    fat_percent           = Column(Float, nullable=True)
+    protein_percent       = Column(Float, nullable=True)
+    salt_percent          = Column(Float, nullable=True)
+    initial_tvc_log_cfu_g = Column(Float, nullable=True)
+    reference_weight_g    = Column(Float, nullable=True)
+    source                = Column(String, nullable=True)   # see MATRIX_PROFILE_SOURCES
+    external_id           = Column(String, nullable=True)   # FDC id
+    fetched_at            = Column(DateTime, nullable=True)
+    created_at            = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        CheckConstraint("ph IS NULL OR (ph > 0 AND ph <= 14)", name="ck_matrix_ph_range"),
+        CheckConstraint("water_activity IS NULL OR (water_activity > 0 AND water_activity <= 1)",
+                        name="ck_matrix_water_activity_range"),
+        CheckConstraint(f"source IS NULL OR source IN ({sql_values(MATRIX_PROFILE_SOURCES)})",
+                        name="ck_matrix_profiles_source"),
+    )
+
+
+class TreatmentProfile(Base):
+    """One distinct physical treatment, deduplicated across the corpus.
+
+    `treatment_key` exists because a three-column UNIQUE cannot dedupe: two rows whose
+    temperature and duration are both NULL compare as distinct in SQL, so every unqualified
+    "Irradiation" would insert a new row. The writer builds the key as "type|temp|dur" with
+    a literal for the nulls, which collapses them.
+    """
+    __tablename__ = "treatment_profiles"
+
+    id                    = Column(Integer, primary_key=True, index=True)
+    treatment_type        = Column(String, nullable=False)   # see TREATMENT_TYPES
+    thermal_temperature_c = Column(Float, nullable=True)
+    thermal_duration_min  = Column(Float, nullable=True)
+    treatment_key         = Column(String, nullable=False, unique=True, index=True)
+    created_at            = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        CheckConstraint(f"treatment_type IN ({sql_values(TREATMENT_TYPES)})",
+                        name="ck_treatment_profiles_type"),
+        CheckConstraint("thermal_duration_min IS NULL OR thermal_duration_min >= 0",
+                        name="ck_treatment_duration_non_negative"),
+    )
+
+
 class Ingredient(Base):
-    """Reusable ingredient catalogue — one row per unique ingredient name per project."""
+    """Reusable ingredient catalogue — one row per unique ingredient name, corpus-wide.
+
+    Global rather than per project (as `matrix_profiles` is, and for the same reason): the
+    molecular features and regulatory status hanging off an ingredient describe the
+    substance, not one team's use of it, and duplicating "nisin" per project would mean
+    re-fetching PubChem for each copy.
+    """
     __tablename__ = "ingredients"
 
     id                  = Column(Integer, primary_key=True, index=True)
-    project_id          = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
-    ingredient_name     = Column(String, nullable=False)
-    functional_class    = Column(String, nullable=False)   # antimicrobial | antioxidant | ...
-    source              = Column(String, nullable=False)   # biological origin, NOT paper
+    ingredient_name     = Column(String, nullable=False, unique=True, index=True)
+    functional_class    = Column(String, nullable=False)   # see FUNCTIONAL_CLASSES
+    source_category     = Column(String, nullable=False)   # biological origin, NOT paper
     created_at          = Column(DateTime, default=datetime.utcnow)
 
     __table_args__ = (
-        UniqueConstraint("project_id", "ingredient_name", name="uq_ingredient_project_name"),
+        CheckConstraint(
+            f"functional_class IN ({sql_values(FUNCTIONAL_CLASSES + (UNCLASSIFIED_CLASS,))})",
+            name="ck_ingredients_functional_class",
+        ),
+        CheckConstraint(
+            f"source_category IN ({sql_values(INGREDIENT_SOURCES + (UNKNOWN_SOURCE,))})",
+            name="ck_ingredients_source",
+        ),
     )
 
 
 class Experiment(Base):
-    """One row per distinct (meat_matrix, treatment) combination in a paper."""
+    """One arm of a paper, in three dimensions: matrix, treatment, additives.
+
+    `matrix_id` and `treatment_id` replace the `meat_matrix` and `treatment` prose columns.
+    Both are RESTRICT rather than CASCADE -- the third documented exception to the FK policy
+    above. A reference row several experiments point at must not vanish under them, and
+    unlike a project or a paper there is no owning tenant whose deletion should take it.
+
+    The composition block is what *this paper measured*. A null falls back to the matrix
+    profile's reference value, and the difference between the two is exactly the provenance
+    distinction the 05 Aug minutes require -- so it is a column, not a convention.
+    """
     __tablename__ = "experiments"
 
-    id                  = Column(Integer, primary_key=True, index=True)
-    project_id          = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
-    paper_id            = Column(Integer, ForeignKey("papers.id", ondelete="CASCADE"), nullable=False, index=True)
-    job_id              = Column(Integer, ForeignKey("jobs.id", ondelete="SET NULL"), nullable=True)
-    meat_matrix         = Column(String, nullable=False)
-    treatment           = Column(String, nullable=False)
-    created_at          = Column(DateTime, default=datetime.utcnow)
+    id                    = Column(Integer, primary_key=True, index=True)
+    project_id            = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
+    paper_id              = Column(Integer, ForeignKey("papers.id", ondelete="CASCADE"), nullable=False, index=True)
+    job_id                = Column(Integer, ForeignKey("jobs.id", ondelete="SET NULL"), nullable=True)
+    matrix_id             = Column(Integer, ForeignKey("matrix_profiles.id", ondelete="RESTRICT"), nullable=False, index=True)
+    treatment_id          = Column(Integer, ForeignKey("treatment_profiles.id", ondelete="RESTRICT"), nullable=True, index=True)
+    treatment_description = Column(Text, nullable=True)    # the sentence it was classified from
+    #: What separates this arm from the others in the same paper. Matrix and treatment do
+    #: not: a dose ladder shares both and differs only in amount, so keying an arm on them
+    #: collapses the whole ladder into one row. Silver builds this from the arm's
+    #: substances and their doses; it is meaningful only within a paper.
+    arm_key               = Column(String, nullable=False, server_default="", default="")
+    sample_weight_g       = Column(Float, nullable=True)   # one sample unit, in grams
+    storage_temperature_c = Column(Float, nullable=True)
+    map_o2_percent        = Column(Float, nullable=True)
+    map_co2_percent       = Column(Float, nullable=True)
+    map_n2_percent        = Column(Float, nullable=True)
+    packaging_description = Column(Text, nullable=True)
+
+    # MEASURED composition -- same names as `matrix_profiles`, different meaning (see above)
+    ph                    = Column(Float, nullable=True)
+    water_activity        = Column(Float, nullable=True)
+    moisture_percent      = Column(Float, nullable=True)
+    fat_percent           = Column(Float, nullable=True)
+    protein_percent       = Column(Float, nullable=True)
+    salt_percent          = Column(Float, nullable=True)
+    initial_tvc_log_cfu_g = Column(Float, nullable=True)
+
+    created_at            = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        CheckConstraint("sample_weight_g IS NULL OR sample_weight_g > 0",
+                        name="ck_experiments_weight_positive"),
+        CheckConstraint("ph IS NULL OR (ph > 0 AND ph <= 14)", name="ck_experiments_ph_range"),
+        CheckConstraint("water_activity IS NULL OR (water_activity > 0 AND water_activity <= 1)",
+                        name="ck_experiments_water_activity_range"),
+        # Backs the writer's get-or-create: re-extracting a paper must find the arm it
+        # wrote last time rather than duplicate it.
+        Index("ix_experiments_identity", "project_id", "paper_id", "matrix_id",
+              "treatment_id", "arm_key"),
+    )
 
 
 class ExperimentIngredient(Base):
-    """Junction: many experiments ↔ many ingredients, with concentration."""
+    """Junction: many experiments ↔ many ingredients, with dose and how it was applied.
+
+    `concentration_ppm` is nullable and that null is meaningful: a paper naming an additive
+    without a dose is common, and so is one whose unit carries no mass basis (`IU/g`, a
+    peak-area percentage) and therefore cannot be converted. Neither is a zero. Which of
+    the two it was is recorded in the ingestion job's `unit_report`, not guessed at here.
+    """
     __tablename__ = "experiment_ingredients"
 
     experiment_id       = Column(Integer, ForeignKey("experiments.id", ondelete="CASCADE"), primary_key=True)
     ingredient_id       = Column(Integer, ForeignKey("ingredients.id", ondelete="CASCADE"), primary_key=True)
-    concentration       = Column(Float, nullable=False)
-    concentration_unit  = Column(String, nullable=False)
+    concentration_ppm   = Column(Float, nullable=True)
+    application_method  = Column(String, nullable=False,
+                                 default=UNSPECIFIED_APPLICATION,
+                                 server_default=UNSPECIFIED_APPLICATION)
+
+    __table_args__ = (
+        CheckConstraint("concentration_ppm IS NULL OR concentration_ppm >= 0",
+                        name="ck_experiment_ingredients_ppm_non_negative"),
+        CheckConstraint(f"application_method IN ({sql_values(APPLICATION_METHODS)})",
+                        name="ck_experiment_ingredients_application"),
+    )
 
 
 class Indicator(Base):
-    """Reusable indicator catalogue — one row per unique (type, unit) per project.
+    """Reusable indicator catalogue — one row per unique (name, unit), corpus-wide.
 
-    `indicator_threshold` is the scientific or regulatory limit for the indicator: the
-    value a measurement crosses to end shelf life. It is what a survival label is derived
-    from, which is why it lives here rather than in a separate definitions table -- a
-    threshold with no indicator to apply it to means nothing.
+    `indicator_name` is what the paper calls it ("Total viable count"); `indicator_type` is
+    the two-valued category it belongs to. They were one column, which meant the display
+    name and the category could not both be stored -- and keying on the category alone
+    would fold every microbial count in log CFU/g into a single row.
+
+    `indicator_threshold` is the scientific or regulatory limit: the value a measurement
+    crosses to end shelf life. It is what a survival label is derived from, which is why it
+    lives here rather than in a separate definitions table -- a threshold with no indicator
+    to apply it to means nothing. There is no comparison operator beside it, because
+    spoilage is always `indicator_value >= threshold`; an operator column would only be a
+    way to write that wrong.
     """
     __tablename__ = "indicators"
 
     id                  = Column(Integer, primary_key=True, index=True)
-    project_id          = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
-    indicator_type      = Column(String, nullable=False)   # e.g. "Total viable count"
+    indicator_name      = Column(String, nullable=False)   # e.g. "Total viable count"
+    indicator_type      = Column(String, nullable=False)   # see INDICATOR_TYPES
     indicator_unit      = Column(String, nullable=False)   # e.g. "log CFU/g"
     indicator_threshold = Column(Float, nullable=True)     # e.g. 7 (regulatory limit)
     created_at          = Column(DateTime, default=datetime.utcnow)
 
     __table_args__ = (
-        UniqueConstraint("project_id", "indicator_type", "indicator_unit",
-                         name="uq_indicator_project_type_unit"),
+        UniqueConstraint("indicator_name", "indicator_unit", name="uq_indicator_name_unit"),
+        CheckConstraint(f"indicator_type IN ({sql_values(INDICATOR_TYPES)})",
+                        name="ck_indicators_type"),
     )
 
 
 class Measurement(Base):
-    """One value per (experiment, day, indicator) — composite primary key."""
+    """One value per (experiment, day, indicator) — composite primary key.
+
+    There is no replicate count. Papers publish a mean and that mean is what gets
+    extracted; where a paper printed several series for one arm, `build_experiments`
+    averages them and the result is a value like any other.
+    """
     __tablename__ = "measurements"
 
     experiment_id       = Column(Integer, ForeignKey("experiments.id", ondelete="CASCADE"), primary_key=True)
     day                 = Column(Integer, primary_key=True)
     indicator_id        = Column(Integer, ForeignKey("indicators.id", ondelete="CASCADE"), primary_key=True)
     indicator_value     = Column(Float, nullable=False)
-    value_is_approximate = Column(Boolean, default=False)
+
+    __table_args__ = (
+        CheckConstraint("day >= 0", name="ck_measurements_day_non_negative"),
+    )
 
 
 class Evidence(Base):
-    """Row-level evidence linking extracted values to exact PDF locations."""
+    """Row-level evidence linking extracted values to exact PDF locations.
+
+    `method` and `rationale` say how far the value sits from the paper's own words: a
+    `derived` or `inferred` value carries the reasoning that produced it, so it is never
+    read as one the paper stated outright. `confidence` is computed by the pipeline's
+    scorer against the source text; it is not a number the model supplies.
+    """
     __tablename__ = "evidence"
 
     id                  = Column(Integer, primary_key=True, index=True)
@@ -339,11 +547,15 @@ class Evidence(Base):
     entity_type         = Column(String, nullable=False)   # experiment|ingredient_link|measurement
     # Composite entity key stored as JSON string, e.g. '{"experiment_id":5,"day":3,"indicator_id":2}'
     entity_key          = Column(Text, nullable=False)
-    field_name          = Column(String, nullable=True)    # specific field this evidence supports
+    # NOT NULL: an experiment carries several spans, and one that does not say which field
+    # it supports cannot be attributed to any of them.
+    field_name          = Column(String, nullable=False)
     page_number         = Column(Integer, nullable=True)
-    source_type         = Column(String, nullable=False)   # text|table|chart|figure|caption|supplementary_material
+    source_type         = Column(String, nullable=False)   # see EVIDENCE_SOURCE_TYPES
     source_label        = Column(String, nullable=True)    # "Table 2", "Figure 3", ...
     exact_text          = Column(Text, nullable=True)
+    method              = Column(String, nullable=False)   # see EVIDENCE_METHODS
+    rationale           = Column(Text, nullable=True)      # required unless method='stated'
     bbox_x1             = Column(Float, nullable=True)
     bbox_y1             = Column(Float, nullable=True)
     bbox_x2             = Column(Float, nullable=True)
@@ -361,6 +573,14 @@ class Evidence(Base):
     docling_item_ref    = Column(String, nullable=True)    # e.g. "#/tables/0", "#/texts/5"
     is_chart_derived    = Column(Boolean, default=False)   # True when value came from chart CSV
 
+    __table_args__ = (
+        CheckConstraint(f"method IN ({sql_values(EVIDENCE_METHODS)})", name="ck_evidence_method"),
+        CheckConstraint(f"source_type IN ({sql_values(EVIDENCE_SOURCE_TYPES)})",
+                        name="ck_evidence_source_type"),
+        CheckConstraint("method = 'stated' OR (rationale IS NOT NULL AND rationale != '')",
+                        name="ck_evidence_rationale_when_not_stated"),
+    )
+
 
 # ─── Docling extraction cache ──────────────────────────────────────────────────
 
@@ -377,6 +597,10 @@ class DoclingCache(Base):
     figure_count    = Column(Integer, default=0)
     page_count      = Column(Integer, default=0)
     docling_version = Column(String, nullable=False)       # bump to invalidate cache
+    #: Where the Silver stage left this paper's gated package. The workspace job writes it,
+    #: the ingestion job reads it; a null or stale pointer means Silver is recomputed from
+    #: the cached parse rather than the paper failing.
+    silver_package_path = Column(String, nullable=True)
     created_at      = Column(DateTime, default=datetime.utcnow)
 
     figure_conversions = relationship(
@@ -437,6 +661,12 @@ class ExtractionAsset(Base):
     relevance_score     = Column(Float, default=0.0)
     selected_for_llm    = Column(Boolean, default=False)
     user_note           = Column(Text, nullable=True)
+    # The schema gate's structural verdict, distinct from `relevance_score`: the score is a
+    # keyword heuristic driving the curation screen, the gate decides whether the asset
+    # actually carries an ordered series the pipeline can read.
+    gate_verdict        = Column(String, nullable=True)
+    # accepted | reference | review | rejected
+    gate_json           = Column(Text, nullable=True)      # axis, points, why
     created_at          = Column(DateTime, default=datetime.utcnow)
 
     context_links = relationship(
@@ -463,3 +693,98 @@ class AssetContextLink(Base):
     created_at  = Column(DateTime, default=datetime.utcnow)
 
     asset = relationship("ExtractionAsset", back_populates="context_links")
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# EXTERNAL REFERENCE DATA
+# ════════════════════════════════════════════════════════════════════════════
+# What PubChem and USDA add to an ingredient the corpus already named. Global, like the
+# ingredients they hang off, and refreshed by a pass that is separate from ingestion so a
+# rate-limited API can never fail a paper's extraction.
+
+class IngredientMolecularFeature(Base):
+    """Physicochemical description of one ingredient, from PubChem.
+
+    Keyed on the ingredient rather than given its own id: an ingredient has at most one
+    molecular description, and a separate primary key would permit two.
+
+    `pka` is nullable more often than the rest because it is not a PUG-REST property at
+    all -- it exists only as free text in the annotation view, and a value that does not
+    parse is left null. Guessing a pKa is worse than not having one: it feeds a weighted
+    mean that a food scientist then reads as evidence.
+    """
+    __tablename__ = "ingredient_molecular_features"
+
+    ingredient_id    = Column(Integer, ForeignKey("ingredients.id", ondelete="CASCADE"), primary_key=True)
+    smiles_code      = Column(String, nullable=True)
+    molecular_weight = Column(Float, nullable=True)
+    pka              = Column(Float, nullable=True)
+    logp             = Column(Float, nullable=True)
+    hbd_count        = Column(Integer, nullable=True)
+    hba_count        = Column(Integer, nullable=True)
+    source           = Column(String, nullable=True)    # see EXTERNAL_PROVIDERS
+    external_id      = Column(String, nullable=True)    # PubChem CID
+    fetched_at       = Column(DateTime, nullable=True)
+
+    __table_args__ = (
+        CheckConstraint("molecular_weight IS NULL OR molecular_weight > 0",
+                        name="ck_molecular_weight_positive"),
+        CheckConstraint("hbd_count IS NULL OR hbd_count >= 0", name="ck_hbd_non_negative"),
+        CheckConstraint("hba_count IS NULL OR hba_count >= 0", name="ck_hba_non_negative"),
+        CheckConstraint(f"source IS NULL OR source IN ({sql_values(EXTERNAL_PROVIDERS)})",
+                        name="ck_molecular_features_source"),
+    )
+
+
+class IngredientRegulatoryStatus(Base):
+    """Whether an ingredient is permitted, and up to what dose, in one jurisdiction.
+
+    Hand-populated. There is no free machine-readable EU or FDA additive API worth wiring,
+    and generating these from a model would produce authoritative-looking wrong limits --
+    the one kind of error a food scientist has no way to catch downstream.
+    """
+    __tablename__ = "ingredient_regulatory_status"
+
+    id             = Column(Integer, primary_key=True, index=True)
+    ingredient_id  = Column(Integer, ForeignKey("ingredients.id", ondelete="CASCADE"), nullable=False, index=True)
+    jurisdiction   = Column(String, nullable=False)     # e.g. "EU", "US"
+    status         = Column(String, nullable=False)     # see REGULATORY_STATUSES
+    max_dose_ppm   = Column(Float, nullable=True)
+    reference      = Column(Text, nullable=True)        # the regulation this came from
+    created_at     = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("ingredient_id", "jurisdiction", name="uq_regulatory_ingredient_jurisdiction"),
+        CheckConstraint(f"status IN ({sql_values(REGULATORY_STATUSES)})",
+                        name="ck_regulatory_status"),
+        CheckConstraint("max_dose_ppm IS NULL OR max_dose_ppm >= 0",
+                        name="ck_regulatory_max_dose_non_negative"),
+    )
+
+
+class IngredientExternalLookup(Base):
+    """What one provider concluded about one ingredient, including that it knew nothing.
+
+    This is the table that makes the enrichment pass idempotent. Without it a miss is
+    indistinguishable from never having asked, so every run re-queries every unmatched
+    ingredient -- which for a mixture like "thyme essential oil" is a request that can only
+    ever fail. Recording `not_found` and `skipped` turns those into facts with a date on
+    them, and `attempts` bounds the retries on a provider that is merely down.
+    """
+    __tablename__ = "ingredient_external_lookups"
+
+    ingredient_id = Column(Integer, ForeignKey("ingredients.id", ondelete="CASCADE"), primary_key=True)
+    provider      = Column(String, primary_key=True)    # see EXTERNAL_PROVIDERS
+    status        = Column(String, nullable=False)      # see EXTERNAL_LOOKUP_STATUSES
+    external_id   = Column(String, nullable=True)
+    detail        = Column(Text, nullable=True)         # why it was skipped, or how it failed
+    attempts      = Column(Integer, nullable=False, default=0, server_default="0")
+    checked_at    = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        CheckConstraint(f"provider IN ({sql_values(EXTERNAL_PROVIDERS)})",
+                        name="ck_external_lookup_provider"),
+        CheckConstraint(f"status IN ({sql_values(EXTERNAL_LOOKUP_STATUSES)})",
+                        name="ck_external_lookup_status"),
+        CheckConstraint("attempts >= 0", name="ck_external_lookup_attempts_non_negative"),
+    )

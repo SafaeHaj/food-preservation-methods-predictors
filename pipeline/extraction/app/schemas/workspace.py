@@ -126,3 +126,31 @@ class EvidencePackagesOut(BaseModel):
     totals: EvidenceTotals
     chart_conversion_available: bool
     chart_conversion_error: Optional[str] = None
+
+
+class GateDecisionOut(BaseModel):
+    """One asset's structural verdict.
+
+    `verdict` is accepted | reference | review | rejected, and `why` says which test it
+    failed — a rejected table that reads "no column orders the rows like an axis" is a
+    different problem from one that reads "cells under the axis columns are not numeric".
+    """
+
+    kind: str
+    index: Optional[int] = None
+    docling_item_ref: Optional[str] = None
+    page_number: Optional[int] = None
+    caption: Optional[str] = None
+    verdict: str
+    why: Optional[str] = None
+    stage: Optional[str] = None
+    axis_label: Optional[str] = None
+    axis_points: list[Any] = []
+    observation_count: int = 0
+
+
+class GateReportOut(BaseModel):
+    #: Empty until the workspace pipeline has run; the counts are then its summary.
+    available: bool = False
+    totals: dict[str, Any] = {}
+    decisions: list[GateDecisionOut] = []

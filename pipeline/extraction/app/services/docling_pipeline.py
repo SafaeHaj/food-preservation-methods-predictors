@@ -28,6 +28,7 @@ from app.services.asset_classifier import classify_figure, score_relevance
 from app.services.chart_converter import convert_charts
 from app.services.context_linker import build_context_links
 from app.services.docling_extractor import extract_pdf
+from app.services.silver import package as silver_package
 
 logger = logging.getLogger(__name__)
 _settings = get_extraction_settings()
@@ -50,12 +51,14 @@ STAGES = {
     stage.key: stage
     for stage in (
         Stage("parse", 5, "Parsing document structure with Docling"),
-        Stage("pages", 25, "Rendering page images"),
-        Stage("assets", 35, "Saving figures and tables to the workspace"),
-        Stage("linking", 50, "Linking context to visual elements"),
-        Stage("charts", 65, "Converting charts to data"),
-        Stage("scoring", 85, "Classifying and scoring assets"),
-        Stage("manifest", 95, "Writing the asset manifest"),
+        Stage("pages", 20, "Rendering page images"),
+        Stage("assets", 30, "Saving figures and tables to the workspace"),
+        Stage("linking", 40, "Linking context to visual elements"),
+        Stage("charts", 55, "Converting charts to data"),
+        Stage("gate", 70, "Testing which tables and figures hold a data series"),
+        Stage("silver", 85, "Staging the gated package"),
+        Stage("scoring", 92, "Classifying and scoring assets"),
+        Stage("manifest", 97, "Writing the asset manifest"),
         Stage("done", 100, "Extraction complete"),
     )
 }
@@ -69,6 +72,13 @@ class PipelineOutcome:
     charts: int
     decorative_excluded: int
     chart_conversion_available: bool
+    #: What the schema gate decided. Distinct from the counts above: `native_tables` is how
+    #: many Docling found, `gated_tables` how many hold a series the pipeline can read.
+    gated_tables: int = 0
+    gated_figures: int = 0
+    reference_assets: int = 0
+    review_open: int = 0
+    observations: int = 0
 
     def as_dict(self) -> dict:
         return {
@@ -78,42 +88,12 @@ class PipelineOutcome:
             "charts": self.charts,
             "decorative_excluded": self.decorative_excluded,
             "chart_conversion_available": self.chart_conversion_available,
+            "gated_tables": self.gated_tables,
+            "gated_figures": self.gated_figures,
+            "reference_assets": self.reference_assets,
+            "review_open": self.review_open,
+            "observations": self.observations,
         }
-
-
-def render_page_images(pdf_path: str, pages_dir: Path) -> dict[int, str]:
-    """Render every page to PNG. Returns {page_number: path}.
-
-    Best-effort: a failure here costs the preview thumbnails, not the extraction, so it is
-    logged and the pipeline continues with an empty map.
-    """
-    pages_dir.mkdir(parents=True, exist_ok=True)
-    rendered: dict[int, str] = {}
-    try:
-        import fitz  # PyMuPDF
-    except ImportError:
-        logger.warning("PyMuPDF is not installed; page previews will be unavailable")
-        return rendered
-
-    try:
-        document = fitz.open(pdf_path)
-    except Exception:
-        logger.warning("Could not open %s for page rendering", pdf_path, exc_info=True)
-        return rendered
-
-    try:
-        matrix = fitz.Matrix(_settings.PAGE_RENDER_ZOOM, _settings.PAGE_RENDER_ZOOM)
-        for index in range(len(document)):
-            page_number = index + 1
-            image_path = pages_dir / f"page_{page_number:04d}.png"
-            if not image_path.exists():
-                document.load_page(index).get_pixmap(matrix=matrix, alpha=False).save(str(image_path))
-            rendered[page_number] = str(image_path)
-    except Exception:
-        logger.warning("Page rendering stopped early for %s", pdf_path, exc_info=True)
-    finally:
-        document.close()
-    return rendered
 
 
 def write_manifest(cache_dir: Path, assets: list[ExtractionAsset]) -> None:
@@ -257,6 +237,30 @@ def _apply_chart_conversions(db: Session, docling_result, by_reference: dict[str
     return charts
 
 
+def _stage_silver(db: Session, paper_id: int, docling_result, package: dict) -> None:
+    """Persist the gated package and record each asset's verdict.
+
+    The package goes to disk rather than into a column -- it carries every observation and
+    the raw rows of anything still under review -- and its path is recorded on the Docling
+    cache row, which is what the ingestion job follows. The per-asset verdict is written
+    onto `extraction_assets` so the workspace can show it without loading the package.
+    """
+    path = silver_package.save(package)
+    asset_repo.set_silver_package(db, docling_result.file_hash, str(path))
+
+    verdicts = silver_package.verdict_by_ref(package)
+    for asset in asset_repo.all_for_paper(db, paper_id):
+        row = verdicts.get(asset.docling_item_ref)
+        if not row:
+            continue
+        asset.gate_verdict = row["verdict"]
+        asset.gate_json = json.dumps(
+            {key: row[key] for key in ("why", "stage", "axis_label", "axis_points",
+                                       "observation_count")},
+            default=str,
+        )
+
+
 #: Context snippets fed to the relevance scorer per asset. More adds noise, not signal.
 MAX_SCORING_CONTEXT_LINKS = 10
 
@@ -302,10 +306,11 @@ def run(db: Session, paper: Paper, job_id: int, progress: JobProgressReporter) -
 
     progress.update(
         progress=STAGES["pages"].progress,
-        step=f"Rendering {docling_result.page_count} page images",
+        step=f"Indexing {docling_result.page_count} page images",
     )
     cache_dir = Path(docling_result.cache_dir)
-    page_images = render_page_images(paper.file_path, cache_dir / "pages")
+    # Written by Docling during the parse above -- there is no second pass over the PDF.
+    page_images = docling_result.page_images
 
     progress.update(
         progress=STAGES["assets"].progress,
@@ -327,6 +332,19 @@ def run(db: Session, paper: Paper, job_id: int, progress: JobProgressReporter) -
     )
     charts = _apply_chart_conversions(db, docling_result, by_reference)
 
+    progress.update(progress=STAGES["gate"].progress, step=STAGES["gate"].label)
+    package = silver_package.build_package(docling_result, paper_slug=str(paper.id))
+    report = package["gate_report"]
+
+    progress.update(
+        progress=STAGES["silver"].progress,
+        step=(
+            f"Staging {report['tables_accepted']} tables and "
+            f"{report['figures_accepted']} figures with {report['observations']} observations"
+        ),
+    )
+    _stage_silver(db, paper.id, docling_result, package)
+
     progress.update(progress=STAGES["scoring"].progress, step=STAGES["scoring"].label)
     decorative, assets = _classify_and_score(db, paper.id)
 
@@ -344,4 +362,9 @@ def run(db: Session, paper: Paper, job_id: int, progress: JobProgressReporter) -
         charts=charts,
         decorative_excluded=decorative,
         chart_conversion_available=_chart_model_error is None,
+        gated_tables=report["tables_accepted"],
+        gated_figures=report["figures_accepted"],
+        reference_assets=report["references"],
+        review_open=report["review"],
+        observations=report["observations"],
     )

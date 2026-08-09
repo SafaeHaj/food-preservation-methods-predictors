@@ -1,0 +1,302 @@
+indicators:
+  tvc:
+    canonical: tvc
+    type: microbial
+    unit: log cfu/g
+    lower_threshold: 5
+    upper_threshold: 7
+    aliases: [tvc, tpc, tac, total viable count, total_bacteria_count_log, total plate count]
+  psychrotrophic:
+    canonical: psychrotrophic
+    type: microbial
+    unit: log cfu/g
+    lower_threshold: 5
+    upper_threshold: 7
+    aliases: [psy, psychrotrophic, psychrotroph]
+  lab:
+    canonical: lab
+    type: microbial
+    unit: log cfu/g
+    lower_threshold: 5
+    upper_threshold: 7
+    aliases: [lab, lactic acid bacteria]
+  enterobacteriaceae:
+    canonical: enterobacteriaceae
+    type: microbial
+    unit: log cfu/g
+    lower_threshold: 3
+    upper_threshold: 5
+    aliases: [enterobacteriaceae, tcc, total coliform count, coliform]
+  pseudomonas:
+    canonical: pseudomonas
+    type: microbial
+    unit: log cfu/g
+    lower_threshold: 5
+    upper_threshold: 7
+    aliases: [pseudomonas]
+  brochothrix:
+    canonical: brochothrix
+    type: microbial
+    unit: log cfu/g
+    lower_threshold: 5
+    upper_threshold: 7
+    aliases: [b. thermosphacta, brochothrix, brochothrix thermosphacta]
+  fungal:
+    canonical: fungal
+    type: microbial
+    unit: log cfu/g
+    lower_threshold: 3
+    upper_threshold: 5
+    aliases: [fungal count, yeast and mould, yeast, mould, proteolytic fungal count, lipolytic fungal count]
+  e_coli:
+    canonical: e_coli
+    type: microbial
+    unit: log cfu/g
+    lower_threshold: 2
+    upper_threshold: 4
+    aliases: [e. coli, e.coli, escherichia coli]
+  s_aureus:
+    canonical: s_aureus
+    type: microbial
+    unit: log cfu/g
+    lower_threshold: 3
+    upper_threshold: 5
+    aliases: [s. aureus, staphylococcus aureus]
+  salmonella:
+    canonical: salmonella
+    type: microbial
+    unit: log cfu/g
+    lower_threshold: 1
+    upper_threshold: 3
+    aliases: [salmonella]
+  listeria:
+    canonical: listeria
+    type: microbial
+    unit: log cfu/g
+    lower_threshold: 2
+    upper_threshold: 4
+    aliases: [listeria, l. monocytogenes]
+  tbars:
+    canonical: tbars
+    type: chemical
+    unit: mg mda/kg
+    lower_threshold: 1
+    upper_threshold: 2
+    aliases: [tbars, tba, thiobarbituric acid]
+  pv:
+    canonical: pv
+    type: chemical
+    unit: meq o2/kg
+    lower_threshold: 5
+    upper_threshold: 10
+    aliases: [pv, peroxide value, peroxide_value]
+  tvbn:
+    canonical: tvbn
+    type: chemical
+    unit: mg n/100g
+    lower_threshold: 15
+    upper_threshold: 30
+    aliases: [tvbn, tvb-n, tvb_n, total volatile basic nitrogen]
+  tman:
+    canonical: tman
+    type: chemical
+    unit: mg n/100g
+    lower_threshold: 5
+    upper_threshold: 15
+    aliases: [tman, tma-n, tma_n, trimethylamine nitrogen]
+  hexanal:
+    canonical: hexanal
+    type: chemical
+    unit: ppm
+    lower_threshold: 1
+    upper_threshold: 3
+    aliases: [hexanal content (hc), hexanal, hc]
+  ph:
+    canonical: ph
+    type: chemical
+    unit: ph
+    lower_threshold: 6.2
+    upper_threshold: 6.8
+    aliases: [ph]
+  water_activity:
+    canonical: water_activity
+    type: chemical
+    unit: aw
+    lower_threshold: 0.97
+    upper_threshold: 0.99
+    aliases: [aw, water activity]
+  weight_loss:
+    canonical: weight_loss
+    type: chemical
+    unit: percent
+    lower_threshold: 3
+    upper_threshold: 5
+    aliases: [weight loss, drip loss]
+  colour:
+    canonical: colour
+    type: chemical
+    unit: index
+    lower_threshold: null
+    upper_threshold: null
+    aliases: [colour, color, a*, redness, "δe"]
+  oxidation_index:
+    canonical: oxidation_index
+    type: chemical
+    unit: absorbance
+    lower_threshold: null
+    upper_threshold: null
+    aliases: [spectrophotometric indicies e232, spectrophotometric indicies e270, e232, e270]
+
+units:
+  aliases:
+    "% (w/w)": "%"
+    "% w/w": "%"
+    "% (w/v)": "%"
+    "% (v/w)": "%"
+    "% (v/v)": "%"
+    "w/w": "%"
+    "%/kg": "%"
+    "g/100g": "%"
+    "µg/g meat": "µg/g"
+    "µg/g of meat": "µg/g"
+    "ug/g": "µg/g"
+    "mg/kg meat": "mg/kg"
+    "mg/kg of meat": "mg/kg"
+    "µg/kg": "µg/kg"
+    "ug/kg": "µg/kg"
+    "mg/g": "mg/g"
+    "iu/g": "iu/g"
+    "mic": "mic"
+  normalized_override_factor: 5
+  ppm_factors:
+    "%": 10000
+    "‰": 1000
+    "g/kg": 1000
+    "mg/g": 1000
+    "g/l": 1000
+    "mg/ml": 1000
+    "ppm": 1
+    "mg/kg": 1
+    "µg/g": 1
+    "mg/l": 1
+    "ppb": 0.001
+    "µg/kg": 0.001
+    "ng/g": 0.001
+  no_mass_basis:
+    - iu/g
+    - mic
+    - ml
+    - µg cm^-2
+    - "% of the fat level"
+    - g/kg fat
+    - mg α-tocopheryl acetate/kg feed
+    - mg/100g
+
+packaging:
+  ocr_corrections:
+    vaccuum: vacuum
+    vaccum: vacuum
+    aeorobic: aerobic
+    aerobica: aerobic
+    carboard: cardboard
+    iluminated: illuminated
+    "poly- ethylene": polyethylene
+    "poly-ethylene": polyethylene
+    polyethene: polyethylene
+    polythene: polyethylene
+    "ldpe/ pa": ldpe pa
+    "ldpe/pa": ldpe pa
+    "ldpe /pa": ldpe pa
+  atmosphere:
+    Vacuum: [vacuum, vacuum packaged, vacuum packaging, vacuum packed]
+    MAP: [map, modified atmosphere]
+    Aerobic: [aerobic, aerobically, air]
+  material:
+    LDPE: [ldpe, low density polyethylene, polyethylene]
+    PA: [pa, polyamide]
+    PP: [pp, polypropylene]
+    PS: [ps, polystyrene]
+    Cellulose: [cellulose]
+    Protein film: [whey protein, protein isolate]
+    Caseinate film: [sodium caseinate, caseinate]
+  container:
+    Tray: [tray, trays]
+    Bag: [bag, bags]
+    Pouch: [pouch, pouches]
+    Tube: [tube, tubes]
+    Box: [box, boxes, cardboard]
+    Film: [film, films]
+    Casing: [casing, casings]
+  special:
+    Barrier: [barrier]
+    Oxygen-permeable: [oxygen permeable, o2 permeable]
+    Active packaging: [active packaging]
+
+og_treatments:
+  patterns:
+    anm: ['\banm\b', antimicrobial]
+    map: ['\bmap\b']
+    salt: [salt]
+    heat: [autoclav, precook, cooked]
+  physical_hurdle:
+    heat: Heat
+    irradiation: Irradiation
+  application:
+    anm: ANM
+    salt: Salt
+    map: MAP
+
+schema:
+  indicator_types: [microbial, chemical]
+  functional_classes: [carbohydrate, protein, fiber, mineral, phenol, essential oil, organic acid]
+  unclassified_class: unclassified
+  ingredient_sources: [animal, plant, microbial, mineral, other]
+  unknown_source: unknown
+  ingredient_slots: 5
+
+treatments:
+  types:
+    - High-pressure processing
+    - Irradiation
+    - UV treatment
+    - Ultrasound
+    - Cold plasma
+    - Ozone treatment
+    - Electrolyzed water treatment
+    - Water washing
+    - Surface trimming
+    - Heat treatment
+    - Vacuum treatment
+    - Other physical treatment
+  patterns:
+    High-pressure processing: [high pressure, high-pressure, hpp, hydrostatic, mpa]
+    Irradiation: [irradiat, gamma, kgy, e-beam, electron beam]
+    UV treatment: [uv-c, uv treatment, ultraviolet, 'uv ']
+    Ultrasound: [ultrasound, ultrasonic, sonicat]
+    Cold plasma: [cold plasma, plasma treatment]
+    Ozone treatment: [ozone, ozonat]
+    Electrolyzed water treatment: [electrolyzed, electrolysed, anodic, cathodic, neutral electrolyzed]
+    Water washing: [water wash, rinsed with water, washing with water]
+    Surface trimming: [trimming, trimmed]
+    Heat treatment: [autoclav, precook, pre-cook, cooked, cooking, blanch, pasteuri, thermal, boiled, fried, frying]
+    Vacuum treatment: [vacuum tumbl, vacuum impregnat]
+  application_methods:
+    - Mixed
+    - Dipped
+    - Sprayed
+    - Washed
+    - Coated
+    - Injected
+    - Immersed
+    - Vacuum-packed
+    - Other
+  unspecified_application: Other
+  application_patterns:
+    Mixed: [added to, incorporat, blend, mixed, mixing, homogeni, ground with, formulation]
+    Dipped: [dip, dipping]
+    Sprayed: [spray]
+    Washed: [wash, rinse]
+    Coated: [coating, coated, edible film, film forming]
+    Injected: [inject, brine injection]
+    Immersed: [immers, soak, submerg]
+    Vacuum-packed: [vacuum pack, vacuum packag, vacuum-pack]

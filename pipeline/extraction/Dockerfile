@@ -4,7 +4,7 @@ FROM python:3.11-slim
 ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
-# Native libs needed by Docling / PaddleOCR / OpenCV and PyMuPDF rendering.
+# Native libs needed by Docling / PaddleOCR / OpenCV.
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libgl1 libglib2.0-0 libgomp1 \

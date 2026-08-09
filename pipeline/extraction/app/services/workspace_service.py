@@ -18,7 +18,8 @@ from shared.uow import unit_of_work
 from app.repositories import asset_repo
 from app.schemas.workspace import (
     AssetDetailOut, AssetLinks, AssetOut, AssetPage, AssetUpdate, ContextLinkOut,
-    EvidenceAssetOut, EvidencePackagesOut, EvidenceTotals, JobAccepted, ParagraphOut,
+    EvidenceAssetOut, EvidencePackagesOut, EvidenceTotals, GateDecisionOut, GateReportOut,
+    JobAccepted, ParagraphOut,
 )
 from app.services import asset_selection
 
@@ -29,7 +30,6 @@ _settings = get_extraction_settings()
 _gateway = get_gateway_settings()
 
 WORKSPACE_JOB = "workspace_extraction"
-LLM_JOB = "llm_validation"
 
 #: Longest context snippet echoed back to the Validation page. The full text is available
 #: on the asset detail endpoint; the list view only needs enough to recognise it.
@@ -236,20 +236,28 @@ def start_extraction(db: Session, paper: Paper, user_id: int) -> JobAccepted:
     return JobAccepted(job_id=job.id, status=job.status)
 
 
-def send_to_llm(db: Session, paper: Paper, user_id: int) -> JobAccepted:
-    """Queue LLM ingestion over the curated asset selection."""
-    from app.tasks import run_llm_ingestion
+# ─── Gate report ──────────────────────────────────────────────────────────────
 
-    if asset_repo.count_for_paper(db, paper.id) == 0:
-        raise BusinessRuleError(
-            "This paper has no extracted assets yet; run the extraction pipeline first",
-            details={"paper_id": paper.id},
-        )
+def gate_report(db: Session, paper: Paper) -> GateReportOut:
+    """The schema gate's verdict on every asset, read from the staged Silver package.
 
-    job = _start_job(db, paper, user_id, LLM_JOB, "Queued for LLM extraction")
-    if job.status == "queued":
-        run_llm_ingestion.delay(paper.id, paper.project_id, job.id)
-    return JobAccepted(job_id=job.id, status=job.status)
+    Reads the package rather than the `gate_verdict` columns because it carries the axis
+    the gate found and the observation count, which is what makes a verdict actionable
+    rather than a label.
+    """
+    from app.services.silver import package as silver_package
+
+    stored = None
+    if paper.file_hash:
+        stored = silver_package.load(asset_repo.silver_package_path(db, paper.file_hash))
+    if stored is None:
+        return GateReportOut(available=False)
+
+    return GateReportOut(
+        available=True,
+        totals=stored.get("gate_report", {}),
+        decisions=[GateDecisionOut(**row) for row in silver_package.decisions(stored)],
+    )
 
 
 # ─── Evidence preview ─────────────────────────────────────────────────────────

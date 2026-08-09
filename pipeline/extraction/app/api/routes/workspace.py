@@ -8,7 +8,7 @@
     GET    /projects/{pid}/papers/{paper_id}/assets/{id}/page-image   signed binary
     GET    /projects/{pid}/papers/{paper_id}/assets/{id}/csv          signed binary
     GET    /projects/{pid}/papers/{paper_id}/evidence-packages  LLM selection preview
-    POST   /projects/{pid}/papers/{paper_id}/send-to-llm        start LLM ingestion
+    GET    /projects/{pid}/papers/{paper_id}/gate-report        schema-gate verdicts
     GET    /projects/{pid}/assets                               project-wide asset list
 
 There is deliberately no `/workspace/status` or `/llm-job/{id}` endpoint: both start
@@ -32,7 +32,7 @@ from app.api.deps import (
     verify_signed_asset,
 )
 from app.schemas.workspace import (
-    AssetDetailOut, AssetPage, AssetUpdate, EvidencePackagesOut, JobAccepted,
+    AssetDetailOut, AssetPage, AssetUpdate, EvidencePackagesOut, GateReportOut, JobAccepted,
 )
 from app.services import workspace_service
 
@@ -56,19 +56,6 @@ def start_workspace_extraction(
     user: User = Depends(get_current_user),
 ):
     return workspace_service.start_extraction(db, paper, user.id)
-
-
-@router.post(
-    "/projects/{project_id}/papers/{paper_id}/send-to-llm",
-    status_code=202,
-    response_model=JobAccepted,
-)
-def send_to_llm(
-    paper: Paper = Depends(require_paper_contributor),
-    db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
-):
-    return workspace_service.send_to_llm(db, paper, user.id)
 
 
 # ─── Assets ───────────────────────────────────────────────────────────────────
@@ -182,3 +169,22 @@ def get_evidence_packages(
     db: Session = Depends(get_db),
 ):
     return workspace_service.evidence_packages(db, paper)
+
+
+@router.get(
+    "/projects/{project_id}/papers/{paper_id}/gate-report",
+    response_model=GateReportOut,
+)
+def get_gate_report(
+    paper: Paper = Depends(require_paper),
+    db: Session = Depends(get_db),
+):
+    """What the schema gate decided about every table and figure, and why.
+
+    Distinct from `/evidence-packages`, which reports the curation policy — which assets a
+    human selected or the relevance score auto-included. This reports the structural
+    verdict: whether the asset holds an ordered series the pipeline can actually read. The
+    first answers "what will be sent", the second "what could be extracted", and a paper
+    that produces less than expected is usually explained by the second.
+    """
+    return workspace_service.gate_report(db, paper)
