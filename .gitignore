@@ -1,0 +1,39 @@
+# Python environment (regenerate with: python -m venv .venv && pip install -r requirements.txt)
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node / Next.js (regenerate with: npm install; npm run build)
+frontend/node_modules/
+frontend/.next/
+
+# Trained model artifacts -- regenerable via train_models.py / train_specialists.py
+# against data/raw/*. Excluded because several individual files exceed GitHub's
+# 100MB hard per-file limit (e.g. artifacts/models/random_forest.joblib is ~375MB).
+artifacts/
+artifacts_v6/
+artifacts_v7/
+artifacts_classification/
+artifacts_ingredient_ranking/
+artifacts_backup/
+model_versions/
+
+# Secrets and local runtime state -- never commit
+backend/.env
+backend/storage/*.db
+backend/storage/.session_secret
+.env
+.env.local
+.env.*.local
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+
+# Session scratch output (logs/screenshots from dev-server runs and smoke tests)
+_*.log
+_*.png
+_backend.log
+_frontend.log
+frontend/_run_smoke.*

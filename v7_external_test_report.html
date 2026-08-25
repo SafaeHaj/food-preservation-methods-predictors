@@ -1,0 +1,419 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>V7 External Test Report</title>
+<style>
+  @page { size: A4; margin: 16mm 14mm; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; color: #16181c; font-size: 10.5px; line-height: 1.5; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 15px; margin: 26px 0 8px; padding-bottom: 4px; border-bottom: 2px solid #7A1B2E; page-break-after: avoid; }
+  h3 { font-size: 12.5px; margin: 16px 0 6px; page-break-after: avoid; }
+  p { margin: 6px 0; }
+  .subtitle { color: #6B7079; font-size: 11px; margin-bottom: 18px; }
+  .cover { border-bottom: 3px solid #7A1B2E; padding-bottom: 14px; margin-bottom: 6px; }
+  .exec-box { background: #FBF3F4; border: 1px solid #E9C7CC; border-left: 4px solid #7A1B2E; border-radius: 4px; padding: 12px 16px; margin: 10px 0 20px; }
+  .exec-box h3 { margin-top: 0; color: #7A1B2E; }
+  .exec-box ul { margin: 4px 0; padding-left: 18px; }
+  .good { color: #157F52; font-weight: 600; }
+  .bad { color: #C0362C; font-weight: 600; }
+  .warn { color: #A9660B; font-weight: 600; }
+  table { border-collapse: collapse; width: 100%; margin: 6px 0 14px; page-break-inside: auto; }
+  caption { text-align: left; font-weight: 600; font-size: 11px; margin-bottom: 4px; caption-side: top; }
+  th, td { border: 1px solid #DADCE0; padding: 3px 6px; text-align: left; vertical-align: top; }
+  th { background: #F4F4F5; font-weight: 600; font-size: 9px; text-transform: uppercase; letter-spacing: 0.02em; color: #52565c; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.flag-row { background: #FBEEEC; }
+  .note { font-size: 9.5px; color: #6B7079; font-style: italic; margin-top: -8px; margin-bottom: 14px; }
+  .callout { background: #F6F6F7; border-radius: 4px; padding: 10px 14px; margin: 10px 0; font-size: 10px; }
+  .callout.bad-callout { background: #FBEEEC; border: 1px solid #E7B7B0; }
+  .callout.good-callout { background: #EEF7F1; border: 1px solid #B9DFC6; }
+  .page-break { page-break-before: always; }
+  thead { display: table-header-group; }
+  tr { page-break-inside: avoid; }
+  .small { font-size: 9px; color: #8F949C; }
+  code { background: #F4F4F5; padding: 1px 4px; border-radius: 3px; font-size: 9.5px; }
+  .card { border: 1px solid #DADCE0; border-radius: 6px; padding: 10px 12px; margin: 8px 0 14px; page-break-inside: avoid; }
+  .card-title { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-weight: 700; font-size: 11px; margin-bottom: 2px; }
+  .card-title .row-name { flex: 1; }
+  .card-title .row-result { white-space: nowrap; }
+  .card-sub { color: #6B7079; font-size: 9.5px; margin-bottom: 6px; }
+  .tag { display: inline-block; background: #F4F4F5; border-radius: 3px; padding: 1px 5px; font-size: 8.5px; margin: 1px 2px 1px 0; color: #52565c; }
+  .tag.unseen { background: #FBEEEC; color: #A03B32; }
+  .tag.extrap { background: #FFF3E0; color: #A9660B; }
+</style>
+</head><body>
+
+<div class="cover">
+  <h1>Cheese Shelf-Life Studio &mdash; V7 External Test Evaluation</h1>
+  <div class="subtitle">21 real, literature-sourced cases from CHEESE_SHELF_LIFE_V7_EXTERNAL_TEST_POINT_TARGETS.csv, scored against the live V7 specialist pipeline. Generated 2026-08-24 22:55 UTC. Raw model output only &mdash; no correction, multiplier, or manual calibration applied.</div>
+</div>
+
+<div class="exec-box">
+  <h3>Executive summary</h3>
+  <ul>
+    <li>All 21 rows produced a prediction (none hard-blocked) &mdash; but <b>all 21 were flagged <code>unsupported_categorical</code></b>: every case uses at least one food_matrix / packaging_type / indicator_type / physical_form value absent from V7&rsquo;s training vocabulary. See &sect;3.</li>
+    <li>Overall: n=21, MAE=39.4d, RMSE=65.8d, bias=-30.0d, R&sup2;=0.172.</li>
+    <li><b>Semi-hard</b> generalizes best (R&sup2;=0.560); <b>Hard</b> has effectively collapsed on real data (R&sup2;=-3.112, bias=-111.9d) &mdash; see &sect;5.</li>
+    <li>A real bug in the support-assessment logic (missing numeric/categorical values misreported as false extrapolation/unseen-category flags) was found and fixed while building this evaluation &mdash; see &sect;6.</li>
+    <li>No food_matrix/physical_form/packaging_type/indicator_type value was remapped or guessed to improve the score &mdash; see &sect;2.</li>
+  </ul>
+</div>
+
+<h2 id="s1">1. Test set</h2>
+<p>21 cases across 6 independent papers, all with exact ("point", zero-censoring) targets and <code>direct_model_compatible=yes</code>. All rows are <code>general_shelf_life</code> (no safety-endpoint cases in this file). Category split: soft n=9, semi-hard n=7, hard n=5.</p>
+
+<h2 id="s2">2. Methodology &mdash; what was and wasn't normalized</h2>
+<p>Evaluation uses the exact production code path: <code>SpecialistRegistry.resolve()</code> / <code>assess_prediction_support()</code> / <code>ModelService.predict_one()</code> &mdash; the same functions <code>/api/v6/predict</code> calls, not a separate reimplementation. Two, and only two, normalizations were applied, both pure notation (verified, not guessed):</p>
+<ul>
+  <li><code>cheese_category</code> spelling: <code>"semi-hard"</code> &rarr; <code>"semi_hard"</code>. This is a routing key only &mdash; cheese_category is not even a model feature.</li>
+  <li>Concentration units run through the same <code>to_canonical()</code> a live request would use; where the file&rsquo;s unit isn&rsquo;t in the verified table (<code>%_coating_solution</code>, 2 rows), the conversion is left unavailable (None), not guessed.</li>
+</ul>
+<p><b>Nothing else was remapped.</b> food_matrix, physical_form, packaging_type, and indicator_type values that don&rsquo;t match V7&rsquo;s training vocabulary are passed through as-is and flagged by the existing support-assessment machinery, exactly as a real live prediction would be.</p>
+
+<h2 id="s3">3. Aggregate results</h2>
+<table>
+<thead><tr><th>Slice</th><th>n</th><th>MAE (d)</th><th>RMSE (d)</th><th>Bias (d)</th><th>R&sup2;</th></tr></thead>
+<tbody>
+<tr><td><b>Overall</b></td><td class="num">21</td><td class="num">39.4</td><td class="num">65.8</td><td class="num">-30.0</td><td class="num">0.172</td></tr>
+<tr class="flag-row">
+      <td>Soft</td><td class="num">9</td>
+      <td class="num">12.4</td><td class="num">20.4</td>
+      <td class="num">-7.5</td><td class="num">-0.120</td>
+    </tr>
+<tr class="">
+      <td>Semi-hard</td><td class="num">7</td>
+      <td class="num">22.3</td><td class="num">25.8</td>
+      <td class="num">-0.4</td><td class="num">0.560</td>
+    </tr>
+<tr class="flag-row">
+      <td>Hard</td><td class="num">5</td>
+      <td class="num">111.9</td><td class="num">128.6</td>
+      <td class="num">-111.9</td><td class="num">-3.112</td>
+    </tr>
+</tbody>
+</table>
+<p class="note">By support level (all 21 predicted rows fall in one bucket &mdash; see below):</p>
+<table>
+<thead><tr><th>Support level</th><th>n</th><th>MAE (d)</th><th>RMSE (d)</th><th>Bias (d)</th><th>R&sup2;</th></tr></thead>
+<tbody><tr class="flag-row">
+      <td>unsupported categorical</td><td class="num">21</td>
+      <td class="num">39.4</td><td class="num">65.8</td>
+      <td class="num">-30.0</td><td class="num">0.172</td>
+    </tr></tbody>
+</table>
+<div class="callout bad-callout">Every one of the 21 predictable rows was flagged <code>unsupported_categorical</code> &mdash; there is no "clean" supported subset to compare against in this file. This is the hardened pipeline behaving as designed (it never silently presents an out-of-vocabulary input as a normal-confidence result), but it means the R&sup2;/MAE above conflate genuine model error with vocabulary-coverage gaps. Treat this file as a coverage stress test more than a clean accuracy benchmark until a version using V7&rsquo;s own vocabulary is available.</div>
+
+<h2 id="s4" class="page-break">4. Full per-row detail</h2>
+<p class="note">&#9733; marks the specialist&rsquo;s production model (lowest validation RMSE). Every flag is listed in full &mdash; nothing truncated.</p>
+<div class="card">
+      <div class="card-title">
+        <span class="row-name">EXT_ALVES96_AIR &mdash; soft / Mozzarella</span>
+        <span class="row-result good">true 13d &rarr; pred 10.9d (err -2.1d)</span>
+      </div>
+      <div class="card-sub">Alves et al. (1996), Shelf Life of Sliced Mozzarella Cheese in Modified-Atmosphere Packaging &middot; DOI 10.4315/0362-028X-59.8.838 &middot; 1996</div>
+      <p class="small" style="margin:2px 0 6px;">Sliced mozzarella stored at 7±1°C under the reported package atmosphere.</p>
+      <table style="margin:4px 0 6px;">
+        <thead><tr><th>Random Forest</th><th>LightGBM</th><th>XGBoost</th><th>EBM</th><th>Support level</th></tr></thead>
+        <tbody><tr><td class='num'>4.5</td><td class='num'>10.9 &#9733;</td><td class='num'>9.4</td><td class='num'>19.2</td><td>unsupported_categorical</td></tr></tbody>
+      </table>
+      <div><b class="small">Physical-form support:</b> <span class="small">Experimental &mdash; No training-support information is available for this combination.</span></div>
+      <div style="margin-top:4px;"><span class='tag unseen'>unseen food_matrix=Mozzarella</span><span class='tag unseen'>unseen packaging_type=air_PVC</span><span class='tag unseen'>unseen indicator_group=sensory_quality</span><span class='tag unseen'>unseen indicator_type=overall_sensory_deterioration</span><span class='tag unseen'>unseen treatment_type=conventional_packaging</span><span class='tag unseen'>unseen application_method=packaging_atmosphere</span><span class='tag unseen'>unseen physical_form=sliced</span><span class='tag extrap'>'headspace_oxygen_pct' = 21.0 is outside the training range [0.5, 20.9]</span><span class='tag extrap'>'headspace_co2_pct' = 0.0 is outside the training range [0.04, 50]</span></div>
+    </div>
+<div class="card">
+      <div class="card-title">
+        <span class="row-name">EXT_ALVES96_CO2 &mdash; soft / Mozzarella</span>
+        <span class="row-result bad">true 63d &rarr; pred 12.5d (err -50.5d)</span>
+      </div>
+      <div class="card-sub">Alves et al. (1996), Shelf Life of Sliced Mozzarella Cheese in Modified-Atmosphere Packaging &middot; DOI 10.4315/0362-028X-59.8.838 &middot; 1996</div>
+      <p class="small" style="margin:2px 0 6px;">Sliced mozzarella stored at 7±1°C under the reported package atmosphere.</p>
+      <table style="margin:4px 0 6px;">
+        <thead><tr><th>Random Forest</th><th>LightGBM</th><th>XGBoost</th><th>EBM</th><th>Support level</th></tr></thead>
+        <tbody><tr><td class='num'>4.8</td><td class='num'>12.5 &#9733;</td><td class='num'>10.7</td><td class='num'>23.4</td><td>unsupported_categorical</td></tr></tbody>
+      </table>
+      <div><b class="small">Physical-form support:</b> <span class="small">Experimental &mdash; No training-support information is available for this combination.</span></div>
+      <div style="margin-top:4px;"><span class='tag unseen'>unseen food_matrix=Mozzarella</span><span class='tag unseen'>unseen packaging_type=MAP_100_CO2</span><span class='tag unseen'>unseen indicator_group=sensory_quality</span><span class='tag unseen'>unseen indicator_type=overall_sensory_deterioration</span><span class='tag unseen'>unseen treatment_type=modified_atmosphere_packaging</span><span class='tag unseen'>unseen application_method=packaging_atmosphere</span><span class='tag unseen'>unseen physical_form=sliced</span><span class='tag extrap'>'headspace_oxygen_pct' = 0.0 is outside the training range [0.5, 20.9]</span><span class='tag extrap'>'headspace_co2_pct' = 100.0 is outside the training range [0.04, 50]</span></div>
+    </div>
+<div class="card">
+      <div class="card-title">
+        <span class="row-name">EXT_ALVES96_CO2N2 &mdash; soft / Mozzarella</span>
+        <span class="row-result bad">true 45d &rarr; pred 12.4d (err -32.6d)</span>
+      </div>
+      <div class="card-sub">Alves et al. (1996), Shelf Life of Sliced Mozzarella Cheese in Modified-Atmosphere Packaging &middot; DOI 10.4315/0362-028X-59.8.838 &middot; 1996</div>
+      <p class="small" style="margin:2px 0 6px;">Sliced mozzarella stored at 7±1°C under the reported package atmosphere.</p>
+      <table style="margin:4px 0 6px;">
+        <thead><tr><th>Random Forest</th><th>LightGBM</th><th>XGBoost</th><th>EBM</th><th>Support level</th></tr></thead>
+        <tbody><tr><td class='num'>4.8</td><td class='num'>12.4 &#9733;</td><td class='num'>10.7</td><td class='num'>22.3</td><td>unsupported_categorical</td></tr></tbody>
+      </table>
+      <div><b class="small">Physical-form support:</b> <span class="small">Experimental &mdash; No training-support information is available for this combination.</span></div>
+      <div style="margin-top:4px;"><span class='tag unseen'>unseen food_matrix=Mozzarella</span><span class='tag unseen'>unseen packaging_type=MAP_50_CO2_50_N2</span><span class='tag unseen'>unseen indicator_group=sensory_quality</span><span class='tag unseen'>unseen indicator_type=overall_sensory_deterioration</span><span class='tag unseen'>unseen treatment_type=modified_atmosphere_packaging</span><span class='tag unseen'>unseen application_method=packaging_atmosphere</span><span class='tag unseen'>unseen physical_form=sliced</span><span class='tag extrap'>'headspace_oxygen_pct' = 0.0 is outside the training range [0.5, 20.9]</span></div>
+    </div>
+<div class="card">
+      <div class="card-title">
+        <span class="row-name">EXT_ALVES96_N2 &mdash; soft / Mozzarella</span>
+        <span class="row-result good">true 16d &rarr; pred 11.8d (err -4.2d)</span>
+      </div>
+      <div class="card-sub">Alves et al. (1996), Shelf Life of Sliced Mozzarella Cheese in Modified-Atmosphere Packaging &middot; DOI 10.4315/0362-028X-59.8.838 &middot; 1996</div>
+      <p class="small" style="margin:2px 0 6px;">Sliced mozzarella stored at 7±1°C under the reported package atmosphere.</p>
+      <table style="margin:4px 0 6px;">
+        <thead><tr><th>Random Forest</th><th>LightGBM</th><th>XGBoost</th><th>EBM</th><th>Support level</th></tr></thead>
+        <tbody><tr><td class='num'>4.5</td><td class='num'>11.8 &#9733;</td><td class='num'>10.3</td><td class='num'>21.0</td><td>unsupported_categorical</td></tr></tbody>
+      </table>
+      <div><b class="small">Physical-form support:</b> <span class="small">Experimental &mdash; No training-support information is available for this combination.</span></div>
+      <div style="margin-top:4px;"><span class='tag unseen'>unseen food_matrix=Mozzarella</span><span class='tag unseen'>unseen packaging_type=MAP_100_N2</span><span class='tag unseen'>unseen indicator_group=sensory_quality</span><span class='tag unseen'>unseen indicator_type=overall_sensory_deterioration</span><span class='tag unseen'>unseen treatment_type=modified_atmosphere_packaging</span><span class='tag unseen'>unseen application_method=packaging_atmosphere</span><span class='tag unseen'>unseen physical_form=sliced</span><span class='tag extrap'>'headspace_oxygen_pct' = 0.0 is outside the training range [0.5, 20.9]</span><span class='tag extrap'>'headspace_co2_pct' = 0.0 is outside the training range [0.04, 50]</span><span class='tag extrap'>'headspace_n2_pct' = 100.0 is outside the training range [0, 79.1]</span></div>
+    </div>
+<div class="card">
+      <div class="card-title">
+        <span class="row-name">EXT_AZHDARI22_CMC &mdash; soft / High-moisture Mozzarella</span>
+        <span class="row-result good">true 8d &rarr; pred 11.2d (err +3.2d)</span>
+      </div>
+      <div class="card-sub">Azhdari &amp; Moradi (2022), CMC/natamycin coating of high-moisture mozzarella cheese &middot; DOI 10.1016/j.ijbiomac.2022.04.185 &middot; 2022</div>
+      <p class="small" style="margin:2px 0 6px;">High-moisture mozzarella at 7°C with the reported coating treatment.</p>
+      <table style="margin:4px 0 6px;">
+        <thead><tr><th>Random Forest</th><th>LightGBM</th><th>XGBoost</th><th>EBM</th><th>Support level</th></tr></thead>
+        <tbody><tr><td class='num'>4.5</td><td class='num'>11.2 &#9733;</td><td class='num'>10.4</td><td class='num'>21.3</td><td>unsupported_categorical</td></tr></tbody>
+      </table>
+      <div><b class="small">Physical-form support:</b> <span class="small">Experimental &mdash; No training-support information is available for this combination.</span></div>
+      <div style="margin-top:4px;"><span class='tag unseen'>unseen food_matrix=High-moisture Mozzarella</span><span class='tag unseen'>unseen indicator_group=total_bacterial_count</span><span class='tag unseen'>unseen indicator_type=total_mesophilic_count</span><span class='tag unseen'>unseen indicator_unit=log10_CFU_g</span><span class='tag unseen'>unseen application_method=immersion_coating</span><span class='tag unseen'>unseen primary_ingredient_name=carboxymethyl_cellulose</span><span class='tag unseen'>unseen primary_ingredient_family=hydrocolloid_coating</span><span class='tag unseen'>unseen physical_form=unknown</span></div>
+    </div>
+<div class="card">
+      <div class="card-title">
+        <span class="row-name">EXT_AZHDARI22_CTRL &mdash; soft / High-moisture Mozzarella</span>
+        <span class="row-result good">true 4d &rarr; pred 10.9d (err +6.9d)</span>
+      </div>
+      <div class="card-sub">Azhdari &amp; Moradi (2022), CMC/natamycin coating of high-moisture mozzarella cheese &middot; DOI 10.1016/j.ijbiomac.2022.04.185 &middot; 2022</div>
+      <p class="small" style="margin:2px 0 6px;">High-moisture mozzarella at 7°C with the reported coating treatment.</p>
+      <table style="margin:4px 0 6px;">
+        <thead><tr><th>Random Forest</th><th>LightGBM</th><th>XGBoost</th><th>EBM</th><th>Support level</th></tr></thead>
+        <tbody><tr><td class='num'>4.5</td><td class='num'>10.9 &#9733;</td><td class='num'>9.5</td><td class='num'>19.1</td><td>unsupported_categorical</td></tr></tbody>
+      </table>
+      <div><b class="small">Physical-form support:</b> <span class="small">Experimental &mdash; No training-support information is available for this combination.</span></div>
+      <div style="margin-top:4px;"><span class='tag unseen'>unseen food_matrix=High-moisture Mozzarella</span><span class='tag unseen'>unseen indicator_group=total_bacterial_count</span><span class='tag unseen'>unseen indicator_type=total_mesophilic_count</span><span class='tag unseen'>unseen indicator_unit=log10_CFU_g</span><span class='tag unseen'>unseen treatment_type=control</span><span class='tag unseen'>unseen physical_form=unknown</span></div>
+    </div>
+<div class="card">
+      <div class="card-title">
+        <span class="row-name">EXT_AZHDARI22_NAT005 &mdash; soft / High-moisture Mozzarella</span>
+        <span class="row-result good">true 8d &rarr; pred 11.7d (err +3.7d)</span>
+      </div>
+      <div class="card-sub">Azhdari &amp; Moradi (2022), CMC/natamycin coating of high-moisture mozzarella cheese &middot; DOI 10.1016/j.ijbiomac.2022.04.185 &middot; 2022</div>
+      <p class="small" style="margin:2px 0 6px;">High-moisture mozzarella at 7°C with the reported coating treatment.</p>
+      <table style="margin:4px 0 6px;">
+        <thead><tr><th>Random Forest</th><th>LightGBM</th><th>XGBoost</th><th>EBM</th><th>Support level</th></tr></thead>
+        <tbody><tr><td class='num'>4.6</td><td class='num'>11.7 &#9733;</td><td class='num'>10.5</td><td class='num'>22.3</td><td>unsupported_categorical</td></tr></tbody>
+      </table>
+      <div><b class="small">Physical-form support:</b> <span class="small">Experimental &mdash; No training-support information is available for this combination.</span></div>
+      <div style="margin-top:4px;"><span class='tag unseen'>unseen food_matrix=High-moisture Mozzarella</span><span class='tag unseen'>unseen indicator_group=total_bacterial_count</span><span class='tag unseen'>unseen indicator_type=total_mesophilic_count</span><span class='tag unseen'>unseen indicator_unit=log10_CFU_g</span><span class='tag unseen'>unseen application_method=immersion_coating</span><span class='tag unseen'>unseen physical_form=unknown</span><span class='tag extrap'>concentration unit unrecognized: No verified conversion for concentration unit '%_coating_solution'. Known units: ['%', '% ( v/v)', '% (v/v)', '% w/v', '% w/w', '%(w/v)', '(w/v) %', '(w/w) %', 'AU/g', 'IU/g', 'g', 'g/L', 'g/kg', 'hr', 'log CFU/g', 'mg/5 ml', 'mg/L', 'mg/g', 'mg/kg', 'mg/mL', 'ml', 'mmol/L', 'none', 'ppm', 'wt %']</span></div>
+    </div>
+<div class="card">
+      <div class="card-title">
+        <span class="row-name">EXT_AZHDARI22_NAT05 &mdash; soft / High-moisture Mozzarella</span>
+        <span class="row-result good">true 8d &rarr; pred 11.7d (err +3.7d)</span>
+      </div>
+      <div class="card-sub">Azhdari &amp; Moradi (2022), CMC/natamycin coating of high-moisture mozzarella cheese &middot; DOI 10.1016/j.ijbiomac.2022.04.185 &middot; 2022</div>
+      <p class="small" style="margin:2px 0 6px;">High-moisture mozzarella at 7°C with the reported coating treatment.</p>
+      <table style="margin:4px 0 6px;">
+        <thead><tr><th>Random Forest</th><th>LightGBM</th><th>XGBoost</th><th>EBM</th><th>Support level</th></tr></thead>
+        <tbody><tr><td class='num'>4.6</td><td class='num'>11.7 &#9733;</td><td class='num'>10.5</td><td class='num'>22.3</td><td>unsupported_categorical</td></tr></tbody>
+      </table>
+      <div><b class="small">Physical-form support:</b> <span class="small">Experimental &mdash; No training-support information is available for this combination.</span></div>
+      <div style="margin-top:4px;"><span class='tag unseen'>unseen food_matrix=High-moisture Mozzarella</span><span class='tag unseen'>unseen indicator_group=total_bacterial_count</span><span class='tag unseen'>unseen indicator_type=total_mesophilic_count</span><span class='tag unseen'>unseen indicator_unit=log10_CFU_g</span><span class='tag unseen'>unseen application_method=immersion_coating</span><span class='tag unseen'>unseen physical_form=unknown</span><span class='tag extrap'>concentration unit unrecognized: No verified conversion for concentration unit '%_coating_solution'. Known units: ['%', '% ( v/v)', '% (v/v)', '% w/v', '% w/w', '%(w/v)', '(w/v) %', '(w/w) %', 'AU/g', 'IU/g', 'g', 'g/L', 'g/kg', 'hr', 'log CFU/g', 'mg/5 ml', 'mg/L', 'mg/g', 'mg/kg', 'mg/mL', 'ml', 'mmol/L', 'none', 'ppm', 'wt %']</span></div>
+    </div>
+<div class="card">
+      <div class="card-title">
+        <span class="row-name">EXT_BARUK20_AIR &mdash; soft / Fresh acid-coagulated cheese</span>
+        <span class="row-result good">true 9d &rarr; pred 13.7d (err +4.7d)</span>
+      </div>
+      <div class="card-sub">Barukčić et al. (2020), Effect of different packaging conditions on shelf life of fresh acid-coagulated cheese &middot; DOI 10.1007/s13197-020-04308-6 &middot; 2020</div>
+      <p class="small" style="margin:2px 0 6px;">Fresh acid-coagulated cheese at 4±0.5°C in atmospheric air.</p>
+      <table style="margin:4px 0 6px;">
+        <thead><tr><th>Random Forest</th><th>LightGBM</th><th>XGBoost</th><th>EBM</th><th>Support level</th></tr></thead>
+        <tbody><tr><td class='num'>5.6</td><td class='num'>13.7 &#9733;</td><td class='num'>11.8</td><td class='num'>22.2</td><td>unsupported_categorical</td></tr></tbody>
+      </table>
+      <div><b class="small">Physical-form support:</b> <span class="small">Experimental &mdash; No training-support information is available for this combination.</span></div>
+      <div style="margin-top:4px;"><span class='tag unseen'>unseen food_matrix=Fresh acid-coagulated cheese</span><span class='tag unseen'>unseen packaging_type=atmospheric_air</span><span class='tag unseen'>unseen indicator_group=combined_quality</span><span class='tag unseen'>unseen indicator_type=microbiological_and_sensory_shelf_life</span><span class='tag unseen'>unseen treatment_type=conventional_packaging</span><span class='tag unseen'>unseen physical_form=unknown</span></div>
+    </div>
+<div class="card">
+      <div class="card-title">
+        <span class="row-name">EXT_GOUDA_SPREAD18_20C &mdash; semi_hard / Processed Gouda cheese spread</span>
+        <span class="row-result warn">true 28d &rarr; pred 43.1d (err +15.1d)</span>
+      </div>
+      <div class="card-sub">Processed Gouda cheese spread shelf-life study (2018) &middot; DOI 10.1007/s10068-018-0377-2 &middot; 2018</div>
+      <p class="small" style="margin:2px 0 6px;">Spreadable processed Gouda stored at 20°C.</p>
+      <table style="margin:4px 0 6px;">
+        <thead><tr><th>Random Forest</th><th>LightGBM</th><th>XGBoost</th><th>EBM</th><th>Support level</th></tr></thead>
+        <tbody><tr><td class='num'>42.7</td><td class='num'>43.1 &#9733;</td><td class='num'>40.2</td><td class='num'>0.0</td><td>unsupported_categorical</td></tr></tbody>
+      </table>
+      <div><b class="small">Physical-form support:</b> <span class="small">Experimental &mdash; No training-support information is available for this combination.</span></div>
+      <div style="margin-top:4px;"><span class='tag unseen'>unseen food_matrix=Processed Gouda cheese spread</span><span class='tag unseen'>unseen indicator_group=sensory_quality</span><span class='tag unseen'>unseen indicator_type=taste_smell_consistency_change</span><span class='tag unseen'>unseen treatment_type=temperature_storage</span><span class='tag unseen'>unseen physical_form=spreadable</span><span class='tag extrap'>'storage_temperature_c' = 20.0 is outside the training range [2, 15]</span></div>
+    </div>
+<div class="card">
+      <div class="card-title">
+        <span class="row-name">EXT_GOUDA_SPREAD18_30C &mdash; semi_hard / Processed Gouda cheese spread</span>
+        <span class="row-result bad">true 4d &rarr; pred 43.1d (err +39.1d)</span>
+      </div>
+      <div class="card-sub">Processed Gouda cheese spread shelf-life study (2018) &middot; DOI 10.1007/s10068-018-0377-2 &middot; 2018</div>
+      <p class="small" style="margin:2px 0 6px;">Spreadable processed Gouda stored at 30°C.</p>
+      <table style="margin:4px 0 6px;">
+        <thead><tr><th>Random Forest</th><th>LightGBM</th><th>XGBoost</th><th>EBM</th><th>Support level</th></tr></thead>
+        <tbody><tr><td class='num'>42.7</td><td class='num'>43.1 &#9733;</td><td class='num'>40.2</td><td class='num'>0.0</td><td>unsupported_categorical</td></tr></tbody>
+      </table>
+      <div><b class="small">Physical-form support:</b> <span class="small">Experimental &mdash; No training-support information is available for this combination.</span></div>
+      <div style="margin-top:4px;"><span class='tag unseen'>unseen food_matrix=Processed Gouda cheese spread</span><span class='tag unseen'>unseen indicator_group=sensory_quality</span><span class='tag unseen'>unseen indicator_type=taste_smell_consistency_change</span><span class='tag unseen'>unseen treatment_type=temperature_storage</span><span class='tag unseen'>unseen physical_form=spreadable</span><span class='tag extrap'>'storage_temperature_c' = 30.0 is outside the training range [2, 15]</span></div>
+    </div>
+<div class="card">
+      <div class="card-title">
+        <span class="row-name">EXT_GOUDA_SPREAD18_8C &mdash; semi_hard / Processed Gouda cheese spread</span>
+        <span class="row-result good">true 49d &rarr; pred 53.0d (err +4.0d)</span>
+      </div>
+      <div class="card-sub">Processed Gouda cheese spread shelf-life study (2018) &middot; DOI 10.1007/s10068-018-0377-2 &middot; 2018</div>
+      <p class="small" style="margin:2px 0 6px;">Spreadable processed Gouda stored at 8°C.</p>
+      <table style="margin:4px 0 6px;">
+        <thead><tr><th>Random Forest</th><th>LightGBM</th><th>XGBoost</th><th>EBM</th><th>Support level</th></tr></thead>
+        <tbody><tr><td class='num'>51.0</td><td class='num'>53.0 &#9733;</td><td class='num'>48.9</td><td class='num'>33.3</td><td>unsupported_categorical</td></tr></tbody>
+      </table>
+      <div><b class="small">Physical-form support:</b> <span class="small">Experimental &mdash; No training-support information is available for this combination.</span></div>
+      <div style="margin-top:4px;"><span class='tag unseen'>unseen food_matrix=Processed Gouda cheese spread</span><span class='tag unseen'>unseen indicator_group=sensory_quality</span><span class='tag unseen'>unseen indicator_type=taste_smell_consistency_change</span><span class='tag unseen'>unseen treatment_type=temperature_storage</span><span class='tag unseen'>unseen physical_form=spreadable</span></div>
+    </div>
+<div class="card">
+      <div class="card-title">
+        <span class="row-name">EXT_MONTASIO24_MONOMAP1_30 &mdash; semi_hard / Montasio</span>
+        <span class="row-result warn">true 60d &rarr; pred 78.4d (err +18.4d)</span>
+      </div>
+      <div class="card-sub">Renoldi et al. (2024), Packaging and shelf-life of semi-hard Montasio cheese &middot; DOI 10.1016/j.fpsl.2024.101363 &middot; 2024</div>
+      <p class="small" style="margin:2px 0 6px;">Montasio at 8±1°C, MonoMAP1_80_CO2_20_N2; shelf-life at 30% panelist rancidity threshold.</p>
+      <table style="margin:4px 0 6px;">
+        <thead><tr><th>Random Forest</th><th>LightGBM</th><th>XGBoost</th><th>EBM</th><th>Support level</th></tr></thead>
+        <tbody><tr><td class='num'>69.5</td><td class='num'>78.4 &#9733;</td><td class='num'>72.7</td><td class='num'>68.6</td><td>unsupported_categorical</td></tr></tbody>
+      </table>
+      <div><b class="small">Physical-form support:</b> <span class="small">Experimental &mdash; No training-support information is available for this combination.</span></div>
+      <div style="margin-top:4px;"><span class='tag unseen'>unseen food_matrix=Montasio</span><span class='tag unseen'>unseen packaging_type=MonoMAP1_80_CO2_20_N2</span><span class='tag unseen'>unseen indicator_group=sensory_quality</span><span class='tag unseen'>unseen indicator_type=rancidity_panel_detection</span><span class='tag unseen'>unseen indicator_unit=%_panelists</span><span class='tag unseen'>unseen treatment_type=packaging</span><span class='tag unseen'>unseen application_method=packaging</span><span class='tag unseen'>unseen physical_form=portioned_slices_250g</span><span class='tag extrap'>'matrix_moisture_pct' = 29.0 is outside the training range [34.2, 54.6]</span><span class='tag extrap'>'matrix_fat_pct' = 37.0 is outside the training range [20.2, 32.8]</span><span class='tag extrap'>'matrix_protein_pct' = 29.0 is outside the training range [13.1, 28.7]</span><span class='tag extrap'>'headspace_oxygen_pct' = 0.0 is outside the training range [0.5, 20.9]</span><span class='tag extrap'>'headspace_co2_pct' = 80.0 is outside the training range [0.04, 75]</span><span class='tag extrap'>'indicator_threshold' = 30.0 is outside the training range [2, 10]</span></div>
+    </div>
+<div class="card">
+      <div class="card-title">
+        <span class="row-name">EXT_MONTASIO24_MONOMAP1_50 &mdash; semi_hard / Montasio</span>
+        <span class="row-result warn">true 90d &rarr; pred 78.4d (err -11.6d)</span>
+      </div>
+      <div class="card-sub">Renoldi et al. (2024), Packaging and shelf-life of semi-hard Montasio cheese &middot; DOI 10.1016/j.fpsl.2024.101363 &middot; 2024</div>
+      <p class="small" style="margin:2px 0 6px;">Montasio at 8±1°C, MonoMAP1_80_CO2_20_N2; shelf-life at 50% panelist rancidity threshold.</p>
+      <table style="margin:4px 0 6px;">
+        <thead><tr><th>Random Forest</th><th>LightGBM</th><th>XGBoost</th><th>EBM</th><th>Support level</th></tr></thead>
+        <tbody><tr><td class='num'>69.5</td><td class='num'>78.4 &#9733;</td><td class='num'>72.7</td><td class='num'>68.6</td><td>unsupported_categorical</td></tr></tbody>
+      </table>
+      <div><b class="small">Physical-form support:</b> <span class="small">Experimental &mdash; No training-support information is available for this combination.</span></div>
+      <div style="margin-top:4px;"><span class='tag unseen'>unseen food_matrix=Montasio</span><span class='tag unseen'>unseen packaging_type=MonoMAP1_80_CO2_20_N2</span><span class='tag unseen'>unseen indicator_group=sensory_quality</span><span class='tag unseen'>unseen indicator_type=rancidity_panel_detection</span><span class='tag unseen'>unseen indicator_unit=%_panelists</span><span class='tag unseen'>unseen treatment_type=packaging</span><span class='tag unseen'>unseen application_method=packaging</span><span class='tag unseen'>unseen physical_form=portioned_slices_250g</span><span class='tag extrap'>'matrix_moisture_pct' = 29.0 is outside the training range [34.2, 54.6]</span><span class='tag extrap'>'matrix_fat_pct' = 37.0 is outside the training range [20.2, 32.8]</span><span class='tag extrap'>'matrix_protein_pct' = 29.0 is outside the training range [13.1, 28.7]</span><span class='tag extrap'>'headspace_oxygen_pct' = 0.0 is outside the training range [0.5, 20.9]</span><span class='tag extrap'>'headspace_co2_pct' = 80.0 is outside the training range [0.04, 75]</span><span class='tag extrap'>'indicator_threshold' = 50.0 is outside the training range [2, 10]</span></div>
+    </div>
+<div class="card">
+      <div class="card-title">
+        <span class="row-name">EXT_MONTASIO24_MULTIMAP30 &mdash; semi_hard / Montasio</span>
+        <span class="row-result warn">true 105d &rarr; pred 78.4d (err -26.6d)</span>
+      </div>
+      <div class="card-sub">Renoldi et al. (2024), Packaging and shelf-life of semi-hard Montasio cheese &middot; DOI 10.1016/j.fpsl.2024.101363 &middot; 2024</div>
+      <p class="small" style="margin:2px 0 6px;">Montasio at 8±1°C, MultiMAP_80_CO2_20_N2; shelf-life at 30% panelist rancidity threshold.</p>
+      <table style="margin:4px 0 6px;">
+        <thead><tr><th>Random Forest</th><th>LightGBM</th><th>XGBoost</th><th>EBM</th><th>Support level</th></tr></thead>
+        <tbody><tr><td class='num'>69.5</td><td class='num'>78.4 &#9733;</td><td class='num'>72.7</td><td class='num'>68.6</td><td>unsupported_categorical</td></tr></tbody>
+      </table>
+      <div><b class="small">Physical-form support:</b> <span class="small">Experimental &mdash; No training-support information is available for this combination.</span></div>
+      <div style="margin-top:4px;"><span class='tag unseen'>unseen food_matrix=Montasio</span><span class='tag unseen'>unseen packaging_type=MultiMAP_80_CO2_20_N2</span><span class='tag unseen'>unseen indicator_group=sensory_quality</span><span class='tag unseen'>unseen indicator_type=rancidity_panel_detection</span><span class='tag unseen'>unseen indicator_unit=%_panelists</span><span class='tag unseen'>unseen treatment_type=packaging</span><span class='tag unseen'>unseen application_method=packaging</span><span class='tag unseen'>unseen physical_form=portioned_slices_250g</span><span class='tag extrap'>'matrix_moisture_pct' = 29.0 is outside the training range [34.2, 54.6]</span><span class='tag extrap'>'matrix_fat_pct' = 37.0 is outside the training range [20.2, 32.8]</span><span class='tag extrap'>'matrix_protein_pct' = 29.0 is outside the training range [13.1, 28.7]</span><span class='tag extrap'>'headspace_oxygen_pct' = 0.0 is outside the training range [0.5, 20.9]</span><span class='tag extrap'>'headspace_co2_pct' = 80.0 is outside the training range [0.04, 75]</span><span class='tag extrap'>'indicator_threshold' = 30.0 is outside the training range [2, 10]</span></div>
+    </div>
+<div class="card">
+      <div class="card-title">
+        <span class="row-name">EXT_MONTASIO24_MULTIMAP50 &mdash; semi_hard / Montasio</span>
+        <span class="row-result bad">true 120d &rarr; pred 78.4d (err -41.6d)</span>
+      </div>
+      <div class="card-sub">Renoldi et al. (2024), Packaging and shelf-life of semi-hard Montasio cheese &middot; DOI 10.1016/j.fpsl.2024.101363 &middot; 2024</div>
+      <p class="small" style="margin:2px 0 6px;">Montasio at 8±1°C, MultiMAP_80_CO2_20_N2; shelf-life at 50% panelist rancidity threshold.</p>
+      <table style="margin:4px 0 6px;">
+        <thead><tr><th>Random Forest</th><th>LightGBM</th><th>XGBoost</th><th>EBM</th><th>Support level</th></tr></thead>
+        <tbody><tr><td class='num'>69.5</td><td class='num'>78.4 &#9733;</td><td class='num'>72.7</td><td class='num'>68.6</td><td>unsupported_categorical</td></tr></tbody>
+      </table>
+      <div><b class="small">Physical-form support:</b> <span class="small">Experimental &mdash; No training-support information is available for this combination.</span></div>
+      <div style="margin-top:4px;"><span class='tag unseen'>unseen food_matrix=Montasio</span><span class='tag unseen'>unseen packaging_type=MultiMAP_80_CO2_20_N2</span><span class='tag unseen'>unseen indicator_group=sensory_quality</span><span class='tag unseen'>unseen indicator_type=rancidity_panel_detection</span><span class='tag unseen'>unseen indicator_unit=%_panelists</span><span class='tag unseen'>unseen treatment_type=packaging</span><span class='tag unseen'>unseen application_method=packaging</span><span class='tag unseen'>unseen physical_form=portioned_slices_250g</span><span class='tag extrap'>'matrix_moisture_pct' = 29.0 is outside the training range [34.2, 54.6]</span><span class='tag extrap'>'matrix_fat_pct' = 37.0 is outside the training range [20.2, 32.8]</span><span class='tag extrap'>'matrix_protein_pct' = 29.0 is outside the training range [13.1, 28.7]</span><span class='tag extrap'>'headspace_oxygen_pct' = 0.0 is outside the training range [0.5, 20.9]</span><span class='tag extrap'>'headspace_co2_pct' = 80.0 is outside the training range [0.04, 75]</span><span class='tag extrap'>'indicator_threshold' = 50.0 is outside the training range [2, 10]</span></div>
+    </div>
+<div class="card">
+      <div class="card-title">
+        <span class="row-name">EXT_PROVOLONE07_CO2_10 &mdash; hard / Provolone (aged 6 months)</span>
+        <span class="row-result bad">true 100d &rarr; pred 59.5d (err -40.5d)</span>
+      </div>
+      <div class="card-sub">Favati et al. (2007), Packaging and shelf-life evaluation of portioned Provolone cheese &middot; DOI 10.1016/j.lwt.2005.12.001 &middot; 2007</div>
+      <p class="small" style="margin:2px 0 6px;">Six-month-aged Provolone, ~400 g portions, at 8°C in MAP_10_CO2_90_N2.</p>
+      <table style="margin:4px 0 6px;">
+        <thead><tr><th>Random Forest</th><th>LightGBM</th><th>XGBoost</th><th>EBM</th><th>Support level</th></tr></thead>
+        <tbody><tr><td class='num'>63.4</td><td class='num'>59.5 &#9733;</td><td class='num'>69.1</td><td class='num'>73.4</td><td>unsupported_categorical</td></tr></tbody>
+      </table>
+      <div><b class="small">Physical-form support:</b> <span class="small">Experimental &mdash; No training-support information is available for this combination.</span></div>
+      <div style="margin-top:4px;"><span class='tag unseen'>unseen food_matrix=Provolone (aged 6 months)</span><span class='tag unseen'>unseen packaging_type=MAP_10_CO2_90_N2</span><span class='tag unseen'>unseen indicator_group=chemical_quality</span><span class='tag unseen'>unseen indicator_type=free_fatty_acids_C4_plus_C6</span><span class='tag unseen'>unseen indicator_unit=ppm</span><span class='tag unseen'>unseen treatment_type=packaging</span><span class='tag unseen'>unseen application_method=packaging</span><span class='tag unseen'>unseen physical_form=portion_approx_400g</span><span class='tag extrap'>'headspace_oxygen_pct' = 0.0 is outside the training range [0.5, 20.9]</span><span class='tag extrap'>'headspace_n2_pct' = 90.0 is outside the training range [0, 79.1]</span><span class='tag extrap'>'indicator_threshold' = 1200.0 is outside the training range [2, 10]</span></div>
+    </div>
+<div class="card">
+      <div class="card-title">
+        <span class="row-name">EXT_PROVOLONE07_CO2_100 &mdash; hard / Provolone (aged 6 months)</span>
+        <span class="row-result bad">true 175d &rarr; pred 64.6d (err -110.4d)</span>
+      </div>
+      <div class="card-sub">Favati et al. (2007), Packaging and shelf-life evaluation of portioned Provolone cheese &middot; DOI 10.1016/j.lwt.2005.12.001 &middot; 2007</div>
+      <p class="small" style="margin:2px 0 6px;">Six-month-aged Provolone, ~400 g portions, at 8°C in MAP_100_CO2.</p>
+      <table style="margin:4px 0 6px;">
+        <thead><tr><th>Random Forest</th><th>LightGBM</th><th>XGBoost</th><th>EBM</th><th>Support level</th></tr></thead>
+        <tbody><tr><td class='num'>65.6</td><td class='num'>64.6 &#9733;</td><td class='num'>73.3</td><td class='num'>60.8</td><td>unsupported_categorical</td></tr></tbody>
+      </table>
+      <div><b class="small">Physical-form support:</b> <span class="small">Experimental &mdash; No training-support information is available for this combination.</span></div>
+      <div style="margin-top:4px;"><span class='tag unseen'>unseen food_matrix=Provolone (aged 6 months)</span><span class='tag unseen'>unseen packaging_type=MAP_100_CO2</span><span class='tag unseen'>unseen indicator_group=chemical_quality</span><span class='tag unseen'>unseen indicator_type=free_fatty_acids_C4_plus_C6</span><span class='tag unseen'>unseen indicator_unit=ppm</span><span class='tag unseen'>unseen treatment_type=packaging</span><span class='tag unseen'>unseen application_method=packaging</span><span class='tag unseen'>unseen physical_form=portion_approx_400g</span><span class='tag extrap'>'headspace_oxygen_pct' = 0.0 is outside the training range [0.5, 20.9]</span><span class='tag extrap'>'headspace_co2_pct' = 100.0 is outside the training range [0.04, 75]</span><span class='tag extrap'>'indicator_threshold' = 1200.0 is outside the training range [2, 10]</span></div>
+    </div>
+<div class="card">
+      <div class="card-title">
+        <span class="row-name">EXT_PROVOLONE07_CO2_20 &mdash; hard / Provolone (aged 6 months)</span>
+        <span class="row-result bad">true 118d &rarr; pred 59.5d (err -58.5d)</span>
+      </div>
+      <div class="card-sub">Favati et al. (2007), Packaging and shelf-life evaluation of portioned Provolone cheese &middot; DOI 10.1016/j.lwt.2005.12.001 &middot; 2007</div>
+      <p class="small" style="margin:2px 0 6px;">Six-month-aged Provolone, ~400 g portions, at 8°C in MAP_20_CO2_80_N2.</p>
+      <table style="margin:4px 0 6px;">
+        <thead><tr><th>Random Forest</th><th>LightGBM</th><th>XGBoost</th><th>EBM</th><th>Support level</th></tr></thead>
+        <tbody><tr><td class='num'>64.0</td><td class='num'>59.5 &#9733;</td><td class='num'>69.1</td><td class='num'>73.3</td><td>unsupported_categorical</td></tr></tbody>
+      </table>
+      <div><b class="small">Physical-form support:</b> <span class="small">Experimental &mdash; No training-support information is available for this combination.</span></div>
+      <div style="margin-top:4px;"><span class='tag unseen'>unseen food_matrix=Provolone (aged 6 months)</span><span class='tag unseen'>unseen packaging_type=MAP_20_CO2_80_N2</span><span class='tag unseen'>unseen indicator_group=chemical_quality</span><span class='tag unseen'>unseen indicator_type=free_fatty_acids_C4_plus_C6</span><span class='tag unseen'>unseen indicator_unit=ppm</span><span class='tag unseen'>unseen treatment_type=packaging</span><span class='tag unseen'>unseen application_method=packaging</span><span class='tag unseen'>unseen physical_form=portion_approx_400g</span><span class='tag extrap'>'headspace_oxygen_pct' = 0.0 is outside the training range [0.5, 20.9]</span><span class='tag extrap'>'headspace_n2_pct' = 80.0 is outside the training range [0, 79.1]</span><span class='tag extrap'>'indicator_threshold' = 1200.0 is outside the training range [2, 10]</span></div>
+    </div>
+<div class="card">
+      <div class="card-title">
+        <span class="row-name">EXT_PROVOLONE07_CO2_30 &mdash; hard / Provolone (aged 6 months)</span>
+        <span class="row-result bad">true 280d &rarr; pred 59.8d (err -220.2d)</span>
+      </div>
+      <div class="card-sub">Favati et al. (2007), Packaging and shelf-life evaluation of portioned Provolone cheese &middot; DOI 10.1016/j.lwt.2005.12.001 &middot; 2007</div>
+      <p class="small" style="margin:2px 0 6px;">Six-month-aged Provolone, ~400 g portions, at 8°C in MAP_30_CO2_70_N2.</p>
+      <table style="margin:4px 0 6px;">
+        <thead><tr><th>Random Forest</th><th>LightGBM</th><th>XGBoost</th><th>EBM</th><th>Support level</th></tr></thead>
+        <tbody><tr><td class='num'>64.6</td><td class='num'>59.8 &#9733;</td><td class='num'>68.9</td><td class='num'>73.9</td><td>unsupported_categorical</td></tr></tbody>
+      </table>
+      <div><b class="small">Physical-form support:</b> <span class="small">Experimental &mdash; No training-support information is available for this combination.</span></div>
+      <div style="margin-top:4px;"><span class='tag unseen'>unseen food_matrix=Provolone (aged 6 months)</span><span class='tag unseen'>unseen packaging_type=MAP_30_CO2_70_N2</span><span class='tag unseen'>unseen indicator_group=chemical_quality</span><span class='tag unseen'>unseen indicator_type=free_fatty_acids_C4_plus_C6</span><span class='tag unseen'>unseen indicator_unit=ppm</span><span class='tag unseen'>unseen treatment_type=packaging</span><span class='tag unseen'>unseen application_method=packaging</span><span class='tag unseen'>unseen physical_form=portion_approx_400g</span><span class='tag extrap'>'headspace_oxygen_pct' = 0.0 is outside the training range [0.5, 20.9]</span><span class='tag extrap'>'indicator_threshold' = 1200.0 is outside the training range [2, 10]</span></div>
+    </div>
+<div class="card">
+      <div class="card-title">
+        <span class="row-name">EXT_PROVOLONE07_VAC &mdash; hard / Provolone (aged 6 months)</span>
+        <span class="row-result bad">true 190d &rarr; pred 60.1d (err -129.9d)</span>
+      </div>
+      <div class="card-sub">Favati et al. (2007), Packaging and shelf-life evaluation of portioned Provolone cheese &middot; DOI 10.1016/j.lwt.2005.12.001 &middot; 2007</div>
+      <p class="small" style="margin:2px 0 6px;">Six-month-aged Provolone, ~400 g portions, at 8°C in vacuum.</p>
+      <table style="margin:4px 0 6px;">
+        <thead><tr><th>Random Forest</th><th>LightGBM</th><th>XGBoost</th><th>EBM</th><th>Support level</th></tr></thead>
+        <tbody><tr><td class='num'>64.7</td><td class='num'>60.1 &#9733;</td><td class='num'>69.3</td><td class='num'>72.0</td><td>unsupported_categorical</td></tr></tbody>
+      </table>
+      <div><b class="small">Physical-form support:</b> <span class="small">Experimental &mdash; No training-support information is available for this combination.</span></div>
+      <div style="margin-top:4px;"><span class='tag unseen'>unseen food_matrix=Provolone (aged 6 months)</span><span class='tag unseen'>unseen indicator_group=chemical_quality</span><span class='tag unseen'>unseen indicator_type=free_fatty_acids_C4_plus_C6</span><span class='tag unseen'>unseen indicator_unit=ppm</span><span class='tag unseen'>unseen treatment_type=packaging</span><span class='tag unseen'>unseen application_method=packaging</span><span class='tag unseen'>unseen physical_form=portion_approx_400g</span><span class='tag extrap'>'indicator_threshold' = 1200.0 is outside the training range [2, 10]</span></div>
+    </div>
+
+<h2 id="s5" class="page-break">5. Deep dive: hard cheese on real data</h2>
+<p>All 5 hard-cheese rows come from one paper (Provolone, aged 6 months, five packaging/CO&#8322; conditions). True values span 100&ndash;280d; predictions cluster at 59.5&ndash;64.6d &mdash; the model is nearly insensitive to what actually distinguishes these five real cases. MAE=111.9d, bias=-111.9d (systematic underprediction), R&sup2;=-3.112.</p>
+<div class="callout bad-callout">This mirrors a generalization weakness that has recurred across multiple model generations in this project&rsquo;s history for long-aged hard cheese &mdash; the V7 retrain and architecture change have not resolved it. It is reported as-is; no correction was applied.</div>
+
+<h2 id="s6">6. Bug found and fixed while building this evaluation</h2>
+<p><code>ModelService.assess_support()</code> compared every numeric field&rsquo;s raw value against its training range without first checking for <code>NaN</code> (as opposed to <code>None</code>) &mdash; the natural result of <code>pandas.read_csv</code> on an empty cell, which several rows in this external file have (e.g. missing <code>matrix_ph</code>). A NaN always fails a range comparison, so it was being reported as a false "value=nan is outside the training range" extrapolation instead of being treated as missing data; the same applied to categorical NaNs being reported as an unseen category "value='nan'". Fixed with a shared missing-value check used in both the categorical and numeric loops, verified directly, and re-confirmed the full 23-case pytest suite (<code>test_v6_specialist_routing.py</code>) still passes since this is shared V6/V7 infrastructure.</p>
+
+<h2 id="s7">7. Recommendations</h2>
+<ol>
+  <li>Build (or request) a version of this external file using V7&rsquo;s own trained vocabulary for food_matrix/physical_form/packaging_type/indicator_type, so accuracy can be assessed independent of vocabulary coverage.</li>
+  <li>Do not remap or fuzzy-match the current file&rsquo;s vocabulary retroactively to make the score look better &mdash; a wrong mapping would be worse than an honest "unsupported" flag.</li>
+  <li>Hard cheese needs targeted attention specifically for long-aged profiles (Provolone-like) before any external validation claim is made for that category &mdash; consistent with every prior model generation in this project.</li>
+  <li>Semi-hard is the most promising generalizer here (R&sup2;=0.560) despite the same vocabulary-mismatch handicap &mdash; worth prioritizing if choosing where to invest further validation effort first.</li>
+</ol>
+
+<p class="small" style="margin-top:20px;">Report generated from data/raw/CHEESE_SHELF_LIFE_V7_EXTERNAL_TEST_POINT_TARGETS.csv via evaluate_v7_external_test.run_evaluation(), against the live artifacts_v7/ specialists. Full machine-readable output: v7_external_test_predictions.csv. No retraining, data modification, or prediction correction occurred in the course of this evaluation or report.</p>
+
+</body></html>

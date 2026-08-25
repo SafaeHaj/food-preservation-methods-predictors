@@ -1,0 +1,2488 @@
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead.
+
+  To migrate automatically, run:
+  npx @next/codemod@canary middleware-to-proxy .
+
+  Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head headCacheNode={{rsc:{...}, ...}}>
+                    <__next_viewport_boundary__>
+                    <MetadataWrapper>
+                      <div
+                        hidden={true}
+-                       bis_skin_checked="1"
+                      >
+                    ...
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="layout.tsx">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <RootLayout>
+                        <html lang="en" className="inter_24fb..." style={{...}}>
+                          <body
+                            className="min-h-full bg-canvas font-sans text-foreground"
+-                           __processed_566558fe-6d0b-4c15-b9da-7327423e9b7f__="true"
+-                           bis_register="W3sibWFzdGVyIjp0cnVlLCJleHRlbnNpb25JZCI6ImVwcGlvY2VtaG1ubGJoanBsY2drb2ZjaWll..."
+                          >
+                            ...
+                              <FloatingDelayGroup delay={{open:150, ...}} timeoutMs={400}>
+                                <Ambience>
+                                  <div
+                                    aria-hidden={true}
+                                    className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-canvas"
+-                                   bis_skin_checked="1"
+                                  >
+                                    <motion.div style={{rotate:{...}}} className="absolute t...">
+                                      <div
+                                        className="absolute top-1/2 left-1/2 size-[140vmax] -translate-x-1/2 -translat..."
+                                        style={{transform:"none"}}
+                                        ref={function useMotionRef.useCallback}
+-                                       bis_skin_checked="1"
+                                      >
+                                        <div
+                                          className="size-full"
+                                          style={{background:"conic-grad..."}}
+-                                         bis_skin_checked="1"
+                                        >
+                                    <div
+                                      className="absolute inset-0"
+-                                     bis_skin_checked="1"
+                                    >
+                                      <motion.div style={{y:{...},x:{...}}} animate={{scale:[...]}} ...>
+                                        <div
+                                          className={"absolute -top-[26%] -left-[12%] size-[68rem] opacity-[0.4] blur..."}
+                                          style={{transform:"none"}}
+                                          ref={function useMotionRef.useCallback}
+-                                         bis_skin_checked="1"
+                                        >
+                                      <motion.div style={{y:{...},x:{...}}} animate={{scale:[...]}} ...>
+                                        <div
+                                          className={"absolute top-[0%] -right-[14%] size-[60rem] opacity-[0.32] blur..."}
+                                          style={{transform:"none"}}
+                                          ref={function useMotionRef.useCallback}
+-                                         bis_skin_checked="1"
+                                        >
+                                      <motion.div style={{y:{...},x:{...}}} animate={{scale:[...]}} ...>
+                                        <div
+                                          className={"absolute -bottom-[22%] left-[14%] size-[56rem] opacity-[0.3] bl..."}
+                                          style={{transform:"none"}}
+                                          ref={function useMotionRef.useCallback}
+-                                         bis_skin_checked="1"
+                                        >
+                                      <motion.div style={{y:{...}, ...}} animate={{scale:[...]}} ...>
+                                        <div
+                                          className={"absolute top-[62%] -right-[8%] size-[48rem] blur-[95px] will-ch..."}
+                                          style={{opacity:0,transform:"translateY..."}}
+                                          ref={function useMotionRef.useCallback}
+-                                         bis_skin_checked="1"
+                                        >
+                                      <motion.div style={{y:{...}, ...}} animate={{scale:[...]}} ...>
+                                        <div
+                                          className={"absolute top-[120%] -left-[10%] size-[52rem] blur-[100px] will-..."}
+                                          style={{opacity:0,transform:"translateY..."}}
+                                          ref={function useMotionRef.useCallback}
+-                                         bis_skin_checked="1"
+                                        >
+                                    <div
+                                      className="absolute -inset-[10%] opacity-[0.2]"
+-                                     bis_skin_checked="1"
+                                    >
+                                      <SpotlightPaint x={{...}} y={{...}}>
+                                        <div
+                                          ref={{current:null}}
+                                          className="absolute inset-0"
+-                                         bis_skin_checked="1"
+                                        >
+                                    <div
+                                      className="absolute inset-0 opacity-[0.14] [mask-image:radial-gradient(ellipse_7..."
+                                      style={{backgroundImage:"radial-gra...",backgroundSize:"28px 28px"}}
+-                                     bis_skin_checked="1"
+                                    >
+                                    <div
+                                      className="absolute inset-0 opacity-[0.035] mix-blend-multiply"
+                                      style={{backgroundImage:"url(\"data..."}}
+-                                     bis_skin_checked="1"
+                                    >
+                                    <div
+                                      className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_58..."
+-                                     bis_skin_checked="1"
+                                    >
+                                ...
+                                  <SegmentViewNode type="page" pagePath="page.tsx">
+                                    <SegmentTrieNode>
+                                    <LandingPage>
+                                      <div
+                                        className="min-h-svh"
+-                                       bis_skin_checked="1"
+                                      >
+                                        <SiteHeader>
+                                          <motion.header initial={{y:-12,opacity:0}} animate={{y:0,opacity:1}} ...>
+                                            <header className="fixed inse..." style={{opacity:0, ...}} ...>
+                                              <div
+                                                className="mx-auto flex h-14 w-full max-w-[1180px] items-center gap-6 ..."
+-                                               bis_skin_checked="1"
+                                              >
+                                                <LinkComponent>
+                                                <nav className="hidden fle...">
+                                                  <a
+                                                    href="#platform"
+                                                    className="rounded-md px-2.5 py-1.5 text-[0.8125rem] font-medium t..."
+-                                                   bis_skin_checked="1"
+                                                  >
++                                                   Platform
+                                                  <a
+                                                    href="#pipeline"
+                                                    className="rounded-md px-2.5 py-1.5 text-[0.8125rem] font-medium t..."
+-                                                   bis_skin_checked="1"
+                                                  >
++                                                   Pipeline
+                                                  <a
+                                                    href="#research"
+                                                    className="rounded-md px-2.5 py-1.5 text-[0.8125rem] font-medium t..."
+-                                                   bis_skin_checked="1"
+                                                  >
++                                                   Research
+                                                  <a
+                                                    href="#validation"
+                                                    className="rounded-md px-2.5 py-1.5 text-[0.8125rem] font-medium t..."
+-                                                   bis_skin_checked="1"
+                                                  >
++                                                   Validation
+                                                <div
+                                                  className="ml-auto flex items-center gap-2 md:ml-0"
+-                                                 bis_skin_checked="1"
+                                                >
+                                        <main className="flex flex-...">
+                                          <section className="relative p...">
+                                            <div
+                                              className="relative mx-auto w-full max-w-[1180px]"
+-                                             bis_skin_checked="1"
+                                            >
+                                              <div
+                                                className="mx-auto max-w-[820px] text-center"
+-                                               bis_skin_checked="1"
+                                              >
+                                                <Reveal immediate={true}>
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className={undefined}
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <LinkComponent>
+                                                        <LinkComponent href="#validation" className="group inli...">
+                                                          <a
+                                                            className="group inline-flex items-center gap-2 rounded-fu..."
+                                                            ref={function}
+                                                            onClick={function onClick}
+                                                            onMouseEnter={function onMouseEnter}
+                                                            onTouchStart={function onTouchStart}
+                                                            href="#validation"
+-                                                           bis_skin_checked="1"
+                                                          >
+                                                <h1>
+                                                <Reveal immediate={true} delay={0.18}>
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className={undefined}
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                <Reveal immediate={true} delay={0.26}>
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className={undefined}
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <div
+                                                        className="mt-9 flex flex-wrap items-center justify-center gap-3"
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                        <LinkComponent>
+                                                          <LinkComponent href="/signup" className={"group/bu..."}>
+                                                            <a
+                                                              className={"group/button relative inline-flex shrink-0 ..."}
+                                                              ref={function}
+                                                              onClick={function onClick}
+                                                              onMouseEnter={function onMouseEnter}
+                                                              onTouchStart={function onTouchStart}
+                                                              href="/signup"
+-                                                             bis_skin_checked="1"
+                                                            >
+                                                        <a
+                                                          href="#platform"
+                                                          className={"group/button relative inline-flex shrink-0 sele..."}
+-                                                         bis_skin_checked="1"
+                                                        >
++                                                         See the platform
+                                              <Reveal immediate={true} delay={0.34} y={30}>
+                                                <motion.div ref={{current:null}} initial={{opacity:0,y:30}} ...>
+                                                  <div
+                                                    className={undefined}
+                                                    style={{opacity:0,transform:"translateY..."}}
+                                                    ref={function useMotionRef.useCallback}
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                    <div
+                                                      className="relative mx-auto mt-20 max-w-[1000px]"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <ProductFrame label="Shelf-Life..." className="edge-highl..." ...>
+                                                        <div
+                                                          className="overflow-hidden rounded-xl border border-border b..."
+-                                                         bis_skin_checked="1"
+                                                        >
+                                                          <div
+                                                            className="flex h-9 items-center gap-2 border-b border-bor..."
+-                                                           bis_skin_checked="1"
+                                                          >
+                                                            <div
+                                                              className="flex gap-1.5"
+                                                              aria-hidden={true}
+-                                                             bis_skin_checked="1"
+                                                            >
+                                                            ...
+                                                          <div
+                                                            className="grid gap-px bg-border sm:grid-cols-2"
+-                                                           bis_skin_checked="1"
+                                                          >
+                                                            <div
+                                                              className="bg-card"
+-                                                             bis_skin_checked="1"
+                                                            >
+                                                              <ComparisonPreview>
+                                                                <div
+                                                                  className="p-4"
+-                                                                 bis_skin_checked="1"
+                                                                >
+                                                                  <div
+                                                                    className="mb-3 flex items-baseline justify-between"
+-                                                                   bis_skin_checked="1"
+                                                                  >
+                                                                  <div
+                                                                    className="flex flex-col gap-2.5"
+-                                                                   bis_skin_checked="1"
+                                                                  >
+                                                                    <div
+                                                                      className="flex flex-col gap-1"
+-                                                                     bis_skin_checked="1"
+                                                                    >
+                                                                      <div
+                                                                        className="flex items-baseline justify-between..."
+-                                                                       bis_skin_checked="1"
+                                                                      >
+                                                                      <div
+                                                                        className="h-1.5 overflow-hidden rounded-full ..."
+-                                                                       bis_skin_checked="1"
+                                                                      >
+                                                                        <div
+                                                                          className="h-full rounded-full bg-primary"
+                                                                          style={{width:"85.5000000..."}}
+-                                                                         bis_skin_checked="1"
+                                                                        >
+                                                                    <div
+                                                                      className="flex flex-col gap-1"
+-                                                                     bis_skin_checked="1"
+                                                                    >
+                                                                      <div
+                                                                        className="flex items-baseline justify-between..."
+-                                                                       bis_skin_checked="1"
+                                                                      >
+                                                                      <div
+                                                                        className="h-1.5 overflow-hidden rounded-full ..."
+-                                                                       bis_skin_checked="1"
+                                                                      >
+                                                                        <div
+                                                                          className="h-full rounded-full bg-primary"
+                                                                          style={{width:"74%"}}
+-                                                                         bis_skin_checked="1"
+                                                                        >
+                                                                    <div
+                                                                      className="flex flex-col gap-1"
+-                                                                     bis_skin_checked="1"
+                                                                    >
+                                                                      <div
+                                                                        className="flex items-baseline justify-between..."
+-                                                                       bis_skin_checked="1"
+                                                                      >
+                                                                      <div
+                                                                        className="h-1.5 overflow-hidden rounded-full ..."
+-                                                                       bis_skin_checked="1"
+                                                                      >
+                                                                        <div
+                                                                          className="h-full rounded-full bg-primary"
+                                                                          style={{width:"65.2500000..."}}
+-                                                                         bis_skin_checked="1"
+                                                                        >
+                                                                  <div
+                                                                    className="mt-3 flex items-center gap-1.5 border-t..."
+-                                                                   bis_skin_checked="1"
+                                                                  >
+                                                            <div
+                                                              className="bg-card"
+-                                                             bis_skin_checked="1"
+                                                            >
+                                                              <LeaderboardPreview>
+                                                                <div
+                                                                  className="p-4"
+-                                                                 bis_skin_checked="1"
+                                                                >
+                                                                  <div
+                                                                    className="mb-3 flex items-baseline justify-between"
+-                                                                   bis_skin_checked="1"
+                                                                  >
+                                                                  ...
+                                                      <div
+                                                        aria-hidden={true}
+                                                        className="pointer-events-none absolute inset-x-0 -bottom-px h..."
+-                                                       bis_skin_checked="1"
+                                                      >
+                                          <section className="border-y b...">
+                                            <div
+                                              className="mx-auto grid w-full max-w-[1180px] grid-cols-2 gap-y-10 sm:gr..."
+-                                             bis_skin_checked="1"
+                                            >
+                                              <Reveal delay={0} className="text-center">
+                                                <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                  <div
+                                                    className="text-center"
+                                                    style={{opacity:0,transform:"translateY..."}}
+                                                    ref={function useMotionRef.useCallback}
+-                                                   bis_skin_checked="1"
+                                                  >
+                                              <Reveal delay={0.06} className="text-center">
+                                                <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                  <div
+                                                    className="text-center"
+                                                    style={{opacity:0,transform:"translateY..."}}
+                                                    ref={function useMotionRef.useCallback}
+-                                                   bis_skin_checked="1"
+                                                  >
+                                              <Reveal delay={0.12} className="text-center">
+                                                <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                  <div
+                                                    className="text-center"
+                                                    style={{opacity:0,transform:"translateY..."}}
+                                                    ref={function useMotionRef.useCallback}
+-                                                   bis_skin_checked="1"
+                                                  >
+                                              <Reveal delay={0.18} className="text-center">
+                                                <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                  <div
+                                                    className="text-center"
+                                                    style={{opacity:0,transform:"translateY..."}}
+                                                    ref={function useMotionRef.useCallback}
+-                                                   bis_skin_checked="1"
+                                                  >
+                                          <section id="platform" className="scroll-mt-...">
+                                            <div
+                                              className="mx-auto w-full max-w-[1180px]"
+-                                             bis_skin_checked="1"
+                                            >
+                                              <div
+                                                className="max-w-[640px]"
+-                                               bis_skin_checked="1"
+                                              >
+                                                <Reveal>
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className={undefined}
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                <h2>
+                                                <Reveal delay={0.12}>
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className={undefined}
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                              <div
+                                                className="mt-16 grid gap-px overflow-hidden rounded-xl border border-..."
+-                                               bis_skin_checked="1"
+                                              >
+                                                <Reveal delay={0} className="bg-card">
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className="bg-card"
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <div
+                                                        className="group flex h-full flex-col gap-3.5 p-7 transition-c..."
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                <Reveal delay={0.07} className="bg-card">
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className="bg-card"
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <div
+                                                        className="group flex h-full flex-col gap-3.5 p-7 transition-c..."
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                <Reveal delay={0.14} className="bg-card">
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className="bg-card"
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <div
+                                                        className="group flex h-full flex-col gap-3.5 p-7 transition-c..."
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                <Reveal delay={0} className="bg-card">
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className="bg-card"
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <div
+                                                        className="group flex h-full flex-col gap-3.5 p-7 transition-c..."
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                <Reveal delay={0.07} className="bg-card">
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className="bg-card"
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <div
+                                                        className="group flex h-full flex-col gap-3.5 p-7 transition-c..."
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                <Reveal delay={0.14} className="bg-card">
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className="bg-card"
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <div
+                                                        className="group flex h-full flex-col gap-3.5 p-7 transition-c..."
+-                                                       bis_skin_checked="1"
+                                                      >
+                                          <section id="pipeline" className="relative s...">
+                                            <div
+                                              className="mx-auto w-full max-w-[1180px]"
+-                                             bis_skin_checked="1"
+                                            >
+                                              <div
+                                                className="max-w-[640px]"
+-                                               bis_skin_checked="1"
+                                              >
+                                                <Reveal>
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className={undefined}
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                <h2>
+                                                <Reveal delay={0.12}>
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className={undefined}
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                              <PipelineScroller>
+                                                <div
+                                                  ref={{current:null}}
+                                                  className="relative mt-14 pl-8 sm:pl-12"
+-                                                 bis_skin_checked="1"
+                                                >
+                                                  <div
+                                                    aria-hidden={true}
+                                                    className="absolute top-1 bottom-1 left-[3px] w-px bg-border sm:le..."
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                  <motion.div aria-hidden={true} style={{height:{...}}} ...>
+                                                    <div
+                                                      aria-hidden={true}
+                                                      className="absolute top-1 left-[3px] w-px origin-top bg-primary ..."
+                                                      style={{height:"0%"}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                  <ol className="flex flex-...">
+                                                    <PipelineStep index={0} title="Load the w..." body="A single E..." ...>
+                                                      <li ref={{current:null}} className="relative">
+                                                        <span>
+                                                        <motion.div initial={{opacity:0,y:14}} ...>
+                                                          <div
+                                                            className="max-w-[620px]"
+                                                            style={{opacity:0,transform:"translateY..."}}
+                                                            ref={function useMotionRef.useCallback}
+-                                                           bis_skin_checked="1"
+                                                          >
+                                                            <div
+                                                              className="flex items-baseline gap-3"
+-                                                             bis_skin_checked="1"
+                                                            >
+                                                            ...
+                                                    <PipelineStep index={1} title="Split by c..." body="Rows shari..." ...>
+                                                      <li ref={{current:null}} className="relative">
+                                                        <span>
+                                                        <motion.div initial={{opacity:0,y:14}} ...>
+                                                          <div
+                                                            className="max-w-[620px]"
+                                                            style={{opacity:0,transform:"translateY..."}}
+                                                            ref={function useMotionRef.useCallback}
+-                                                           bis_skin_checked="1"
+                                                          >
+                                                            <div
+                                                              className="flex items-baseline gap-3"
+-                                                             bis_skin_checked="1"
+                                                            >
+                                                            ...
+                                                    <PipelineStep index={2} title="Select hon..." body="Matrix che..." ...>
+                                                      <li ref={{current:null}} className="relative">
+                                                        <span>
+                                                        <motion.div initial={{opacity:0,y:14}} ...>
+                                                          <div
+                                                            className="max-w-[620px]"
+                                                            style={{opacity:0,transform:"translateY..."}}
+                                                            ref={function useMotionRef.useCallback}
+-                                                           bis_skin_checked="1"
+                                                          >
+                                                            <div
+                                                              className="flex items-baseline gap-3"
+-                                                             bis_skin_checked="1"
+                                                            >
+                                                            ...
+                                                    <PipelineStep index={3} title="Train four..." body="Random For..." ...>
+                                                      <li ref={{current:null}} className="relative">
+                                                        <span>
+                                                        <motion.div initial={{opacity:0,y:14}} ...>
+                                                          <div
+                                                            className="max-w-[620px]"
+                                                            style={{opacity:0,transform:"translateY..."}}
+                                                            ref={function useMotionRef.useCallback}
+-                                                           bis_skin_checked="1"
+                                                          >
+                                                            <div
+                                                              className="flex items-baseline gap-3"
+-                                                             bis_skin_checked="1"
+                                                            >
+                                                            ...
+                                                    <PipelineStep index={4} title="Calibrate ..." body="A split-co..." ...>
+                                                      <li ref={{current:null}} className="relative">
+                                                        <span>
+                                                        <motion.div initial={{opacity:0,y:14}} ...>
+                                                          <div
+                                                            className="max-w-[620px]"
+                                                            style={{opacity:0,transform:"translateY..."}}
+                                                            ref={function useMotionRef.useCallback}
+-                                                           bis_skin_checked="1"
+                                                          >
+                                                            <div
+                                                              className="flex items-baseline gap-3"
+-                                                             bis_skin_checked="1"
+                                                            >
+                                                            ...
+                                                    <PipelineStep index={5} title="Serve from..." body="The API lo..." ...>
+                                                      <li ref={{current:null}} className="relative">
+                                                        <span>
+                                                        <motion.div initial={{opacity:0,y:14}} ...>
+                                                          <div
+                                                            className="max-w-[620px]"
+                                                            style={{opacity:0,transform:"translateY..."}}
+                                                            ref={function useMotionRef.useCallback}
+-                                                           bis_skin_checked="1"
+                                                          >
+                                                            <div
+                                                              className="flex items-baseline gap-3"
+-                                                             bis_skin_checked="1"
+                                                            >
+                                                            ...
+                                          <section className="px-5 py-28...">
+                                            <div
+                                              className="mx-auto grid w-full max-w-[1180px] items-center gap-14 lg:gri..."
+-                                             bis_skin_checked="1"
+                                            >
+                                              <div
+-                                               bis_skin_checked="1"
+                                              >
+                                                <Reveal>
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className={undefined}
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                <h2>
+                                                <Reveal delay={0.12}>
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className={undefined}
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                <Reveal delay={0.18}>
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className={undefined}
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                              <Reveal delay={0.1} y={24}>
+                                                <motion.div ref={{current:null}} initial={{opacity:0,y:24}} ...>
+                                                  <div
+                                                    className={undefined}
+                                                    style={{opacity:0,transform:"translateY..."}}
+                                                    ref={function useMotionRef.useCallback}
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                    <ProductFrame label="Explainabi..." className="edge-highl..." ...>
+                                                      <div
+                                                        className="overflow-hidden rounded-xl border border-border bg-..."
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                        <div
+                                                          className="flex h-9 items-center gap-2 border-b border-borde..."
+-                                                         bis_skin_checked="1"
+                                                        >
+                                                          <div
+                                                            className="flex gap-1.5"
+                                                            aria-hidden={true}
+-                                                           bis_skin_checked="1"
+                                                          >
+                                                          ...
+                                                        <div
+                                                          className="bg-card"
+-                                                         bis_skin_checked="1"
+                                                        >
+                                                          <ExplainPreview>
+                                                            <div
+                                                              className="p-4"
+-                                                             bis_skin_checked="1"
+                                                            >
+                                                              <div
+                                                                className="mb-3 flex items-baseline justify-between"
+-                                                               bis_skin_checked="1"
+                                                              >
+                                                              <div
+                                                                className="flex flex-col gap-2"
+-                                                               bis_skin_checked="1"
+                                                              >
+                                                                <div
+                                                                  className="flex items-center gap-2"
+-                                                                 bis_skin_checked="1"
+                                                                >
+                                                                  <span>
+                                                                  <div
+                                                                    className="relative h-4 flex-1"
+-                                                                   bis_skin_checked="1"
+                                                                  >
+                                                                  ...
+                                                                <div
+                                                                  className="flex items-center gap-2"
+-                                                                 bis_skin_checked="1"
+                                                                >
+                                                                  <span>
+                                                                  <div
+                                                                    className="relative h-4 flex-1"
+-                                                                   bis_skin_checked="1"
+                                                                  >
+                                                                  ...
+                                                                <div
+                                                                  className="flex items-center gap-2"
+-                                                                 bis_skin_checked="1"
+                                                                >
+                                                                  <span>
+                                                                  <div
+                                                                    className="relative h-4 flex-1"
+-                                                                   bis_skin_checked="1"
+                                                                  >
+                                                                  ...
+                                                                <div
+                                                                  className="flex items-center gap-2"
+-                                                                 bis_skin_checked="1"
+                                                                >
+                                                                  <span>
+                                                                  <div
+                                                                    className="relative h-4 flex-1"
+-                                                                   bis_skin_checked="1"
+                                                                  >
+                                                                  ...
+                                                                <div
+                                                                  className="flex items-center gap-2"
+-                                                                 bis_skin_checked="1"
+                                                                >
+                                                                  <span>
+                                                                  <div
+                                                                    className="relative h-4 flex-1"
+-                                                                   bis_skin_checked="1"
+                                                                  >
+                                                                  ...
+                                          <section id="research" className="scroll-mt-...">
+                                            <div
+                                              className="mx-auto w-full max-w-[1180px]"
+-                                             bis_skin_checked="1"
+                                            >
+                                              <div
+                                                className="max-w-[640px]"
+-                                               bis_skin_checked="1"
+                                              >
+                                                <Reveal>
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className={undefined}
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                <h2>
+                                                <Reveal delay={0.12}>
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className={undefined}
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                              <Reveal delay={0.14} y={22}>
+                                                <motion.div ref={{current:null}} initial={{opacity:0,y:22}} ...>
+                                                  <div
+                                                    className={undefined}
+                                                    style={{opacity:0,transform:"translateY..."}}
+                                                    ref={function useMotionRef.useCallback}
+-                                                   bis_skin_checked="1"
+                                                  >
+                                              <Reveal delay={0.2} y={22}>
+                                                <motion.div ref={{current:null}} initial={{opacity:0,y:22}} ...>
+                                                  <div
+                                                    className={undefined}
+                                                    style={{opacity:0,transform:"translateY..."}}
+                                                    ref={function useMotionRef.useCallback}
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                    <div
+                                                      className="edge-highlight surface mt-8 grid overflow-hidden sm:g..."
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <EditorialImage>
+                                                      <div
+                                                        className="flex flex-col justify-center p-7 sm:p-9"
+-                                                       bis_skin_checked="1"
+                                                      >
+                                          <section className="border-y b...">
+                                            <div
+                                              className="mx-auto grid w-full max-w-[1180px] gap-6 sm:grid-cols-2"
+-                                             bis_skin_checked="1"
+                                            >
+                                              <Reveal y={22}>
+                                                <motion.div ref={{current:null}} initial={{opacity:0,y:22}} ...>
+                                                  <div
+                                                    className={undefined}
+                                                    style={{opacity:0,transform:"translateY..."}}
+                                                    ref={function useMotionRef.useCallback}
+-                                                   bis_skin_checked="1"
+                                                  >
+                                              <Reveal delay={0.08} y={22}>
+                                                <motion.div ref={{current:null}} initial={{opacity:0,y:22}} ...>
+                                                  <div
+                                                    className={undefined}
+                                                    style={{opacity:0,transform:"translateY..."}}
+                                                    ref={function useMotionRef.useCallback}
+-                                                   bis_skin_checked="1"
+                                                  >
+                                          <section id="validation" className="scroll-mt-...">
+                                            <div
+                                              className="mx-auto grid w-full max-w-[1180px] items-center gap-14 lg:gri..."
+-                                             bis_skin_checked="1"
+                                            >
+                                              <Reveal y={24} className="order-2 lg...">
+                                                <motion.div ref={{current:null}} initial={{opacity:0,y:24}} ...>
+                                                  <div
+                                                    className="order-2 lg:order-1"
+                                                    style={{opacity:0,transform:"translateY..."}}
+                                                    ref={function useMotionRef.useCallback}
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                    <ProductFrame label="Modeling —..." className="edge-highl..." ...>
+                                                      <div
+                                                        className="overflow-hidden rounded-xl border border-border bg-..."
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                        <div
+                                                          className="flex h-9 items-center gap-2 border-b border-borde..."
+-                                                         bis_skin_checked="1"
+                                                        >
+                                                          <div
+                                                            className="flex gap-1.5"
+                                                            aria-hidden={true}
+-                                                           bis_skin_checked="1"
+                                                          >
+                                                          ...
+                                                        <div
+                                                          className="bg-card"
+-                                                         bis_skin_checked="1"
+                                                        >
+                                                          <CategoryErrorPreview>
+                                                            <div
+                                                              className="p-4"
+-                                                             bis_skin_checked="1"
+                                                            >
+                                                              <div
+                                                                className="mb-3 flex items-baseline justify-between"
+-                                                               bis_skin_checked="1"
+                                                              >
+                                                              <div
+                                                                className="flex flex-col gap-2"
+-                                                               bis_skin_checked="1"
+                                                              >
+                                                                <div
+                                                                  className="flex items-center justify-between rounded..."
+-                                                                 bis_skin_checked="1"
+                                                                >
+                                                                  <div
+                                                                    className="flex items-center gap-2"
+-                                                                   bis_skin_checked="1"
+                                                                  >
+                                                                  ...
+                                                                <div
+                                                                  className="flex items-center justify-between rounded..."
+-                                                                 bis_skin_checked="1"
+                                                                >
+                                                                  <div
+                                                                    className="flex items-center gap-2"
+-                                                                   bis_skin_checked="1"
+                                                                  >
+                                                                  ...
+                                                                <div
+                                                                  className="flex items-center justify-between rounded..."
+-                                                                 bis_skin_checked="1"
+                                                                >
+                                                                  <div
+                                                                    className="flex items-center gap-2"
+-                                                                   bis_skin_checked="1"
+                                                                  >
+                                                                  ...
+                                                              ...
+                                              <div
+                                                className="order-1 lg:order-2"
+-                                               bis_skin_checked="1"
+                                              >
+                                                <Reveal>
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className={undefined}
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                <h2>
+                                                <Reveal delay={0.12}>
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className={undefined}
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                <Reveal delay={0.18}>
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className={undefined}
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <div
+                                                        className="mt-7 rounded-xl border border-border bg-card p-5"
+-                                                       bis_skin_checked="1"
+                                                      >
+                                          <section className="relative b...">
+                                            <div
+                                              aria-hidden={true}
+                                              className="hero-glow pointer-events-none absolute inset-x-0 -bottom-32 h..."
+-                                             bis_skin_checked="1"
+                                            >
+                                            <div
+                                              className="relative mx-auto w-full max-w-[1180px] text-center"
+-                                             bis_skin_checked="1"
+                                            >
+                                              <Reveal>
+                                                <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                  <div
+                                                    className={undefined}
+                                                    style={{opacity:0,transform:"translateY..."}}
+                                                    ref={function useMotionRef.useCallback}
+-                                                   bis_skin_checked="1"
+                                                  >
+                                              <Reveal delay={0.1}>
+                                                <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                  <div
+                                                    className={undefined}
+                                                    style={{opacity:0,transform:"translateY..."}}
+                                                    ref={function useMotionRef.useCallback}
+-                                                   bis_skin_checked="1"
+                                                  >
+                                              <Reveal delay={0.16}>
+                                                <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                  <div
+                                                    className={undefined}
+                                                    style={{opacity:0,transform:"translateY..."}}
+                                                    ref={function useMotionRef.useCallback}
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                    <div
+                                                      className="mt-9 flex flex-wrap items-center justify-center gap-3"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <LinkComponent>
+                                                        <LinkComponent href="/signup" className={"group/bu..."}>
+                                                          <a
+                                                            className={"group/button relative inline-flex shrink-0 se..."}
+                                                            ref={function}
+                                                            onClick={function onClick}
+                                                            onMouseEnter={function onMouseEnter}
+                                                            onTouchStart={function onTouchStart}
+                                                            href="/signup"
+-                                                           bis_skin_checked="1"
+                                                          >
+                                                      <LinkComponent>
+                                                        <LinkComponent href="/login" className={"group/bu..."}>
+                                                          <a
+                                                            className={"group/button relative inline-flex shrink-0 se..."}
+                                                            ref={function}
+                                                            onClick={function onClick}
+                                                            onMouseEnter={function onMouseEnter}
+                                                            onTouchStart={function onTouchStart}
+                                                            href="/login"
+-                                                           bis_skin_checked="1"
+                                                          >
++                                                           Log in
+                                        <SiteFooter>
+                                          <footer className="border-t b...">
+                                            <div
+                                              className="mx-auto flex w-full max-w-[1180px] flex-col gap-8 sm:flex-row..."
+-                                             bis_skin_checked="1"
+                                            >
+                                              <div
+                                                className="max-w-[300px]"
+-                                               bis_skin_checked="1"
+                                              >
+                                                <div
+                                                  className="flex items-center gap-2"
+-                                                 bis_skin_checked="1"
+                                                >
+                                                ...
+                                              <nav className="flex gap-12">
+                                                <div
+                                                  className="flex flex-col gap-2"
+-                                                 bis_skin_checked="1"
+                                                >
+                                                  <p>
+                                                  <a
+                                                    href="#platform"
+                                                    className="type-ui text-muted-foreground transition-colors hover:t..."
+-                                                   bis_skin_checked="1"
+                                                  >
++                                                   Platform
+                                                  <a
+                                                    href="#pipeline"
+                                                    className="type-ui text-muted-foreground transition-colors hover:t..."
+-                                                   bis_skin_checked="1"
+                                                  >
++                                                   Pipeline
+                                                  <a
+                                                    href="#research"
+                                                    className="type-ui text-muted-foreground transition-colors hover:t..."
+-                                                   bis_skin_checked="1"
+                                                  >
++                                                   Research
+                                                  <a
+                                                    href="#validation"
+                                                    className="type-ui text-muted-foreground transition-colors hover:t..."
+-                                                   bis_skin_checked="1"
+                                                  >
++                                                   Validation
+                                                <div
+                                                  className="flex flex-col gap-2"
+-                                                 bis_skin_checked="1"
+                                                >
+                                                  <p>
+                                                  <LinkComponent>
+                                                    <LinkComponent href="/login" className="type-ui te...">
+                                                      <a
+                                                        className="type-ui text-muted-foreground transition-colors hov..."
+                                                        ref={function}
+                                                        onClick={function onClick}
+                                                        onMouseEnter={function onMouseEnter}
+                                                        onTouchStart={function onTouchStart}
+                                                        href="/login"
+-                                                       bis_skin_checked="1"
+                                                      >
++                                                       Log in
+                                                  <LinkComponent>
+                                                    <LinkComponent href="/signup" className="type-ui te...">
+                                                      <a
+                                                        className="type-ui text-muted-foreground transition-colors hov..."
+                                                        ref={function}
+                                                        onClick={function onClick}
+                                                        onMouseEnter={function onMouseEnter}
+                                                        onTouchStart={function onTouchStart}
+                                                        href="/signup"
+-                                                       bis_skin_checked="1"
+                                                      >
++                                                       Sign up
+                                            <div
+                                              className="mx-auto mt-10 w-full max-w-[1180px] border-t border-border pt-6"
+-                                             bis_skin_checked="1"
+                                            >
+                                  ...
+                            ...
+                  ...
+ 
+[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head headCacheNode={{rsc:{...}, ...}}>
+                    <__next_viewport_boundary__>
+                    <MetadataWrapper>
+                      <div
+                        hidden={true}
+-                       bis_skin_checked="1"
+                      >
+                    ...
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="layout.tsx">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <RootLayout>
+                        <html lang="en" className="inter_24fb..." style={{...}}>
+                          <body
+                            className="min-h-full bg-canvas font-sans text-foreground"
+-                           __processed_626534b1-b8b0-413c-8067-61e80d14d433__="true"
+-                           bis_register="W3sibWFzdGVyIjp0cnVlLCJleHRlbnNpb25JZCI6ImVwcGlvY2VtaG1ubGJoanBsY2drb2ZjaWll..."
+                          >
+                            ...
+                              <FloatingDelayGroup delay={{open:150, ...}} timeoutMs={400}>
+                                <Ambience>
+                                  <div
+                                    aria-hidden={true}
+                                    className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-canvas"
+-                                   bis_skin_checked="1"
+                                  >
+                                    <motion.div style={{rotate:{...}}} className="absolute t...">
+                                      <div
+                                        className="absolute top-1/2 left-1/2 size-[140vmax] -translate-x-1/2 -translat..."
+                                        style={{transform:"none"}}
+                                        ref={function useMotionRef.useCallback}
+-                                       bis_skin_checked="1"
+                                      >
+                                        <div
+                                          className="size-full"
+                                          style={{background:"conic-grad..."}}
+-                                         bis_skin_checked="1"
+                                        >
+                                    <div
+                                      className="absolute inset-0"
+-                                     bis_skin_checked="1"
+                                    >
+                                      <motion.div style={{y:{...},x:{...}}} animate={{scale:[...]}} ...>
+                                        <div
+                                          className={"absolute -top-[26%] -left-[12%] size-[68rem] opacity-[0.4] blur..."}
+                                          style={{transform:"none"}}
+                                          ref={function useMotionRef.useCallback}
+-                                         bis_skin_checked="1"
+                                        >
+                                      <motion.div style={{y:{...},x:{...}}} animate={{scale:[...]}} ...>
+                                        <div
+                                          className={"absolute top-[0%] -right-[14%] size-[60rem] opacity-[0.32] blur..."}
+                                          style={{transform:"none"}}
+                                          ref={function useMotionRef.useCallback}
+-                                         bis_skin_checked="1"
+                                        >
+                                      <motion.div style={{y:{...},x:{...}}} animate={{scale:[...]}} ...>
+                                        <div
+                                          className={"absolute -bottom-[22%] left-[14%] size-[56rem] opacity-[0.3] bl..."}
+                                          style={{transform:"none"}}
+                                          ref={function useMotionRef.useCallback}
+-                                         bis_skin_checked="1"
+                                        >
+                                      <motion.div style={{y:{...}, ...}} animate={{scale:[...]}} ...>
+                                        <div
+                                          className={"absolute top-[62%] -right-[8%] size-[48rem] blur-[95px] will-ch..."}
+                                          style={{opacity:0,transform:"translateY..."}}
+                                          ref={function useMotionRef.useCallback}
+-                                         bis_skin_checked="1"
+                                        >
+                                      <motion.div style={{y:{...}, ...}} animate={{scale:[...]}} ...>
+                                        <div
+                                          className={"absolute top-[120%] -left-[10%] size-[52rem] blur-[100px] will-..."}
+                                          style={{opacity:0,transform:"translateY..."}}
+                                          ref={function useMotionRef.useCallback}
+-                                         bis_skin_checked="1"
+                                        >
+                                    <div
+                                      className="absolute -inset-[10%] opacity-[0.2]"
+-                                     bis_skin_checked="1"
+                                    >
+                                      <SpotlightPaint x={{...}} y={{...}}>
+                                        <div
+                                          ref={{current:null}}
+                                          className="absolute inset-0"
+-                                         bis_skin_checked="1"
+                                        >
+                                    <div
+                                      className="absolute inset-0 opacity-[0.14] [mask-image:radial-gradient(ellipse_7..."
+                                      style={{backgroundImage:"radial-gra...",backgroundSize:"28px 28px"}}
+-                                     bis_skin_checked="1"
+                                    >
+                                    <div
+                                      className="absolute inset-0 opacity-[0.035] mix-blend-multiply"
+                                      style={{backgroundImage:"url(\"data..."}}
+-                                     bis_skin_checked="1"
+                                    >
+                                    <div
+                                      className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_58..."
+-                                     bis_skin_checked="1"
+                                    >
+                                ...
+                                  <SegmentViewNode type="page" pagePath="page.tsx">
+                                    <SegmentTrieNode>
+                                    <LandingPage>
+                                      <div
+                                        className="min-h-svh"
+-                                       bis_skin_checked="1"
+                                      >
+                                        <SiteHeader>
+                                          <motion.header initial={{y:-12,opacity:0}} animate={{y:0,opacity:1}} ...>
+                                            <header className="fixed inse..." style={{opacity:0, ...}} ...>
+                                              <div
+                                                className="mx-auto flex h-14 w-full max-w-[1180px] items-center gap-6 ..."
+-                                               bis_skin_checked="1"
+                                              >
+                                                <LinkComponent>
+                                                <nav className="hidden fle...">
+                                                  <a
+                                                    href="#platform"
+                                                    className="rounded-md px-2.5 py-1.5 text-[0.8125rem] font-medium t..."
+-                                                   bis_skin_checked="1"
+                                                  >
++                                                   Platform
+                                                  <a
+                                                    href="#pipeline"
+                                                    className="rounded-md px-2.5 py-1.5 text-[0.8125rem] font-medium t..."
+-                                                   bis_skin_checked="1"
+                                                  >
++                                                   Pipeline
+                                                  <a
+                                                    href="#research"
+                                                    className="rounded-md px-2.5 py-1.5 text-[0.8125rem] font-medium t..."
+-                                                   bis_skin_checked="1"
+                                                  >
++                                                   Research
+                                                  <a
+                                                    href="#validation"
+                                                    className="rounded-md px-2.5 py-1.5 text-[0.8125rem] font-medium t..."
+-                                                   bis_skin_checked="1"
+                                                  >
++                                                   Validation
+                                                <div
+                                                  className="ml-auto flex items-center gap-2 md:ml-0"
+-                                                 bis_skin_checked="1"
+                                                >
+                                        <main className="flex flex-...">
+                                          <section className="relative p...">
+                                            <div
+                                              className="relative mx-auto w-full max-w-[1180px]"
+-                                             bis_skin_checked="1"
+                                            >
+                                              <div
+                                                className="mx-auto max-w-[820px] text-center"
+-                                               bis_skin_checked="1"
+                                              >
+                                                <Reveal immediate={true}>
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className={undefined}
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <LinkComponent>
+                                                        <LinkComponent href="#validation" className="group inli...">
+                                                          <a
+                                                            className="group inline-flex items-center gap-2 rounded-fu..."
+                                                            ref={function}
+                                                            onClick={function onClick}
+                                                            onMouseEnter={function onMouseEnter}
+                                                            onTouchStart={function onTouchStart}
+                                                            href="#validation"
+-                                                           bis_skin_checked="1"
+                                                          >
+                                                <h1>
+                                                <Reveal immediate={true} delay={0.18}>
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className={undefined}
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                <Reveal immediate={true} delay={0.26}>
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className={undefined}
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <div
+                                                        className="mt-9 flex flex-wrap items-center justify-center gap-3"
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                        <LinkComponent>
+                                                          <LinkComponent href="/signup" className={"group/bu..."}>
+                                                            <a
+                                                              className={"group/button relative inline-flex shrink-0 ..."}
+                                                              ref={function}
+                                                              onClick={function onClick}
+                                                              onMouseEnter={function onMouseEnter}
+                                                              onTouchStart={function onTouchStart}
+                                                              href="/signup"
+-                                                             bis_skin_checked="1"
+                                                            >
+                                                        <a
+                                                          href="#platform"
+                                                          className={"group/button relative inline-flex shrink-0 sele..."}
+-                                                         bis_skin_checked="1"
+                                                        >
++                                                         See the platform
+                                              <Reveal immediate={true} delay={0.34} y={30}>
+                                                <motion.div ref={{current:null}} initial={{opacity:0,y:30}} ...>
+                                                  <div
+                                                    className={undefined}
+                                                    style={{opacity:0,transform:"translateY..."}}
+                                                    ref={function useMotionRef.useCallback}
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                    <div
+                                                      className="relative mx-auto mt-20 max-w-[1000px]"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <ProductFrame label="Shelf-Life..." className="edge-highl..." ...>
+                                                        <div
+                                                          className="overflow-hidden rounded-xl border border-border b..."
+-                                                         bis_skin_checked="1"
+                                                        >
+                                                          <div
+                                                            className="flex h-9 items-center gap-2 border-b border-bor..."
+-                                                           bis_skin_checked="1"
+                                                          >
+                                                            <div
+                                                              className="flex gap-1.5"
+                                                              aria-hidden={true}
+-                                                             bis_skin_checked="1"
+                                                            >
+                                                            ...
+                                                          <div
+                                                            className="grid gap-px bg-border sm:grid-cols-2"
+-                                                           bis_skin_checked="1"
+                                                          >
+                                                            <div
+                                                              className="bg-card"
+-                                                             bis_skin_checked="1"
+                                                            >
+                                                              <ComparisonPreview>
+                                                                <div
+                                                                  className="p-4"
+-                                                                 bis_skin_checked="1"
+                                                                >
+                                                                  <div
+                                                                    className="mb-3 flex items-baseline justify-between"
+-                                                                   bis_skin_checked="1"
+                                                                  >
+                                                                  <div
+                                                                    className="flex flex-col gap-2.5"
+-                                                                   bis_skin_checked="1"
+                                                                  >
+                                                                    <div
+                                                                      className="flex flex-col gap-1"
+-                                                                     bis_skin_checked="1"
+                                                                    >
+                                                                      <div
+                                                                        className="flex items-baseline justify-between..."
+-                                                                       bis_skin_checked="1"
+                                                                      >
+                                                                      <div
+                                                                        className="h-1.5 overflow-hidden rounded-full ..."
+-                                                                       bis_skin_checked="1"
+                                                                      >
+                                                                        <div
+                                                                          className="h-full rounded-full bg-primary"
+                                                                          style={{width:"85.5000000..."}}
+-                                                                         bis_skin_checked="1"
+                                                                        >
+                                                                    <div
+                                                                      className="flex flex-col gap-1"
+-                                                                     bis_skin_checked="1"
+                                                                    >
+                                                                      <div
+                                                                        className="flex items-baseline justify-between..."
+-                                                                       bis_skin_checked="1"
+                                                                      >
+                                                                      <div
+                                                                        className="h-1.5 overflow-hidden rounded-full ..."
+-                                                                       bis_skin_checked="1"
+                                                                      >
+                                                                        <div
+                                                                          className="h-full rounded-full bg-primary"
+                                                                          style={{width:"74%"}}
+-                                                                         bis_skin_checked="1"
+                                                                        >
+                                                                    <div
+                                                                      className="flex flex-col gap-1"
+-                                                                     bis_skin_checked="1"
+                                                                    >
+                                                                      <div
+                                                                        className="flex items-baseline justify-between..."
+-                                                                       bis_skin_checked="1"
+                                                                      >
+                                                                      <div
+                                                                        className="h-1.5 overflow-hidden rounded-full ..."
+-                                                                       bis_skin_checked="1"
+                                                                      >
+                                                                        <div
+                                                                          className="h-full rounded-full bg-primary"
+                                                                          style={{width:"65.2500000..."}}
+-                                                                         bis_skin_checked="1"
+                                                                        >
+                                                                  <div
+                                                                    className="mt-3 flex items-center gap-1.5 border-t..."
+-                                                                   bis_skin_checked="1"
+                                                                  >
+                                                            <div
+                                                              className="bg-card"
+-                                                             bis_skin_checked="1"
+                                                            >
+                                                              <LeaderboardPreview>
+                                                                <div
+                                                                  className="p-4"
+-                                                                 bis_skin_checked="1"
+                                                                >
+                                                                  <div
+                                                                    className="mb-3 flex items-baseline justify-between"
+-                                                                   bis_skin_checked="1"
+                                                                  >
+                                                                  ...
+                                                      <div
+                                                        aria-hidden={true}
+                                                        className="pointer-events-none absolute inset-x-0 -bottom-px h..."
+-                                                       bis_skin_checked="1"
+                                                      >
+                                          <section className="border-y b...">
+                                            <div
+                                              className="mx-auto grid w-full max-w-[1180px] grid-cols-2 gap-y-10 sm:gr..."
+-                                             bis_skin_checked="1"
+                                            >
+                                              <Reveal delay={0} className="text-center">
+                                                <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                  <div
+                                                    className="text-center"
+                                                    style={{opacity:0,transform:"translateY..."}}
+                                                    ref={function useMotionRef.useCallback}
+-                                                   bis_skin_checked="1"
+                                                  >
+                                              <Reveal delay={0.06} className="text-center">
+                                                <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                  <div
+                                                    className="text-center"
+                                                    style={{opacity:0,transform:"translateY..."}}
+                                                    ref={function useMotionRef.useCallback}
+-                                                   bis_skin_checked="1"
+                                                  >
+                                              <Reveal delay={0.12} className="text-center">
+                                                <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                  <div
+                                                    className="text-center"
+                                                    style={{opacity:0,transform:"translateY..."}}
+                                                    ref={function useMotionRef.useCallback}
+-                                                   bis_skin_checked="1"
+                                                  >
+                                              <Reveal delay={0.18} className="text-center">
+                                                <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                  <div
+                                                    className="text-center"
+                                                    style={{opacity:0,transform:"translateY..."}}
+                                                    ref={function useMotionRef.useCallback}
+-                                                   bis_skin_checked="1"
+                                                  >
+                                          <section id="platform" className="scroll-mt-...">
+                                            <div
+                                              className="mx-auto w-full max-w-[1180px]"
+-                                             bis_skin_checked="1"
+                                            >
+                                              <div
+                                                className="max-w-[640px]"
+-                                               bis_skin_checked="1"
+                                              >
+                                                <Reveal>
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className={undefined}
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                <h2>
+                                                <Reveal delay={0.12}>
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className={undefined}
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                              <div
+                                                className="mt-16 grid gap-px overflow-hidden rounded-xl border border-..."
+-                                               bis_skin_checked="1"
+                                              >
+                                                <Reveal delay={0} className="bg-card">
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className="bg-card"
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <div
+                                                        className="group flex h-full flex-col gap-3.5 p-7 transition-c..."
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                <Reveal delay={0.07} className="bg-card">
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className="bg-card"
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <div
+                                                        className="group flex h-full flex-col gap-3.5 p-7 transition-c..."
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                <Reveal delay={0.14} className="bg-card">
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className="bg-card"
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <div
+                                                        className="group flex h-full flex-col gap-3.5 p-7 transition-c..."
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                <Reveal delay={0} className="bg-card">
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className="bg-card"
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <div
+                                                        className="group flex h-full flex-col gap-3.5 p-7 transition-c..."
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                <Reveal delay={0.07} className="bg-card">
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className="bg-card"
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <div
+                                                        className="group flex h-full flex-col gap-3.5 p-7 transition-c..."
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                <Reveal delay={0.14} className="bg-card">
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className="bg-card"
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <div
+                                                        className="group flex h-full flex-col gap-3.5 p-7 transition-c..."
+-                                                       bis_skin_checked="1"
+                                                      >
+                                          <section id="pipeline" className="relative s...">
+                                            <div
+                                              className="mx-auto w-full max-w-[1180px]"
+-                                             bis_skin_checked="1"
+                                            >
+                                              <div
+                                                className="max-w-[640px]"
+-                                               bis_skin_checked="1"
+                                              >
+                                                <Reveal>
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className={undefined}
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                <h2>
+                                                <Reveal delay={0.12}>
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className={undefined}
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                              <PipelineScroller>
+                                                <div
+                                                  ref={{current:null}}
+                                                  className="relative mt-14 pl-8 sm:pl-12"
+-                                                 bis_skin_checked="1"
+                                                >
+                                                  <div
+                                                    aria-hidden={true}
+                                                    className="absolute top-1 bottom-1 left-[3px] w-px bg-border sm:le..."
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                  <motion.div aria-hidden={true} style={{height:{...}}} ...>
+                                                    <div
+                                                      aria-hidden={true}
+                                                      className="absolute top-1 left-[3px] w-px origin-top bg-primary ..."
+                                                      style={{height:"0%"}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                  <ol className="flex flex-...">
+                                                    <PipelineStep index={0} title="Load the w..." body="A single E..." ...>
+                                                      <li ref={{current:null}} className="relative">
+                                                        <span>
+                                                        <motion.div initial={{opacity:0,y:14}} ...>
+                                                          <div
+                                                            className="max-w-[620px]"
+                                                            style={{opacity:0,transform:"translateY..."}}
+                                                            ref={function useMotionRef.useCallback}
+-                                                           bis_skin_checked="1"
+                                                          >
+                                                            <div
+                                                              className="flex items-baseline gap-3"
+-                                                             bis_skin_checked="1"
+                                                            >
+                                                            ...
+                                                    <PipelineStep index={1} title="Split by c..." body="Rows shari..." ...>
+                                                      <li ref={{current:null}} className="relative">
+                                                        <span>
+                                                        <motion.div initial={{opacity:0,y:14}} ...>
+                                                          <div
+                                                            className="max-w-[620px]"
+                                                            style={{opacity:0,transform:"translateY..."}}
+                                                            ref={function useMotionRef.useCallback}
+-                                                           bis_skin_checked="1"
+                                                          >
+                                                            <div
+                                                              className="flex items-baseline gap-3"
+-                                                             bis_skin_checked="1"
+                                                            >
+                                                            ...
+                                                    <PipelineStep index={2} title="Select hon..." body="Matrix che..." ...>
+                                                      <li ref={{current:null}} className="relative">
+                                                        <span>
+                                                        <motion.div initial={{opacity:0,y:14}} ...>
+                                                          <div
+                                                            className="max-w-[620px]"
+                                                            style={{opacity:0,transform:"translateY..."}}
+                                                            ref={function useMotionRef.useCallback}
+-                                                           bis_skin_checked="1"
+                                                          >
+                                                            <div
+                                                              className="flex items-baseline gap-3"
+-                                                             bis_skin_checked="1"
+                                                            >
+                                                            ...
+                                                    <PipelineStep index={3} title="Train four..." body="Random For..." ...>
+                                                      <li ref={{current:null}} className="relative">
+                                                        <span>
+                                                        <motion.div initial={{opacity:0,y:14}} ...>
+                                                          <div
+                                                            className="max-w-[620px]"
+                                                            style={{opacity:0,transform:"translateY..."}}
+                                                            ref={function useMotionRef.useCallback}
+-                                                           bis_skin_checked="1"
+                                                          >
+                                                            <div
+                                                              className="flex items-baseline gap-3"
+-                                                             bis_skin_checked="1"
+                                                            >
+                                                            ...
+                                                    <PipelineStep index={4} title="Calibrate ..." body="A split-co..." ...>
+                                                      <li ref={{current:null}} className="relative">
+                                                        <span>
+                                                        <motion.div initial={{opacity:0,y:14}} ...>
+                                                          <div
+                                                            className="max-w-[620px]"
+                                                            style={{opacity:0,transform:"translateY..."}}
+                                                            ref={function useMotionRef.useCallback}
+-                                                           bis_skin_checked="1"
+                                                          >
+                                                            <div
+                                                              className="flex items-baseline gap-3"
+-                                                             bis_skin_checked="1"
+                                                            >
+                                                            ...
+                                                    <PipelineStep index={5} title="Serve from..." body="The API lo..." ...>
+                                                      <li ref={{current:null}} className="relative">
+                                                        <span>
+                                                        <motion.div initial={{opacity:0,y:14}} ...>
+                                                          <div
+                                                            className="max-w-[620px]"
+                                                            style={{opacity:0,transform:"translateY..."}}
+                                                            ref={function useMotionRef.useCallback}
+-                                                           bis_skin_checked="1"
+                                                          >
+                                                            <div
+                                                              className="flex items-baseline gap-3"
+-                                                             bis_skin_checked="1"
+                                                            >
+                                                            ...
+                                          <section className="px-5 py-28...">
+                                            <div
+                                              className="mx-auto grid w-full max-w-[1180px] items-center gap-14 lg:gri..."
+-                                             bis_skin_checked="1"
+                                            >
+                                              <div
+-                                               bis_skin_checked="1"
+                                              >
+                                                <Reveal>
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className={undefined}
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                <h2>
+                                                <Reveal delay={0.12}>
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className={undefined}
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                <Reveal delay={0.18}>
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className={undefined}
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                              <Reveal delay={0.1} y={24}>
+                                                <motion.div ref={{current:null}} initial={{opacity:0,y:24}} ...>
+                                                  <div
+                                                    className={undefined}
+                                                    style={{opacity:0,transform:"translateY..."}}
+                                                    ref={function useMotionRef.useCallback}
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                    <ProductFrame label="Explainabi..." className="edge-highl..." ...>
+                                                      <div
+                                                        className="overflow-hidden rounded-xl border border-border bg-..."
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                        <div
+                                                          className="flex h-9 items-center gap-2 border-b border-borde..."
+-                                                         bis_skin_checked="1"
+                                                        >
+                                                          <div
+                                                            className="flex gap-1.5"
+                                                            aria-hidden={true}
+-                                                           bis_skin_checked="1"
+                                                          >
+                                                          ...
+                                                        <div
+                                                          className="bg-card"
+-                                                         bis_skin_checked="1"
+                                                        >
+                                                          <ExplainPreview>
+                                                            <div
+                                                              className="p-4"
+-                                                             bis_skin_checked="1"
+                                                            >
+                                                              <div
+                                                                className="mb-3 flex items-baseline justify-between"
+-                                                               bis_skin_checked="1"
+                                                              >
+                                                              <div
+                                                                className="flex flex-col gap-2"
+-                                                               bis_skin_checked="1"
+                                                              >
+                                                                <div
+                                                                  className="flex items-center gap-2"
+-                                                                 bis_skin_checked="1"
+                                                                >
+                                                                  <span>
+                                                                  <div
+                                                                    className="relative h-4 flex-1"
+-                                                                   bis_skin_checked="1"
+                                                                  >
+                                                                  ...
+                                                                <div
+                                                                  className="flex items-center gap-2"
+-                                                                 bis_skin_checked="1"
+                                                                >
+                                                                  <span>
+                                                                  <div
+                                                                    className="relative h-4 flex-1"
+-                                                                   bis_skin_checked="1"
+                                                                  >
+                                                                  ...
+                                                                <div
+                                                                  className="flex items-center gap-2"
+-                                                                 bis_skin_checked="1"
+                                                                >
+                                                                  <span>
+                                                                  <div
+                                                                    className="relative h-4 flex-1"
+-                                                                   bis_skin_checked="1"
+                                                                  >
+                                                                  ...
+                                                                <div
+                                                                  className="flex items-center gap-2"
+-                                                                 bis_skin_checked="1"
+                                                                >
+                                                                  <span>
+                                                                  <div
+                                                                    className="relative h-4 flex-1"
+-                                                                   bis_skin_checked="1"
+                                                                  >
+                                                                  ...
+                                                                <div
+                                                                  className="flex items-center gap-2"
+-                                                                 bis_skin_checked="1"
+                                                                >
+                                                                  <span>
+                                                                  <div
+                                                                    className="relative h-4 flex-1"
+-                                                                   bis_skin_checked="1"
+                                                                  >
+                                                                  ...
+                                          <section id="research" className="scroll-mt-...">
+                                            <div
+                                              className="mx-auto w-full max-w-[1180px]"
+-                                             bis_skin_checked="1"
+                                            >
+                                              <div
+                                                className="max-w-[640px]"
+-                                               bis_skin_checked="1"
+                                              >
+                                                <Reveal>
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className={undefined}
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                <h2>
+                                                <Reveal delay={0.12}>
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className={undefined}
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                              <Reveal delay={0.14} y={22}>
+                                                <motion.div ref={{current:null}} initial={{opacity:0,y:22}} ...>
+                                                  <div
+                                                    className={undefined}
+                                                    style={{opacity:0,transform:"translateY..."}}
+                                                    ref={function useMotionRef.useCallback}
+-                                                   bis_skin_checked="1"
+                                                  >
+                                              <Reveal delay={0.2} y={22}>
+                                                <motion.div ref={{current:null}} initial={{opacity:0,y:22}} ...>
+                                                  <div
+                                                    className={undefined}
+                                                    style={{opacity:0,transform:"translateY..."}}
+                                                    ref={function useMotionRef.useCallback}
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                    <div
+                                                      className="edge-highlight surface mt-8 grid overflow-hidden sm:g..."
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <EditorialImage>
+                                                      <div
+                                                        className="flex flex-col justify-center p-7 sm:p-9"
+-                                                       bis_skin_checked="1"
+                                                      >
+                                          <section className="border-y b...">
+                                            <div
+                                              className="mx-auto grid w-full max-w-[1180px] gap-6 sm:grid-cols-2"
+-                                             bis_skin_checked="1"
+                                            >
+                                              <Reveal y={22}>
+                                                <motion.div ref={{current:null}} initial={{opacity:0,y:22}} ...>
+                                                  <div
+                                                    className={undefined}
+                                                    style={{opacity:0,transform:"translateY..."}}
+                                                    ref={function useMotionRef.useCallback}
+-                                                   bis_skin_checked="1"
+                                                  >
+                                              <Reveal delay={0.08} y={22}>
+                                                <motion.div ref={{current:null}} initial={{opacity:0,y:22}} ...>
+                                                  <div
+                                                    className={undefined}
+                                                    style={{opacity:0,transform:"translateY..."}}
+                                                    ref={function useMotionRef.useCallback}
+-                                                   bis_skin_checked="1"
+                                                  >
+                                          <section id="validation" className="scroll-mt-...">
+                                            <div
+                                              className="mx-auto grid w-full max-w-[1180px] items-center gap-14 lg:gri..."
+-                                             bis_skin_checked="1"
+                                            >
+                                              <Reveal y={24} className="order-2 lg...">
+                                                <motion.div ref={{current:null}} initial={{opacity:0,y:24}} ...>
+                                                  <div
+                                                    className="order-2 lg:order-1"
+                                                    style={{opacity:0,transform:"translateY..."}}
+                                                    ref={function useMotionRef.useCallback}
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                    <ProductFrame label="Modeling —..." className="edge-highl..." ...>
+                                                      <div
+                                                        className="overflow-hidden rounded-xl border border-border bg-..."
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                        <div
+                                                          className="flex h-9 items-center gap-2 border-b border-borde..."
+-                                                         bis_skin_checked="1"
+                                                        >
+                                                          <div
+                                                            className="flex gap-1.5"
+                                                            aria-hidden={true}
+-                                                           bis_skin_checked="1"
+                                                          >
+                                                          ...
+                                                        <div
+                                                          className="bg-card"
+-                                                         bis_skin_checked="1"
+                                                        >
+                                                          <CategoryErrorPreview>
+                                                            <div
+                                                              className="p-4"
+-                                                             bis_skin_checked="1"
+                                                            >
+                                                              <div
+                                                                className="mb-3 flex items-baseline justify-between"
+-                                                               bis_skin_checked="1"
+                                                              >
+                                                              <div
+                                                                className="flex flex-col gap-2"
+-                                                               bis_skin_checked="1"
+                                                              >
+                                                                <div
+                                                                  className="flex items-center justify-between rounded..."
+-                                                                 bis_skin_checked="1"
+                                                                >
+                                                                  <div
+                                                                    className="flex items-center gap-2"
+-                                                                   bis_skin_checked="1"
+                                                                  >
+                                                                  ...
+                                                                <div
+                                                                  className="flex items-center justify-between rounded..."
+-                                                                 bis_skin_checked="1"
+                                                                >
+                                                                  <div
+                                                                    className="flex items-center gap-2"
+-                                                                   bis_skin_checked="1"
+                                                                  >
+                                                                  ...
+                                                                <div
+                                                                  className="flex items-center justify-between rounded..."
+-                                                                 bis_skin_checked="1"
+                                                                >
+                                                                  <div
+                                                                    className="flex items-center gap-2"
+-                                                                   bis_skin_checked="1"
+                                                                  >
+                                                                  ...
+                                                              ...
+                                              <div
+                                                className="order-1 lg:order-2"
+-                                               bis_skin_checked="1"
+                                              >
+                                                <Reveal>
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className={undefined}
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                <h2>
+                                                <Reveal delay={0.12}>
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className={undefined}
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                <Reveal delay={0.18}>
+                                                  <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                    <div
+                                                      className={undefined}
+                                                      style={{opacity:0,transform:"translateY..."}}
+                                                      ref={function useMotionRef.useCallback}
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <div
+                                                        className="mt-7 rounded-xl border border-border bg-card p-5"
+-                                                       bis_skin_checked="1"
+                                                      >
+                                          <section className="relative b...">
+                                            <div
+                                              aria-hidden={true}
+                                              className="hero-glow pointer-events-none absolute inset-x-0 -bottom-32 h..."
+-                                             bis_skin_checked="1"
+                                            >
+                                            <div
+                                              className="relative mx-auto w-full max-w-[1180px] text-center"
+-                                             bis_skin_checked="1"
+                                            >
+                                              <Reveal>
+                                                <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                  <div
+                                                    className={undefined}
+                                                    style={{opacity:0,transform:"translateY..."}}
+                                                    ref={function useMotionRef.useCallback}
+-                                                   bis_skin_checked="1"
+                                                  >
+                                              <Reveal delay={0.1}>
+                                                <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                  <div
+                                                    className={undefined}
+                                                    style={{opacity:0,transform:"translateY..."}}
+                                                    ref={function useMotionRef.useCallback}
+-                                                   bis_skin_checked="1"
+                                                  >
+                                              <Reveal delay={0.16}>
+                                                <motion.div ref={{current:null}} initial={{opacity:0,y:16}} ...>
+                                                  <div
+                                                    className={undefined}
+                                                    style={{opacity:0,transform:"translateY..."}}
+                                                    ref={function useMotionRef.useCallback}
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                    <div
+                                                      className="mt-9 flex flex-wrap items-center justify-center gap-3"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <LinkComponent>
+                                                        <LinkComponent href="/signup" className={"group/bu..."}>
+                                                          <a
+                                                            className={"group/button relative inline-flex shrink-0 se..."}
+                                                            ref={function}
+                                                            onClick={function onClick}
+                                                            onMouseEnter={function onMouseEnter}
+                                                            onTouchStart={function onTouchStart}
+                                                            href="/signup"
+-                                                           bis_skin_checked="1"
+                                                          >
+                                                      <LinkComponent>
+                                                        <LinkComponent href="/login" className={"group/bu..."}>
+                                                          <a
+                                                            className={"group/button relative inline-flex shrink-0 se..."}
+                                                            ref={function}
+                                                            onClick={function onClick}
+                                                            onMouseEnter={function onMouseEnter}
+                                                            onTouchStart={function onTouchStart}
+                                                            href="/login"
+-                                                           bis_skin_checked="1"
+                                                          >
++                                                           Log in
+                                        <SiteFooter>
+                                          <footer className="border-t b...">
+                                            <div
+                                              className="mx-auto flex w-full max-w-[1180px] flex-col gap-8 sm:flex-row..."
+-                                             bis_skin_checked="1"
+                                            >
+                                              <div
+                                                className="max-w-[300px]"
+-                                               bis_skin_checked="1"
+                                              >
+                                                <div
+                                                  className="flex items-center gap-2"
+-                                                 bis_skin_checked="1"
+                                                >
+                                                ...
+                                              <nav className="flex gap-12">
+                                                <div
+                                                  className="flex flex-col gap-2"
+-                                                 bis_skin_checked="1"
+                                                >
+                                                  <p>
+                                                  <a
+                                                    href="#platform"
+                                                    className="type-ui text-muted-foreground transition-colors hover:t..."
+-                                                   bis_skin_checked="1"
+                                                  >
++                                                   Platform
+                                                  <a
+                                                    href="#pipeline"
+                                                    className="type-ui text-muted-foreground transition-colors hover:t..."
+-                                                   bis_skin_checked="1"
+                                                  >
++                                                   Pipeline
+                                                  <a
+                                                    href="#research"
+                                                    className="type-ui text-muted-foreground transition-colors hover:t..."
+-                                                   bis_skin_checked="1"
+                                                  >
++                                                   Research
+                                                  <a
+                                                    href="#validation"
+                                                    className="type-ui text-muted-foreground transition-colors hover:t..."
+-                                                   bis_skin_checked="1"
+                                                  >
++                                                   Validation
+                                                <div
+                                                  className="flex flex-col gap-2"
+-                                                 bis_skin_checked="1"
+                                                >
+                                                  <p>
+                                                  <LinkComponent>
+                                                    <LinkComponent href="/login" className="type-ui te...">
+                                                      <a
+                                                        className="type-ui text-muted-foreground transition-colors hov..."
+                                                        ref={function}
+                                                        onClick={function onClick}
+                                                        onMouseEnter={function onMouseEnter}
+                                                        onTouchStart={function onTouchStart}
+                                                        href="/login"
+-                                                       bis_skin_checked="1"
+                                                      >
++                                                       Log in
+                                                  <LinkComponent>
+                                                    <LinkComponent href="/signup" className="type-ui te...">
+                                                      <a
+                                                        className="type-ui text-muted-foreground transition-colors hov..."
+                                                        ref={function}
+                                                        onClick={function onClick}
+                                                        onMouseEnter={function onMouseEnter}
+                                                        onTouchStart={function onTouchStart}
+                                                        href="/signup"
+-                                                       bis_skin_checked="1"
+                                                      >
++                                                       Sign up
+                                            <div
+                                              className="mx-auto mt-10 w-full max-w-[1180px] border-t border-border pt-6"
+-                                             bis_skin_checked="1"
+                                            >
+                                  ...
+                            ...
+                  ...
+ 
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+⚠ Fast Refresh had to perform a full reload when ./src/lib/api.ts changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/app/predi..." notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head headCacheNode={{rsc:{...}, ...}}>
+                    <__next_viewport_boundary__>
+                    <MetadataWrapper>
+                      <div
+                        hidden={true}
+-                       bis_skin_checked="1"
+                      >
+                    ...
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="layout.tsx">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <RootLayout>
+                        <html lang="en" className="inter_24fb..." style={{...}}>
+                          <body
+                            className="min-h-full bg-canvas font-sans text-foreground"
+-                           __processed_63163757-2b48-4ecf-9daa-e4526f5eef32__="true"
+-                           bis_register="W3sibWFzdGVyIjp0cnVlLCJleHRlbnNpb25JZCI6ImVwcGlvY2VtaG1ubGJoanBsY2drb2ZjaWll..."
+                          >
+                            ...
+                              <FloatingDelayGroup delay={{open:150, ...}} timeoutMs={400}>
+                                <Ambience>
+                                  <div
+                                    aria-hidden={true}
+                                    className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-canvas"
+-                                   bis_skin_checked="1"
+                                  >
+                                    <motion.div style={{rotate:{...}}} className="absolute t...">
+                                      <div
+                                        className="absolute top-1/2 left-1/2 size-[140vmax] -translate-x-1/2 -translat..."
+                                        style={{transform:"none"}}
+                                        ref={function useMotionRef.useCallback}
+-                                       bis_skin_checked="1"
+                                      >
+                                        <div
+                                          className="size-full"
+                                          style={{background:"conic-grad..."}}
+-                                         bis_skin_checked="1"
+                                        >
+                                    <div
+                                      className="absolute inset-0"
+-                                     bis_skin_checked="1"
+                                    >
+                                      <motion.div style={{y:{...},x:{...}}} animate={{scale:[...]}} ...>
+                                        <div
+                                          className={"absolute -top-[26%] -left-[12%] size-[68rem] opacity-[0.4] blur..."}
+                                          style={{transform:"none"}}
+                                          ref={function useMotionRef.useCallback}
+-                                         bis_skin_checked="1"
+                                        >
+                                      <motion.div style={{y:{...},x:{...}}} animate={{scale:[...]}} ...>
+                                        <div
+                                          className={"absolute top-[0%] -right-[14%] size-[60rem] opacity-[0.32] blur..."}
+                                          style={{transform:"none"}}
+                                          ref={function useMotionRef.useCallback}
+-                                         bis_skin_checked="1"
+                                        >
+                                      <motion.div style={{y:{...},x:{...}}} animate={{scale:[...]}} ...>
+                                        <div
+                                          className={"absolute -bottom-[22%] left-[14%] size-[56rem] opacity-[0.3] bl..."}
+                                          style={{transform:"none"}}
+                                          ref={function useMotionRef.useCallback}
+-                                         bis_skin_checked="1"
+                                        >
+                                      <motion.div style={{y:{...}, ...}} animate={{scale:[...]}} ...>
+                                        <div
+                                          className={"absolute top-[62%] -right-[8%] size-[48rem] blur-[95px] will-ch..."}
+                                          style={{opacity:0,transform:"translateY..."}}
+                                          ref={function useMotionRef.useCallback}
+-                                         bis_skin_checked="1"
+                                        >
+                                      <motion.div style={{y:{...}, ...}} animate={{scale:[...]}} ...>
+                                        <div
+                                          className={"absolute top-[120%] -left-[10%] size-[52rem] blur-[100px] will-..."}
+                                          style={{opacity:0,transform:"translateY..."}}
+                                          ref={function useMotionRef.useCallback}
+-                                         bis_skin_checked="1"
+                                        >
+                                    <div
+                                      className="absolute -inset-[10%] opacity-[0.2]"
+-                                     bis_skin_checked="1"
+                                    >
+                                      <SpotlightPaint x={{...}} y={{...}}>
+                                        <div
+                                          ref={{current:null}}
+                                          className="absolute inset-0"
+-                                         bis_skin_checked="1"
+                                        >
+                                    <div
+                                      className="absolute inset-0 opacity-[0.14] [mask-image:radial-gradient(ellipse_7..."
+                                      style={{backgroundImage:"radial-gra...",backgroundSize:"28px 28px"}}
+-                                     bis_skin_checked="1"
+                                    >
+                                    <div
+                                      className="absolute inset-0 opacity-[0.035] mix-blend-multiply"
+                                      style={{backgroundImage:"url(\"data..."}}
+-                                     bis_skin_checked="1"
+                                    >
+                                    <div
+                                      className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_58..."
+-                                     bis_skin_checked="1"
+                                    >
+                                ...
+                                  <SegmentViewNode type="layout" pagePath="app/layout...">
+                                    <SegmentTrieNode>
+                                    <script>
+                                    <script>
+                                    <script>
+                                    <AppLayout>
+                                      <RequireAuth>
+                                        <div
+                                          className="flex min-h-svh w-full items-center justify-center bg-canvas"
+                                          role="status"
+                                          aria-live="polite"
+-                                         bis_skin_checked="1"
+                                        >
+                            ...
+                  ...
+ 
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)

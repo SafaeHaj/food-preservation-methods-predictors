@@ -1,0 +1,729 @@
+﻿
+> frontend@0.1.0 dev
+> next dev
+
+▲ Next.js 16.3.0 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://169.254.239.243:3000
+✓ Ready in 946ms
+✓ Running next.config.ts took 86ms
+node.exe : ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead.
+Au caractère Ligne:1 : 1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (⚠ The "middlewa...proxy" instead.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+  To migrate automatically, run:
+  npx @next/codemod@canary middleware-to-proxy .
+
+  Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+
+○ Compiling / ...
+ GET / 200 in 6.3s (next.js: 5.5s, application-code: 753ms)
+ GET / 200 in 327ms (next.js: 41ms, application-code: 286ms)
+ GET /login 200 in 1804ms (next.js: 1492ms, proxy.ts: 134ms, application-code: 179ms)
+○ Compiling /app ...
+ GET /app 200 in 4.1s (next.js: 3.6s, proxy.ts: 19ms, application-code: 442ms)
+ GET /app 200 in 492ms (next.js: 25ms, proxy.ts: 10ms, application-code: 457ms)
+[browser] Uncaught TypeError: Cannot read properties of undefined (reading 'subscribe')
+    at CommandInput (src/components/ui/command.tsx:76:9)
+    at CommandPaletteProvider (src/components/command-palette.tsx:80:9)
+    at AppLayout (src\app\app\layout.tsx:19:9)
+  74 |     <div data-slot="command-input-wrapper" className="p-1 pb-0">
+  75 |       <InputGroup className="h-8! rounded-lg! border-input/30 bg-input/30 shadow-none! 
+*:data-[slot=input-group-addon]:pl-2!">
+> 76 |         <CommandPrimitive.Input
+     |         ^
+  77 |           data-slot="command-input"
+  78 |           className={cn(
+  79 |             "w-full text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50",
+ GET /login 200 in 135ms (next.js: 18ms, proxy.ts: 8ms, application-code: 108ms)
+ GET /app 200 in 416ms (next.js: 49ms, proxy.ts: 9ms, application-code: 358ms)
+ GET /app 200 in 360ms (next.js: 15ms, proxy.ts: 10ms, application-code: 335ms)
+ GET / 200 in 262ms (next.js: 25ms, application-code: 237ms)
+ GET / 200 in 250ms (next.js: 24ms, application-code: 226ms)
+[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This 
+won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head headCacheNode={{rsc:{...}, ...}}>
+                    <__next_viewport_boundary__>
+                    <MetadataWrapper>
+                      <div
+                        hidden={true}
+-                       bis_skin_checked="1"
+                      >
+                    ...
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="layout.tsx">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <RootLayout>
+                        <html lang="en" className="inter_24fb..." style={{...}}>
+                          <body
+                            className="min-h-full bg-canvas font-sans text-foreground"
+-                           
+bis_register="W3sibWFzdGVyIjp0cnVlLCJleHRlbnNpb25JZCI6ImVwcGlvY2VtaG1ubGJoanBsY2drb2ZjaWll..."
+-                           __processed_af13710e-a9ae-4eec-ad50-c4230f3b9aaf__="true"
+                          >
+                            ...
+                              <FloatingDelayGroup delay={{open:150, ...}} timeoutMs={400}>
+                                <Ambience>
+                                  <div
+                                    aria-hidden={true}
+                                    className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-canvas"
+-                                   bis_skin_checked="1"
+                                  >
+                                    <motion.div style={{rotate:{...}}} className="absolute t...">
+                                      <div
+                                        className="absolute top-1/2 left-1/2 size-[140vmax] -translate-x-1/2 
+-translat..."
+                                        style={{transform:"none"}}
+                                        ref={function useMotionRef.useCallback}
+-                                       bis_skin_checked="1"
+                                      >
+                                        <div
+                                          className="size-full"
+                                          style={{background:"conic-grad..."}}
+-                                         bis_skin_checked="1"
+                                        >
+                                    <div
+                                      className="absolute inset-0"
+-                                     bis_skin_checked="1"
+                                    >
+                                      <motion.div style={{y:{...},x:{...}}} animate={{scale:[...]}} ...>
+                                        <div
+                                          className={"absolute -top-[26%] -left-[12%] size-[68rem] opacity-[0.4] 
+blur..."}
+                                          style={{transform:"none"}}
+                                          ref={function useMotionRef.useCallback}
+-                                         bis_skin_checked="1"
+                                        >
+                                      <motion.div style={{y:{...},x:{...}}} animate={{scale:[...]}} ...>
+                                        <div
+                                          className={"absolute top-[0%] -right-[14%] size-[60rem] opacity-[0.32] 
+blur..."}
+                                          style={{transform:"none"}}
+                                          ref={function useMotionRef.useCallback}
+-                                         bis_skin_checked="1"
+                                        >
+                                      <motion.div style={{y:{...},x:{...}}} animate={{scale:[...]}} ...>
+                                        <div
+                                          className={"absolute -bottom-[22%] left-[14%] size-[56rem] opacity-[0.3] 
+bl..."}
+                                          style={{transform:"none"}}
+                                          ref={function useMotionRef.useCallback}
+-                                         bis_skin_checked="1"
+                                        >
+                                      <motion.div style={{y:{...}, ...}} animate={{scale:[...]}} ...>
+                                        <div
+                                          className={"absolute top-[62%] -right-[8%] size-[48rem] blur-[95px] 
+will-ch..."}
+                                          style={{opacity:0,transform:"translateY..."}}
+                                          ref={function useMotionRef.useCallback}
+-                                         bis_skin_checked="1"
+                                        >
+                                      <motion.div style={{y:{...}, ...}} animate={{scale:[...]}} ...>
+                                        <div
+                                          className={"absolute top-[120%] -left-[10%] size-[52rem] blur-[100px] 
+will-..."}
+                                          style={{opacity:0,transform:"translateY..."}}
+                                          ref={function useMotionRef.useCallback}
+-                                         bis_skin_checked="1"
+                                        >
+                                    <div
+                                      className="absolute -inset-[10%] opacity-[0.2]"
+-                                     bis_skin_checked="1"
+                                    >
+                                      <SpotlightPaint x={{...}} y={{...}}>
+                                        <div
+                                          ref={{current:null}}
+                                          className="absolute inset-0"
+-                                         bis_skin_checked="1"
+                                        >
+                                    <div
+                                      className="absolute inset-0 opacity-[0.14] 
+[mask-image:radial-gradient(ellipse_7..."
+                                      style={{backgroundImage:"radial-gra...",backgroundSize:"28px 28px"}}
+-                                     bis_skin_checked="1"
+                                    >
+                                    <div
+                                      className="absolute inset-0 opacity-[0.035] mix-blend-multiply"
+                                      style={{backgroundImage:"url(\"data..."}}
+-                                     bis_skin_checked="1"
+                                    >
+                                    ...
+                                ...
+                                  <LandingPage>
+                                    <div className="min-h-svh">
+                                      ...
+                                        <header className="fixed inse..." style={{opacity:0, ...}} ...>
+                                          <div className="mx-auto fl...">
+                                            <LinkComponent>
+                                            <nav className="hidden fle...">
+                                              <a
+                                                href="#platform"
+                                                className="rounded-md px-2.5 py-1.5 text-[0.8125rem] font-medium 
+text-..."
+-                                               bis_skin_checked="1"
+                                              >
++                                               Platform
+                                              <a
+                                                href="#pipeline"
+                                                className="rounded-md px-2.5 py-1.5 text-[0.8125rem] font-medium 
+text-..."
+-                                               bis_skin_checked="1"
+                                              >
++                                               Pipeline
+                                              <a
+                                                href="#research"
+                                                className="rounded-md px-2.5 py-1.5 text-[0.8125rem] font-medium 
+text-..."
+-                                               bis_skin_checked="1"
+                                              >
++                                               Research
+                                              <a
+                                                href="#validation"
+                                                className="rounded-md px-2.5 py-1.5 text-[0.8125rem] font-medium 
+text-..."
+-                                               bis_skin_checked="1"
+                                              >
++                                               Validation
+                                            ...
+                                      <main className="flex flex-...">
+                                        ...
+                                          <div className="mx-auto ma...">
+                                            ...
+                                              <div className={undefined} style={{opacity:0, ...}} ...>
+                                                <LinkComponent>
+                                                  <LinkComponent href="#validation" className="group inli...">
+                                                    <a
+                                                      className="group inline-flex items-center gap-2 rounded-full 
+bor..."
+                                                      ref={function}
+                                                      onClick={function onClick}
+                                                      onMouseEnter={function onMouseEnter}
+                                                      onTouchStart={function onTouchStart}
+                                                      href="#validation"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                            <h1>
+                                            <Reveal>
+                                            ...
+                                              <div className={undefined} style={{opacity:0, ...}} ...>
+                                                <div className="mt-9 flex ...">
+                                                  <LinkComponent>
+                                                    <LinkComponent href="/signup" className={"group/bu..."}>
+                                                      <a
+                                                        className={"group/button relative inline-flex shrink-0 
+select..."}
+                                                        ref={function}
+                                                        onClick={function onClick}
+                                                        onMouseEnter={function onMouseEnter}
+                                                        onTouchStart={function onTouchStart}
+                                                        href="/signup"
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                  <a
+                                                    href="#platform"
+                                                    className={"group/button relative inline-flex shrink-0 
+select-non..."}
+-                                                   bis_skin_checked="1"
+                                                  >
++                                                   See the platform
+                                        <section>
+                                        <section>
+                                        <section>
+                                        <section>
+                                        <section>
+                                        <section>
+                                        <section>
+                                        ...
+                                          <div className="mt-9 flex ...">
+                                            <LinkComponent>
+                                              <LinkComponent href="/signup" className={"group/bu..."}>
+                                                <a
+                                                  className={"group/button relative inline-flex shrink-0 select-none 
+..."}
+                                                  ref={function}
+                                                  onClick={function onClick}
+                                                  onMouseEnter={function onMouseEnter}
+                                                  onTouchStart={function onTouchStart}
+                                                  href="/signup"
+-                                                 bis_skin_checked="1"
+                                                >
+                                            <LinkComponent>
+                                              <LinkComponent href="/login" className={"group/bu..."}>
+                                                <a
+                                                  className={"group/button relative inline-flex shrink-0 select-none 
+..."}
+                                                  ref={function}
+                                                  onClick={function onClick}
+                                                  onMouseEnter={function onMouseEnter}
+                                                  onTouchStart={function onTouchStart}
+                                                  href="/login"
+-                                                 bis_skin_checked="1"
+                                                >
++                                                 Log in
+                                      <SiteFooter>
+                                        <footer className="border-t b...">
+                                          <div className="mx-auto fl...">
+                                            <div>
+                                            <nav className="flex gap-12">
+                                              <div className="flex flex-...">
+                                                <p>
+                                                <a
+                                                  href="#platform"
+                                                  className="type-ui text-muted-foreground transition-colors 
+hover:tex..."
+-                                                 bis_skin_checked="1"
+                                                >
++                                                 Platform
+                                                <a
+                                                  href="#pipeline"
+                                                  className="type-ui text-muted-foreground transition-colors 
+hover:tex..."
+-                                                 bis_skin_checked="1"
+                                                >
++                                                 Pipeline
+                                                <a
+                                                  href="#research"
+                                                  className="type-ui text-muted-foreground transition-colors 
+hover:tex..."
+-                                                 bis_skin_checked="1"
+                                                >
++                                                 Research
+                                                <a
+                                                  href="#validation"
+                                                  className="type-ui text-muted-foreground transition-colors 
+hover:tex..."
+-                                                 bis_skin_checked="1"
+                                                >
++                                                 Validation
+                                              <div className="flex flex-...">
+                                                <p>
+                                                <LinkComponent>
+                                                  <LinkComponent href="/login" className="type-ui te...">
+                                                    <a
+                                                      className="type-ui text-muted-foreground transition-colors 
+hover..."
+                                                      ref={function}
+                                                      onClick={function onClick}
+                                                      onMouseEnter={function onMouseEnter}
+                                                      onTouchStart={function onTouchStart}
+                                                      href="/login"
+-                                                     bis_skin_checked="1"
+                                                    >
++                                                     Log in
+                                                <LinkComponent>
+                                                  <LinkComponent href="/signup" className="type-ui te...">
+                                                    <a
+                                                      className="type-ui text-muted-foreground transition-colors 
+hover..."
+                                                      ref={function}
+                                                      onClick={function onClick}
+                                                      onMouseEnter={function onMouseEnter}
+                                                      onTouchStart={function onTouchStart}
+                                                      href="/signup"
+-                                                     bis_skin_checked="1"
+                                                    >
++                                                     Sign up
+                                          ...
+                            ...
+                  ...
+ 
+ GET /app 200 in 624ms (next.js: 49ms, proxy.ts: 24ms, application-code: 550ms)
+○ Compiling /app/synthetic ...
+ GET /app/synthetic 200 in 5.0s (next.js: 4.3s, proxy.ts: 8ms, application-code: 768ms)
+ GET /app/prediction 200 in 2.9s (next.js: 2.6s, proxy.ts: 19ms, application-code: 272ms)
+ GET /app/how-it-works 200 in 4.7s (next.js: 3.1s, proxy.ts: 24ms, application-code: 1574ms)
+ GET /app/how-it-works 200 in 1585ms (next.js: 128ms, proxy.ts: 17ms, application-code: 1440ms)
+ GET /app/how-it-works 200 in 1346ms (next.js: 176ms, proxy.ts: 37ms, application-code: 1133ms)
+ GET /app/how-it-works 200 in 1360ms (next.js: 96ms, proxy.ts: 39ms, application-code: 1226ms)
+ GET /app/how-it-works 200 in 1372ms (next.js: 274ms, proxy.ts: 181ms, application-code: 917ms)
+ GET /app/how-it-works 200 in 893ms (next.js: 139ms, proxy.ts: 98ms, application-code: 656ms)
+ GET /app/how-it-works 200 in 474ms (next.js: 39ms, proxy.ts: 19ms, application-code: 416ms)
+ GET /app/how-it-works 200 in 321ms (next.js: 103ms, proxy.ts: 23ms, application-code: 195ms)
+ GET / 200 in 895ms (next.js: 481ms, application-code: 413ms)
+[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This 
+won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head headCacheNode={{rsc:{...}, ...}}>
+                    <__next_viewport_boundary__>
+                    <MetadataWrapper>
+                      <div
+                        hidden={true}
+-                       bis_skin_checked="1"
+                      >
+                    ...
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="layout.tsx">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <RootLayout>
+                        <html lang="en" className="inter_24fb..." style={{...}}>
+                          <body
+                            className="min-h-full bg-canvas font-sans text-foreground"
+-                           __processed_31b32d53-611f-4966-bb75-829c733482f0__="true"
+-                           
+bis_register="W3sibWFzdGVyIjp0cnVlLCJleHRlbnNpb25JZCI6ImVwcGlvY2VtaG1ubGJoanBsY2drb2ZjaWll..."
+                          >
+                            ...
+                              <FloatingDelayGroup delay={{open:150, ...}} timeoutMs={400}>
+                                <Ambience>
+                                  <div
+                                    aria-hidden={true}
+                                    className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-canvas"
+-                                   bis_skin_checked="1"
+                                  >
+                                    <motion.div style={{rotate:{...}}} className="absolute t...">
+                                      <div
+                                        className="absolute top-1/2 left-1/2 size-[140vmax] -translate-x-1/2 
+-translat..."
+                                        style={{transform:"none"}}
+                                        ref={function useMotionRef.useCallback}
+-                                       bis_skin_checked="1"
+                                      >
+                                        <div
+                                          className="size-full"
+                                          style={{background:"conic-grad..."}}
+-                                         bis_skin_checked="1"
+                                        >
+                                    <div
+                                      className="absolute inset-0"
+-                                     bis_skin_checked="1"
+                                    >
+                                      <motion.div style={{y:{...},x:{...}}} animate={{scale:[...]}} ...>
+                                        <div
+                                          className={"absolute -top-[26%] -left-[12%] size-[68rem] opacity-[0.4] 
+blur..."}
+                                          style={{transform:"none"}}
+                                          ref={function useMotionRef.useCallback}
+-                                         bis_skin_checked="1"
+                                        >
+                                      <motion.div style={{y:{...},x:{...}}} animate={{scale:[...]}} ...>
+                                        <div
+                                          className={"absolute top-[0%] -right-[14%] size-[60rem] opacity-[0.32] 
+blur..."}
+                                          style={{transform:"none"}}
+                                          ref={function useMotionRef.useCallback}
+-                                         bis_skin_checked="1"
+                                        >
+                                      <motion.div style={{y:{...},x:{...}}} animate={{scale:[...]}} ...>
+                                        <div
+                                          className={"absolute -bottom-[22%] left-[14%] size-[56rem] opacity-[0.3] 
+bl..."}
+                                          style={{transform:"none"}}
+                                          ref={function useMotionRef.useCallback}
+-                                         bis_skin_checked="1"
+                                        >
+                                      <motion.div style={{y:{...}, ...}} animate={{scale:[...]}} ...>
+                                        <div
+                                          className={"absolute top-[62%] -right-[8%] size-[48rem] blur-[95px] 
+will-ch..."}
+                                          style={{opacity:0,transform:"translateY..."}}
+                                          ref={function useMotionRef.useCallback}
+-                                         bis_skin_checked="1"
+                                        >
+                                      <motion.div style={{y:{...}, ...}} animate={{scale:[...]}} ...>
+                                        <div
+                                          className={"absolute top-[120%] -left-[10%] size-[52rem] blur-[100px] 
+will-..."}
+                                          style={{opacity:0,transform:"translateY..."}}
+                                          ref={function useMotionRef.useCallback}
+-                                         bis_skin_checked="1"
+                                        >
+                                    <div
+                                      className="absolute -inset-[10%] opacity-[0.2]"
+-                                     bis_skin_checked="1"
+                                    >
+                                      <SpotlightPaint x={{...}} y={{...}}>
+                                        <div
+                                          ref={{current:null}}
+                                          className="absolute inset-0"
+-                                         bis_skin_checked="1"
+                                        >
+                                    <div
+                                      className="absolute inset-0 opacity-[0.14] 
+[mask-image:radial-gradient(ellipse_7..."
+                                      style={{backgroundImage:"radial-gra...",backgroundSize:"28px 28px"}}
+-                                     bis_skin_checked="1"
+                                    >
+                                    <div
+                                      className="absolute inset-0 opacity-[0.035] mix-blend-multiply"
+                                      style={{backgroundImage:"url(\"data..."}}
+-                                     bis_skin_checked="1"
+                                    >
+                                    ...
+                                ...
+                                  <LandingPage>
+                                    <div className="min-h-svh">
+                                      ...
+                                        <header className="fixed inse..." style={{opacity:0, ...}} ...>
+                                          <div className="mx-auto fl...">
+                                            <LinkComponent>
+                                            <nav className="hidden fle...">
+                                              <a
+                                                href="#platform"
+                                                className="rounded-md px-2.5 py-1.5 text-[0.8125rem] font-medium 
+text-..."
+-                                               bis_skin_checked="1"
+                                              >
++                                               Platform
+                                              <a
+                                                href="#pipeline"
+                                                className="rounded-md px-2.5 py-1.5 text-[0.8125rem] font-medium 
+text-..."
+-                                               bis_skin_checked="1"
+                                              >
++                                               Pipeline
+                                              <a
+                                                href="#research"
+                                                className="rounded-md px-2.5 py-1.5 text-[0.8125rem] font-medium 
+text-..."
+-                                               bis_skin_checked="1"
+                                              >
++                                               Research
+                                              <a
+                                                href="#validation"
+                                                className="rounded-md px-2.5 py-1.5 text-[0.8125rem] font-medium 
+text-..."
+-                                               bis_skin_checked="1"
+                                              >
++                                               Validation
+                                            ...
+                                      <main className="flex flex-...">
+                                        ...
+                                          <div className="mx-auto ma...">
+                                            ...
+                                              <div className={undefined} style={{opacity:0, ...}} ...>
+                                                <LinkComponent>
+                                                  <LinkComponent href="#validation" className="group inli...">
+                                                    <a
+                                                      className="group inline-flex items-center gap-2 rounded-full 
+bor..."
+                                                      ref={function}
+                                                      onClick={function onClick}
+                                                      onMouseEnter={function onMouseEnter}
+                                                      onTouchStart={function onTouchStart}
+                                                      href="#validation"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                            <h1>
+                                            <Reveal>
+                                            ...
+                                              <div className={undefined} style={{opacity:0, ...}} ...>
+                                                <div className="mt-9 flex ...">
+                                                  <LinkComponent>
+                                                    <LinkComponent href="/signup" className={"group/bu..."}>
+                                                      <a
+                                                        className={"group/button relative inline-flex shrink-0 
+select..."}
+                                                        ref={function}
+                                                        onClick={function onClick}
+                                                        onMouseEnter={function onMouseEnter}
+                                                        onTouchStart={function onTouchStart}
+                                                        href="/signup"
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                  <a
+                                                    href="#platform"
+                                                    className={"group/button relative inline-flex shrink-0 
+select-non..."}
+-                                                   bis_skin_checked="1"
+                                                  >
++                                                   See the platform
+                                        <section>
+                                        <section>
+                                        <section>
+                                        <section>
+                                        <section>
+                                        <section>
+                                        <section>
+                                        ...
+                                          <div className="mt-9 flex ...">
+                                            <LinkComponent>
+                                              <LinkComponent href="/signup" className={"group/bu..."}>
+                                                <a
+                                                  className={"group/button relative inline-flex shrink-0 select-none 
+..."}
+                                                  ref={function}
+                                                  onClick={function onClick}
+                                                  onMouseEnter={function onMouseEnter}
+                                                  onTouchStart={function onTouchStart}
+                                                  href="/signup"
+-                                                 bis_skin_checked="1"
+                                                >
+                                            <LinkComponent>
+                                              <LinkComponent href="/login" className={"group/bu..."}>
+                                                <a
+                                                  className={"group/button relative inline-flex shrink-0 select-none 
+..."}
+                                                  ref={function}
+                                                  onClick={function onClick}
+                                                  onMouseEnter={function onMouseEnter}
+                                                  onTouchStart={function onTouchStart}
+                                                  href="/login"
+-                                                 bis_skin_checked="1"
+                                                >
++                                                 Log in
+                                      <SiteFooter>
+                                        <footer className="border-t b...">
+                                          <div className="mx-auto fl...">
+                                            <div>
+                                            <nav className="flex gap-12">
+                                              <div className="flex flex-...">
+                                                <p>
+                                                <a
+                                                  href="#platform"
+                                                  className="type-ui text-muted-foreground transition-colors 
+hover:tex..."
+-                                                 bis_skin_checked="1"
+                                                >
++                                                 Platform
+                                                <a
+                                                  href="#pipeline"
+                                                  className="type-ui text-muted-foreground transition-colors 
+hover:tex..."
+-                                                 bis_skin_checked="1"
+                                                >
++                                                 Pipeline
+                                                <a
+                                                  href="#research"
+                                                  className="type-ui text-muted-foreground transition-colors 
+hover:tex..."
+-                                                 bis_skin_checked="1"
+                                                >
++                                                 Research
+                                                <a
+                                                  href="#validation"
+                                                  className="type-ui text-muted-foreground transition-colors 
+hover:tex..."
+-                                                 bis_skin_checked="1"
+                                                >
++                                                 Validation
+                                              <div className="flex flex-...">
+                                                <p>
+                                                <LinkComponent>
+                                                  <LinkComponent href="/login" className="type-ui te...">
+                                                    <a
+                                                      className="type-ui text-muted-foreground transition-colors 
+hover..."
+                                                      ref={function}
+                                                      onClick={function onClick}
+                                                      onMouseEnter={function onMouseEnter}
+                                                      onTouchStart={function onTouchStart}
+                                                      href="/login"
+-                                                     bis_skin_checked="1"
+                                                    >
++                                                     Log in
+                                                <LinkComponent>
+                                                  <LinkComponent href="/signup" className="type-ui te...">
+                                                    <a
+                                                      className="type-ui text-muted-foreground transition-colors 
+hover..."
+                                                      ref={function}
+                                                      onClick={function onClick}
+                                                      onMouseEnter={function onMouseEnter}
+                                                      onTouchStart={function onTouchStart}
+                                                      href="/signup"
+-                                                     bis_skin_checked="1"
+                                                    >
++                                                     Sign up
+                                          ...
+                            ...
+                  ...
+ 
+ GET /app 307 in 204ms (proxy.ts: 18ms)
+ GET /app 200 in 1029ms (next.js: 54ms, proxy.ts: 13ms, application-code: 962ms)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+ GET /app/prediction 200 in 443ms (next.js: 92ms, proxy.ts: 15ms, application-code: 337ms)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+ GET /app/how-it-works 200 in 472ms (next.js: 202ms, proxy.ts: 17ms, application-code: 254ms)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+ GET /app/prediction 200 in 268ms (next.js: 37ms, proxy.ts: 15ms, application-code: 217ms)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+○ Compiling /app/results ...
+ GET /app/results 200 in 6.7s (next.js: 6.5s, proxy.ts: 13ms, application-code: 265ms)
+ GET /app/results 200 in 173ms (next.js: 48ms, proxy.ts: 16ms, application-code: 109ms)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+○ Compiling /app/classification ...
+ GET /app/classification 200 in 6.3s (next.js: 5.2s, proxy.ts: 33ms, application-code: 1082ms)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+[browser] ⨯ unhandledRejection: TypeError: Cannot read properties of undefined (reading 'M_ID')
+    at Z (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)
+    at f (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)
+ GET / 200 in 391ms (next.js: 127ms, application-code: 265ms)
+ GET / 200 in 1445ms (next.js: 246ms, application-code: 1199ms)

@@ -1,0 +1,11 @@
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+.git
+.gitignore
+Dockerfile
+.dockerignore
+README.md
+train_models.py
+smoke_test.py

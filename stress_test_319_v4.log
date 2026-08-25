@@ -1,0 +1,76 @@
+==============================================================================================================
+CHEESE_319_REAL_EXTERNAL_STRESS_TEST_CASES -- 319 cases, 34 papers, best model = LightGBM
+==============================================================================================================
+
+--- Model comparison (overall, all 319 rows, all tiers pooled) ---
+  Random Forest                    n=319  MAE=  40.39d  RMSE=  63.81d  R2=  0.179  MAPE= 212.7%  bias= +16.90d  medAE= 20.09d
+  XGBoost                          n=319  MAE=  43.94d  RMSE=  66.54d  R2=  0.107  MAPE= 219.8%  bias= +16.85d  medAE= 21.96d
+  LightGBM                         n=319  MAE=  44.04d  RMSE=  67.20d  R2=  0.089  MAPE= 218.9%  bias= +17.54d  medAE= 22.58d
+  Explainable Boosting Machine     n=319  MAE=  47.03d  RMSE=  70.79d  R2= -0.011  MAPE= 204.0%  bias= +15.13d  medAE= 25.00d
+
+--- LightGBM (best model) : by quality tier ---
+    (R2 on tiers with a wide true-value range is meaningful; on narrow-range tiers R2 is unstable by construction)
+  A_RANGE_REAL           n=  4  MAE=   5.99d  RMSE=   6.03d  R2= -2.452  MAPE= 157.8%  bias=  +2.46d  medAE=  5.90d
+  A_STRICT_REAL          n= 27  MAE=   1.93d  RMSE=   2.86d  R2=  0.488  MAPE=  20.8%  bias=  -0.67d  medAE=  1.50d
+  B_LOWER_BOUND_REAL     n= 54  MAE=  51.30d  RMSE=  73.84d  R2= -0.242  MAPE=  62.1%  bias= -40.37d  medAE= 39.94d
+  B_OVERALL_REAL         n= 23  MAE=   8.95d  RMSE=  27.06d  R2=  0.860  MAPE=  26.2%  bias=  -6.85d  medAE=  1.69d
+  C_SAFETY_EVENT_REAL    n= 52  MAE=  50.15d  RMSE=  84.17d  R2= -4.449  MAPE= 773.1%  bias= +40.11d  medAE= 20.19d
+  C_STUDY_HORIZON_REAL   n=159  MAE=  52.75d  RMSE=  69.17d  R2=  0.219  MAPE= 154.1%  bias= +36.83d  medAE= 39.60d
+
+--- A_STRICT_REAL only (n=27) : every model, this is the tier requested for R2 ---
+  LightGBM                         n= 27  MAE=   1.93d  RMSE=   2.86d  R2=  0.488  MAPE=  20.8%  bias=  -0.67d  medAE=  1.50d
+  XGBoost                          n= 27  MAE=   2.34d  RMSE=   3.25d  R2=  0.339  MAPE=  22.9%  bias=  -0.70d  medAE=  1.60d
+  Random Forest                    n= 27  MAE=   2.42d  RMSE=   3.31d  R2=  0.314  MAPE=  28.3%  bias=  +0.00d  medAE=  1.37d
+  Explainable Boosting Machine     n= 27  MAE=   7.51d  RMSE=   8.88d  R2= -3.927  MAPE=  85.6%  bias=  -2.91d  medAE=  8.00d
+
+--- LightGBM : by cheese_category ---
+  hard         n= 35  MAE=  36.05d  RMSE=  47.29d  R2= -0.553  MAPE= 137.0%  bias= +22.75d  medAE= 35.97d
+  semi_hard    n=114  MAE=  81.92d  RMSE=  97.62d  R2=  0.011  MAPE= 504.3%  bias= +69.19d  medAE= 70.33d
+  soft         n=170  MAE=  20.28d  RMSE=  40.29d  R2=  0.290  MAPE=  44.5%  bias= -18.16d  medAE=  6.01d
+
+--- LightGBM : by is_control ---
+  treatment    n=129  MAE=  53.74d  RMSE=  72.29d  R2= -2.509  MAPE= 167.3%  bias= +35.55d  medAE= 42.24d
+  control      n=190  MAE=  37.45d  RMSE=  63.51d  R2=  0.439  MAPE= 254.0%  bias=  +5.32d  medAE= 15.74d
+
+--- Lower-bound-semantics tiers (n=265): prediction >= reported lower bound ---
+  51% of predictions meet or exceed the reported bound (129 under-predictions)
+
+--- Per-paper breakdown (LightGBM), papers with n>=8 rows ---
+                                                                        n     MAE    RMSE     R2   MAPE_%    bias  median_AE
+source_rule_id                                                                                                              
+https://pubmed.ncbi.nlm.nih.gov/18348389/                            14.0  145.52  166.87 -23.21  2103.28  145.52     134.93
+https://doi.org/10.1016/j.fm.2018.02.005                             16.0  113.24  121.19    NaN    62.91 -113.24     128.54
+https://doi.org/10.1016/j.idairyj.2023.105596                        60.0   75.98   84.17 -44.55   259.11   75.98      67.13
+https://doi.org/10.1111/j.1365-2621.2010.02465.x                     10.0   75.53   75.78    NaN   251.78   75.53      78.57
+https://doi.org/10.3168/jds.2024-25496                                9.0   63.27   79.67    NaN    17.34  -63.27      33.89
+https://doi.org/10.3168/jds.S0022-0302(93)77424-X                     8.0   42.98   46.92  -4.29    76.92  -42.98      52.26
+https://doi.org/10.1106/108201302028118                               9.0   39.99   40.15    NaN    44.44   39.99      39.71
+https://doi.org/10.1021/jf902774z                                     9.0   19.97   20.03    NaN    71.32  -19.97      19.44
+https://doi.org/10.3168/jds.2011-4219                                12.0   17.03   24.22   0.27    19.99  -16.07       8.43
+https://doi.org/10.4315/0362-028X.JFP-14-047                         16.0   14.02   14.87    NaN    93.46    6.52      15.00
+https://doi.org/10.3390/pathogens15010065                            10.0   11.84   15.62  -1.67    45.61    0.35       9.04
+https://doi.org/10.1111/j.1365-2621.1994.tb14701.x                   15.0   11.19   11.34    NaN    39.96  -11.19      10.03
+https://doi.org/10.1016/j.lwt.2013.04.007                            18.0    5.41    9.24    NaN    15.47    1.44       1.10
+https://pubmed.ncbi.nlm.nih.gov/27800345/                             9.0    3.81    4.37   0.22    77.37    0.51       5.10
+https://pmc.ncbi.nlm.nih.gov/articles/PMC7270376/                    16.0    2.52    2.89   0.45    15.34   -2.52       2.39
+https://doi.org/10.1016/j.foohum.2023.09.010                         12.0    1.53    1.75   0.66    12.19   -0.61       1.48
+https://www.sciencedirect.com/science/article/pii/S0141813022008996  16.0    1.30    1.54   0.21    21.20    0.53       1.36
+
+--- Worst 15 predictions (LightGBM, by absolute error) ---
+  EXT_REAL_0227: processed cheese       C_SAFETY_EVENT_REAL  true=   14.0d  pred=  257.4d  err=  +243.4d  cat=semi_hard
+  EXT_REAL_0226: processed cheese       C_SAFETY_EVENT_REAL  true=   14.0d  pred=  257.0d  err=  +243.0d  cat=semi_hard
+  EXT_REAL_0229: processed cheese       C_SAFETY_EVENT_REAL  true=    3.0d  pred=  241.7d  err=  +238.7d  cat=semi_hard
+  EXT_REAL_0228: processed cheese       C_SAFETY_EVENT_REAL  true=    3.0d  pred=  239.3d  err=  +236.3d  cat=semi_hard
+  EXT_REAL_0225: processed cheese       C_SAFETY_EVENT_REAL  true=   14.0d  pred=  246.1d  err=  +232.1d  cat=semi_hard
+  EXT_REAL_0231: processed cheese       C_STUDY_HORIZON_REAL true=   84.0d  pred=  261.1d  err=  +177.1d  cat=semi_hard
+  EXT_REAL_0230: processed cheese       C_STUDY_HORIZON_REAL true=   84.0d  pred=  258.0d  err=  +174.0d  cat=semi_hard
+  EXT_REAL_0279: feta                   B_LOWER_BOUND_REAL   true=  180.0d  pred=   23.8d  err=  -156.2d  cat=soft
+  EXT_REAL_0278: feta                   B_LOWER_BOUND_REAL   true=  180.0d  pred=   23.9d  err=  -156.1d  cat=soft
+  EXT_REAL_0280: feta                   B_LOWER_BOUND_REAL   true=  180.0d  pred=   25.2d  err=  -154.8d  cat=soft
+  EXT_REAL_0131: kashar                 C_STUDY_HORIZON_REAL true=   45.0d  pred=  195.8d  err=  +150.8d  cat=semi_hard
+  EXT_REAL_0277: feta                   B_LOWER_BOUND_REAL   true=  180.0d  pred=   30.7d  err=  -149.3d  cat=soft
+  EXT_REAL_0130: kashar                 C_STUDY_HORIZON_REAL true=   45.0d  pred=  191.8d  err=  +146.8d  cat=semi_hard
+  EXT_REAL_0128: kashar                 C_STUDY_HORIZON_REAL true=   45.0d  pred=  191.7d  err=  +146.7d  cat=semi_hard
+  EXT_REAL_0196: kashar                 C_STUDY_HORIZON_REAL true=   45.0d  pred=  190.4d  err=  +145.4d  cat=semi_hard
+
+Full per-row predictions written to stress_test_319_predictions.csv

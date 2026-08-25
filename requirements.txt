@@ -1,0 +1,13 @@
+pandas
+numpy
+openpyxl
+scikit-learn
+lightgbm
+xgboost
+interpret
+tensorflow
+joblib
+dash
+plotly
+pyarrow
+gunicorn

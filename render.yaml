@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: shelf-life-regression
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: standard
+    healthCheckPath: /
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"

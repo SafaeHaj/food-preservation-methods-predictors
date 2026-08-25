@@ -1,0 +1,8 @@
+﻿python : WARNING:tensorflow:TensorFlow GPU support is not available on native Windows for TensorFlow >= 2.11. Even if 
+CUDA/cuDNN are installed, GPU will not be used. Please use WSL2 or the TensorFlow-DirectML plugin.
+Au caractère Ligne:1 : 405
++ ... cripts\Activate.ps1; python train_models.py *> training_run_clean.log
++                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (WARNING:tensorf...irectML plugin.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

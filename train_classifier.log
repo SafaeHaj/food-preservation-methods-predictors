@@ -1,0 +1,29 @@
+﻿=== Formulation Efficacy Classifier -- Training ===
+
+[1/6] Loading workbook + building leakage-safe splits ...
+  class cutoffs (train-split tertiles): Low < 17.01%  |  Medium 17.01-29.05%  |  High >= 29.05%
+  train=17080  validation=3660  test=3660
+    train class balance: {'Low': 5694, 'High': 5694, 'Medium': 5692}
+    validation class balance: {'Low': 1236, 'High': 1231, 'Medium': 1193}
+    test class balance: {'Low': 1230, 'High': 1225, 'Medium': 1205}
+  features: numeric=14 categorical=11 binary=2
+
+[2/6] Fitting preprocessing ...
+  expanded feature count: 274
+
+[3/6] Random Forest Classifier ...
+  test accuracy=0.633  macro F1=0.631  (6.6s)
+
+[4/6] XGBoost Classifier ...
+  test accuracy=0.684  macro F1=0.685  (16.1s)
+
+[5/6] Building distribution summaries ...
+
+[6/6] Saving artifacts ...
+
+Models trained: ['random_forest', 'xgboost']
+Best model (by test macro F1): xgboost
+Total duration: 576.3s
+Artifacts saved under: C:\Users\lenovo\Desktop\Mcgill-Canada\cheese-shelf-life-modeling\artifacts_classification
+
+=== Training complete. ===

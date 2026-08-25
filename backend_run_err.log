@@ -1,0 +1,10 @@
+INFO:     Started server process [25936]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8010 (Press CTRL+C to quit)
+prediction input warning: 'indicator_type' = 'brand_new_pathogen_xyz' was never seen in training (unseen category)
+prediction input warning: 'indicator_type' = 'brand_new_pathogen_xyz' was never seen in training (unseen category)
+prediction input warning: 'indicator_type' = 'brand_new_pathogen_xyz' was never seen in training (unseen category)
+prediction input warning: 'indicator_threshold' = 500.0 differs from the single value (2) seen in training for {'indicator_type': 'listeria_monocytogenes', 'indicator_unit': 'log CFU/g'}
+prediction input warning: 'indicator_threshold' = 500.0 differs from the single value (2) seen in training for {'indicator_type': 'listeria_monocytogenes', 'indicator_unit': 'log CFU/g'}
+prediction input warning: 'indicator_threshold' = 500.0 differs from the single value (2) seen in training for {'indicator_type': 'listeria_monocytogenes', 'indicator_unit': 'log CFU/g'}

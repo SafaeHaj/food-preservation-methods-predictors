@@ -1,0 +1,170 @@
+﻿python : prediction input warning: 'headspace_n2_pct' = 100.0 is outside the training range [0.00, 79.06]
+Au caractère Ligne:1 : 405
++ ... tivate.ps1; python evaluate_319_stress_test.py *> stress_test_319_v3. ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (prediction inpu...e [0.00, 79.06]:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+prediction input warning: 'headspace_co2_pct' = 100.0 is outside the training range [0.00, 75.00]
+prediction input warning: 'indicator_type' = 'clostridia' was never seen in training (unseen category)
+prediction input warning: 'indicator_type' = 'clostridia' was never seen in training (unseen category)
+prediction input warning: 'indicator_type' = 'clostridia' was never seen in training (unseen category)
+prediction input warning: 'indicator_type' = 'clostridia' was never seen in training (unseen category)
+prediction input warning: 'headspace_co2_pct' = 100.0 is outside the training range [0.00, 75.00]
+prediction input warning: 'headspace_co2_pct' = 100.0 is outside the training range [0.00, 75.00]
+prediction input warning: 'headspace_co2_pct' = 100.0 is outside the training range [0.00, 75.00]
+prediction input warning: 'headspace_co2_pct' = 100.0 is outside the training range [0.00, 75.00]
+prediction input warning: 'headspace_n2_pct' = 100.0 is outside the training range [0.00, 79.06]
+prediction input warning: 'headspace_n2_pct' = 100.0 is outside the training range [0.00, 79.06]
+prediction input warning: 'headspace_n2_pct' = 100.0 is outside the training range [0.00, 79.06]
+prediction input warning: 'headspace_n2_pct' = 100.0 is outside the training range [0.00, 79.06]
+prediction input warning: 'primary_concentration' = 4000.0 is outside the training range [0.00, 2121.97]
+prediction input warning: 'storage_temperature_c' = -18.0 is outside the training range [-0.63, 25.47]
+prediction input warning: 'storage_temperature_c' = -18.0 is outside the training range [-0.63, 25.47]
+prediction input warning: 'storage_temperature_c' = -18.0 is outside the training range [-0.63, 25.47]
+prediction input warning: 'storage_temperature_c' = 30.0 is outside the training range [-0.63, 25.47]
+prediction input warning: 'storage_temperature_c' = 30.0 is outside the training range [-0.63, 25.47]
+prediction input warning: 'storage_temperature_c' = 30.0 is outside the training range [-0.63, 25.47]
+prediction input warning: 'storage_temperature_c' = 30.0 is outside the training range [-0.63, 25.47]
+prediction input warning: 'headspace_n2_pct' = 100.0 is outside the training range [0.00, 79.06]
+prediction input warning: 'headspace_co2_pct' = 100.0 is outside the training range [0.00, 75.00]
+prediction input warning: 'indicator_type' = 'clostridia' was never seen in training (unseen category)
+prediction input warning: 'indicator_type' = 'clostridia' was never seen in training (unseen category)
+prediction input warning: 'indicator_type' = 'clostridia' was never seen in training (unseen category)
+prediction input warning: 'indicator_type' = 'clostridia' was never seen in training (unseen category)
+prediction input warning: 'headspace_co2_pct' = 100.0 is outside the training range [0.00, 75.00]
+prediction input warning: 'headspace_co2_pct' = 100.0 is outside the training range [0.00, 75.00]
+prediction input warning: 'headspace_co2_pct' = 100.0 is outside the training range [0.00, 75.00]
+prediction input warning: 'headspace_co2_pct' = 100.0 is outside the training range [0.00, 75.00]
+prediction input warning: 'headspace_n2_pct' = 100.0 is outside the training range [0.00, 79.06]
+prediction input warning: 'headspace_n2_pct' = 100.0 is outside the training range [0.00, 79.06]
+prediction input warning: 'headspace_n2_pct' = 100.0 is outside the training range [0.00, 79.06]
+prediction input warning: 'headspace_n2_pct' = 100.0 is outside the training range [0.00, 79.06]
+prediction input warning: 'primary_concentration' = 4000.0 is outside the training range [0.00, 2121.97]
+prediction input warning: 'storage_temperature_c' = -18.0 is outside the training range [-0.63, 25.47]
+prediction input warning: 'storage_temperature_c' = -18.0 is outside the training range [-0.63, 25.47]
+prediction input warning: 'storage_temperature_c' = -18.0 is outside the training range [-0.63, 25.47]
+prediction input warning: 'storage_temperature_c' = 30.0 is outside the training range [-0.63, 25.47]
+prediction input warning: 'storage_temperature_c' = 30.0 is outside the training range [-0.63, 25.47]
+prediction input warning: 'storage_temperature_c' = 30.0 is outside the training range [-0.63, 25.47]
+prediction input warning: 'storage_temperature_c' = 30.0 is outside the training range [-0.63, 25.47]
+prediction input warning: 'headspace_n2_pct' = 100.0 is outside the training range [0.00, 79.06]
+prediction input warning: 'headspace_co2_pct' = 100.0 is outside the training range [0.00, 75.00]
+prediction input warning: 'indicator_type' = 'clostridia' was never seen in training (unseen category)
+prediction input warning: 'indicator_type' = 'clostridia' was never seen in training (unseen category)
+prediction input warning: 'indicator_type' = 'clostridia' was never seen in training (unseen category)
+prediction input warning: 'indicator_type' = 'clostridia' was never seen in training (unseen category)
+prediction input warning: 'headspace_co2_pct' = 100.0 is outside the training range [0.00, 75.00]
+prediction input warning: 'headspace_co2_pct' = 100.0 is outside the training range [0.00, 75.00]
+prediction input warning: 'headspace_co2_pct' = 100.0 is outside the training range [0.00, 75.00]
+prediction input warning: 'headspace_co2_pct' = 100.0 is outside the training range [0.00, 75.00]
+prediction input warning: 'headspace_n2_pct' = 100.0 is outside the training range [0.00, 79.06]
+prediction input warning: 'headspace_n2_pct' = 100.0 is outside the training range [0.00, 79.06]
+prediction input warning: 'headspace_n2_pct' = 100.0 is outside the training range [0.00, 79.06]
+prediction input warning: 'headspace_n2_pct' = 100.0 is outside the training range [0.00, 79.06]
+prediction input warning: 'primary_concentration' = 4000.0 is outside the training range [0.00, 2121.97]
+prediction input warning: 'storage_temperature_c' = -18.0 is outside the training range [-0.63, 25.47]
+prediction input warning: 'storage_temperature_c' = -18.0 is outside the training range [-0.63, 25.47]
+prediction input warning: 'storage_temperature_c' = -18.0 is outside the training range [-0.63, 25.47]
+prediction input warning: 'storage_temperature_c' = 30.0 is outside the training range [-0.63, 25.47]
+prediction input warning: 'storage_temperature_c' = 30.0 is outside the training range [-0.63, 25.47]
+prediction input warning: 'storage_temperature_c' = 30.0 is outside the training range [-0.63, 25.47]
+prediction input warning: 'storage_temperature_c' = 30.0 is outside the training range [-0.63, 25.47]
+prediction input warning: 'headspace_n2_pct' = 100.0 is outside the training range [0.00, 79.06]
+prediction input warning: 'headspace_co2_pct' = 100.0 is outside the training range [0.00, 75.00]
+prediction input warning: 'indicator_type' = 'clostridia' was never seen in training (unseen category)
+prediction input warning: 'indicator_type' = 'clostridia' was never seen in training (unseen category)
+prediction input warning: 'indicator_type' = 'clostridia' was never seen in training (unseen category)
+prediction input warning: 'indicator_type' = 'clostridia' was never seen in training (unseen category)
+prediction input warning: 'headspace_co2_pct' = 100.0 is outside the training range [0.00, 75.00]
+prediction input warning: 'headspace_co2_pct' = 100.0 is outside the training range [0.00, 75.00]
+prediction input warning: 'headspace_co2_pct' = 100.0 is outside the training range [0.00, 75.00]
+prediction input warning: 'headspace_co2_pct' = 100.0 is outside the training range [0.00, 75.00]
+prediction input warning: 'headspace_n2_pct' = 100.0 is outside the training range [0.00, 79.06]
+prediction input warning: 'headspace_n2_pct' = 100.0 is outside the training range [0.00, 79.06]
+prediction input warning: 'headspace_n2_pct' = 100.0 is outside the training range [0.00, 79.06]
+prediction input warning: 'headspace_n2_pct' = 100.0 is outside the training range [0.00, 79.06]
+prediction input warning: 'primary_concentration' = 4000.0 is outside the training range [0.00, 2121.97]
+prediction input warning: 'storage_temperature_c' = -18.0 is outside the training range [-0.63, 25.47]
+prediction input warning: 'storage_temperature_c' = -18.0 is outside the training range [-0.63, 25.47]
+prediction input warning: 'storage_temperature_c' = -18.0 is outside the training range [-0.63, 25.47]
+prediction input warning: 'storage_temperature_c' = 30.0 is outside the training range [-0.63, 25.47]
+prediction input warning: 'storage_temperature_c' = 30.0 is outside the training range [-0.63, 25.47]
+prediction input warning: 'storage_temperature_c' = 30.0 is outside the training range [-0.63, 25.47]
+prediction input warning: 'storage_temperature_c' = 30.0 is outside the training range [-0.63, 25.47]
+==============================================================================================================
+CHEESE_319_REAL_EXTERNAL_STRESS_TEST_CASES -- 319 cases, 34 papers, best model = XGBoost
+==============================================================================================================
+
+--- Model comparison (overall, all 319 rows, all tiers pooled) ---
+  XGBoost                          n=319  MAE=  32.35d  RMSE=  52.45d  R2=  0.445  MAPE= 123.0%  bias=  +3.02d  medAE= 15.06d
+  LightGBM                         n=319  MAE=  33.56d  RMSE=  55.37d  R2=  0.382  MAPE= 126.9%  bias=  +2.49d  medAE= 14.93d
+  Random Forest                    n=319  MAE=  34.17d  RMSE=  58.70d  R2=  0.305  MAPE= 125.8%  bias=  +0.93d  medAE= 13.82d
+  Explainable Boosting Machine     n=319  MAE=  37.07d  RMSE=  58.02d  R2=  0.321  MAPE= 166.7%  bias=  +1.08d  medAE= 19.41d
+
+--- XGBoost (best model) : by quality tier ---
+    (R2 on tiers with a wide true-value range is meaningful; on narrow-range tiers R2 is unstable by construction)
+  A_RANGE_REAL           n=  4  MAE=   5.41d  RMSE=   5.52d  R2= -1.884  MAPE= 137.3%  bias=  +1.80d  medAE=  4.99d
+  A_STRICT_REAL          n= 27  MAE=   3.46d  RMSE=   6.23d  R2= -1.422  MAPE=  35.2%  bias=  +1.25d  medAE=  1.44d
+  B_LOWER_BOUND_REAL     n= 54  MAE=  44.80d  RMSE=  61.18d  R2=  0.147  MAPE=  58.1%  bias= -34.43d  medAE= 46.02d
+  B_OVERALL_REAL         n= 23  MAE=  13.98d  RMSE=  45.86d  R2=  0.597  MAPE=  38.5%  bias=  -9.14d  medAE=  3.35d
+  C_SAFETY_EVENT_REAL    n= 52  MAE=  32.25d  RMSE=  50.30d  R2= -0.946  MAPE= 405.9%  bias= +21.12d  medAE= 14.97d
+  C_STUDY_HORIZON_REAL   n=159  MAE=  36.40d  RMSE=  55.77d  R2=  0.492  MAPE=  79.4%  bias= +11.91d  medAE= 20.05d
+
+--- A_STRICT_REAL only (n=27) : every model, this is the tier requested for R2 ---
+  XGBoost                          n= 27  MAE=   3.46d  RMSE=   6.23d  R2= -1.422  MAPE=  35.2%  bias=  +1.25d  medAE=  1.44d
+  LightGBM                         n= 27  MAE=   4.48d  RMSE=   9.80d  R2= -4.996  MAPE=  40.2%  bias=  +1.60d  medAE=  1.29d
+  Random Forest                    n= 27  MAE=   5.40d  RMSE=  10.43d  R2= -5.803  MAPE=  52.9%  bias=  +2.62d  medAE=  1.99d
+  Explainable Boosting Machine     n= 27  MAE=   6.48d  RMSE=   7.90d  R2= -2.904  MAPE=  75.8%  bias=  -3.08d  medAE=  8.00d
+
+--- XGBoost : by cheese_category ---
+  hard         n= 35  MAE=  55.98d  RMSE=  75.22d  R2= -2.929  MAPE= 147.8%  bias= +38.32d  medAE= 45.93d
+  semi_hard    n=114  MAE=  45.67d  RMSE=  65.30d  R2=  0.558  MAPE= 227.1%  bias= +16.34d  medAE= 34.42d
+  soft         n=170  MAE=  18.55d  RMSE=  33.74d  R2=  0.502  MAPE=  48.2%  bias= -13.18d  medAE=  7.39d
+
+--- XGBoost : by is_control ---
+  treatment    n=129  MAE=  29.98d  RMSE=  42.00d  R2= -0.184  MAPE=  92.9%  bias= +13.74d  medAE= 20.20d
+  control      n=190  MAE=  33.96d  RMSE=  58.50d  R2=  0.524  MAPE= 143.5%  bias=  -4.25d  medAE= 11.55d
+
+--- Lower-bound-semantics tiers (n=265): prediction >= reported lower bound ---
+  54% of predictions meet or exceed the reported bound (122 under-predictions)
+
+--- Per-paper breakdown (XGBoost), papers with n>=8 rows ---
+                                                                        n     MAE    RMSE     R2   MAPE_%    bias  median_AE
+source_rule_id                                                                                                              
+https://doi.org/10.3168/jds.2024-25496                                9.0  138.81  151.11    NaN    38.03 -138.81     156.69
+https://doi.org/10.1106/108201302028118                               9.0  116.38  122.65    NaN   129.31  116.38     136.48
+https://doi.org/10.1016/j.fm.2018.02.005                             16.0   90.96   94.24    NaN    50.53  -90.96     100.30
+https://pubmed.ncbi.nlm.nih.gov/18348389/                            14.0   69.78   82.88  -4.97  1029.10   60.31      48.53
+https://doi.org/10.3168/jds.S0022-0302(93)77424-X                     8.0   41.91   46.15  -4.12    71.66  -41.82      51.92
+https://doi.org/10.1111/j.1365-2621.2010.02465.x                     10.0   34.72   35.00    NaN   115.74   34.72      36.94
+https://doi.org/10.3390/pathogens15010065                            10.0   32.91   42.77 -19.04   169.20   31.40      27.67
+https://doi.org/10.1016/j.idairyj.2023.105596                        60.0   28.71   35.73  -7.21    95.15   28.71      30.65
+https://doi.org/10.3168/jds.2011-4219                                12.0   22.61   28.23   0.00    29.70  -22.61      16.08
+https://doi.org/10.1021/jf902774z                                     9.0   12.51   14.43    NaN    44.68  -12.51      12.48
+https://doi.org/10.1111/j.1365-2621.1994.tb14701.x                   15.0   10.30   10.62    NaN    36.79  -10.30       9.38
+https://doi.org/10.4315/0362-028X.JFP-14-047                         16.0    6.98    8.07    NaN    46.51   -0.69       7.04
+https://doi.org/10.1016/j.foohum.2023.09.010                         12.0    4.11    6.41  -3.56    36.62    2.36       2.43
+https://doi.org/10.1016/j.lwt.2013.04.007                            18.0    4.05    5.23    NaN    11.57   -3.25       3.12
+https://pubmed.ncbi.nlm.nih.gov/27800345/                             9.0    3.68    4.18   0.29    69.22    0.13       4.88
+https://pmc.ncbi.nlm.nih.gov/articles/PMC7270376/                    16.0    2.11    2.50   0.59    13.13    2.11       2.05
+https://www.sciencedirect.com/science/article/pii/S0141813022008996  16.0    1.39    1.79  -0.07    26.80    0.89       1.21
+
+--- Worst 15 predictions (XGBoost, by absolute error) ---
+  EXT_REAL_0223: processed cheese       B_OVERALL_REAL       true=  365.0d  pred=  147.6d  err=  -217.4d  cat=semi_hard
+  EXT_REAL_0286: gouda                  C_STUDY_HORIZON_REAL true=  365.0d  pred=  148.5d  err=  -216.5d  cat=semi_hard
+  EXT_REAL_0287: gouda                  C_STUDY_HORIZON_REAL true=  365.0d  pred=  169.7d  err=  -195.3d  cat=semi_hard
+  EXT_REAL_0289: gouda                  C_STUDY_HORIZON_REAL true=  365.0d  pred=  175.7d  err=  -189.3d  cat=semi_hard
+  EXT_REAL_0290: gouda                  C_STUDY_HORIZON_REAL true=  365.0d  pred=  198.5d  err=  -166.5d  cat=semi_hard
+  EXT_REAL_0217: parmigiano reggiano    C_STUDY_HORIZON_REAL true=   90.0d  pred=  251.7d  err=  +161.7d  cat=hard
+  EXT_REAL_0285: gouda                  C_STUDY_HORIZON_REAL true=  365.0d  pred=  208.3d  err=  -156.7d  cat=semi_hard
+  EXT_REAL_0220: parmigiano reggiano    C_STUDY_HORIZON_REAL true=   90.0d  pred=  246.5d  err=  +156.5d  cat=hard
+  EXT_REAL_0218: parmigiano reggiano    C_STUDY_HORIZON_REAL true=   90.0d  pred=  230.6d  err=  +140.6d  cat=hard
+  EXT_REAL_0214: parmigiano reggiano    C_STUDY_HORIZON_REAL true=   90.0d  pred=  226.7d  err=  +136.7d  cat=hard
+  EXT_REAL_0221: parmigiano reggiano    C_STUDY_HORIZON_REAL true=   90.0d  pred=  226.5d  err=  +136.5d  cat=hard
+  EXT_REAL_0229: processed cheese       C_SAFETY_EVENT_REAL  true=    3.0d  pred=  135.1d  err=  +132.1d  cat=semi_hard
+  EXT_REAL_0228: processed cheese       C_SAFETY_EVENT_REAL  true=    3.0d  pred=  131.9d  err=  +128.9d  cat=semi_hard
+  EXT_REAL_0053: cheddar                B_LOWER_BOUND_REAL   true=   20.0d  pred=  145.9d  err=  +125.9d  cat=hard
+  EXT_REAL_0277: feta                   B_LOWER_BOUND_REAL   true=  180.0d  pred=   55.1d  err=  -124.9d  cat=soft
+
+Full per-row predictions written to stress_test_319_predictions.csv

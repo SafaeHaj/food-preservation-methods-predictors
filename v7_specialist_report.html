@@ -1,0 +1,492 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>V7 Specialist Retrain Report</title>
+<style>
+  @page { size: A4; margin: 16mm 14mm; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; color: #16181c; font-size: 10.5px; line-height: 1.5; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 15px; margin: 26px 0 8px; padding-bottom: 4px; border-bottom: 2px solid #7A1B2E; page-break-after: avoid; }
+  h3 { font-size: 12.5px; margin: 16px 0 6px; page-break-after: avoid; }
+  p { margin: 6px 0; }
+  .subtitle { color: #6B7079; font-size: 11px; margin-bottom: 18px; }
+  .cover { border-bottom: 3px solid #7A1B2E; padding-bottom: 14px; margin-bottom: 6px; }
+  .exec-box { background: #FBF3F4; border: 1px solid #E9C7CC; border-left: 4px solid #7A1B2E; border-radius: 4px; padding: 12px 16px; margin: 10px 0 20px; }
+  .exec-box h3 { margin-top: 0; color: #7A1B2E; }
+  .exec-box ul { margin: 4px 0; padding-left: 18px; }
+  .good { color: #157F52; font-weight: 600; }
+  .bad { color: #C0362C; font-weight: 600; }
+  .warn { color: #A9660B; font-weight: 600; }
+  table { border-collapse: collapse; width: 100%; margin: 6px 0 14px; page-break-inside: auto; }
+  table.metrics { width: auto; min-width: 70%; }
+  caption { text-align: left; font-weight: 600; font-size: 11px; margin-bottom: 4px; caption-side: top; }
+  th, td { border: 1px solid #DADCE0; padding: 3px 6px; text-align: left; }
+  th { background: #F4F4F5; font-weight: 600; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.02em; color: #52565c; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.best-row { background: #FBF3F4; font-weight: 600; }
+  tr.flag-row { background: #FBEEEC; }
+  td.flat { color: #8F949C; }
+  .note { font-size: 9.5px; color: #6B7079; font-style: italic; margin-top: -8px; margin-bottom: 14px; }
+  .callout { background: #F6F6F7; border-radius: 4px; padding: 10px 14px; margin: 10px 0; font-size: 10px; }
+  .callout.proof { background: #FFF7E8; border: 1px solid #EAD9AE; }
+  .callout.bad-callout { background: #FBEEEC; border: 1px solid #E7B7B0; }
+  .callout.good-callout { background: #EEF7F1; border: 1px solid #B9DFC6; }
+  .page-break { page-break-before: always; }
+  .issues li { margin-bottom: 8px; }
+  .issues b { color: #7A1B2E; }
+  thead { display: table-header-group; }
+  tr { page-break-inside: avoid; }
+  .toc { columns: 2; margin: 14px 0 24px; font-size: 10.5px; }
+  .toc a { color: #16181c; text-decoration: none; }
+  .small { font-size: 9px; color: #8F949C; }
+  code { background: #F4F4F5; padding: 1px 4px; border-radius: 3px; font-size: 9.5px; }
+</style>
+</head><body>
+
+<div class="cover">
+  <h1>Cheese Shelf-Life Studio &mdash; V7 Specialist Retrain Report</h1>
+  <div class="subtitle">Six specialists (soft/semi-hard/hard &times; general/safety) &times; four algorithms (RF, LightGBM, XGBoost, EBM), trained on the corrected V7 datasets. Generated 2026-08-24 18:15 UTC. Parallel evaluation track &mdash; V6 artifacts and the live app are untouched.</div>
+</div>
+
+<div class="exec-box">
+  <h3>Executive summary</h3>
+  <ul>
+    <li>All three <b>general_shelf_life</b> specialists are excellent: test R&sup2; ranges 0.920&ndash;0.971.</li>
+    <li>All three <b>safety_endpoint</b> specialists are degraded, in a pattern that tracks almost exactly with how many of their target values are right-censored ("at least N days") rather than exact &mdash; see &sect;5.</li>
+    <li><b>Hard / Safety endpoint</b> has effectively collapsed to predicting the training mean (test R&sup2;=-0.011) &mdash; confirmed directly, not inferred (&sect;6).</li>
+    <li>A real preprocessing bug (<code>% w/w</code> concentration unit, 17,662 V7 rows) was found and fixed during verification, not a data change (&sect;8).</li>
+    <li>No physical-form combination in V7 can reach "Strong" support &mdash; a real, honestly-reported regression vs V6&rsquo;s data (&sect;9).</li>
+    <li>No correction multiplier, offset, clipping, or manual calibration was added anywhere in this work (&sect;10).</li>
+  </ul>
+</div>
+
+<h2 id="s1">1. What changed in V7</h2>
+<p>The user replaced the raw specialist training data with three "corrected" V7 files. Verified directly against the data (not assumed): V7 adds 13 columns beyond V6&rsquo;s 62, most notably genuine challenge-context fields (<code>is_challenge_test</code>, <code>initial_inoculum_log_cfu_g</code>, <code>growth_support</code>) and a target-censoring flag (<code>target_is_lower_bound</code>). Row counts are lower than V6 (V7 totals 34,000 rows across the three category files vs V6&rsquo;s ~35,650), and vocabulary is narrower (soft: 19 food_matrix values, semi-hard: 11, hard: 6), consistent with a more literature-anchored, "corrected" scope.</p>
+
+<h2 id="s2">2. Architecture &amp; constraints</h2>
+<p>Same six-specialist architecture as V6: one model family per (cheese_category, model_task), each a Random Forest / LightGBM / XGBoost / EBM ensemble, routed automatically. New context-scoped train/validation/test splits were built fresh from the V7 data (leakage-safe, grouped by <code>context_id</code>, seed=42). The production model for each specialist is selected purely by validation RMSE. Saved under a new <code>artifacts_v7/</code> directory; <code>artifacts_v6/</code> is untouched (confirmed via unchanged file modification times). <b>No dataset regeneration, rebalancing, relabeling, or augmentation was performed, and no correction multiplier, offset, clipping, or manual calibration was added to any prediction</b> &mdash; confirmed by grep across every file touched in this work, both before and after.</p>
+
+<h2 id="s3">3. Headline comparison &mdash; production model per specialist</h2>
+<p class="note">Row highlighted where test R&sup2; &lt; 0.5. "%LB test" = share of the specialist&rsquo;s own test-split targets that are right-censored lower bounds (see &sect;5) &mdash; not a model defect, a property of the target.</p>
+<table>
+<thead><tr>
+  <th>Specialist</th><th>Best model</th><th>n train</th><th>n val</th><th>n test</th>
+  <th>Val R&sup2;</th><th>Test R&sup2;</th><th>Val MAE</th><th>Test MAE</th><th>Val RMSE</th><th>Test RMSE</th>
+  <th>Train&minus;Val gap</th><th>%LB test</th>
+</tr></thead>
+<tbody><tr class="">
+      <td>Soft / General shelf life</td><td>LightGBM</td>
+      <td class="num">6160</td><td class="num">1320</td><td class="num">1320</td>
+      <td class="num">0.972</td><td class="num">0.971</td>
+      <td class="num">2.39</td><td class="num">2.53</td>
+      <td class="num">4.49</td><td class="num">4.89</td>
+      <td class="num">0.025</td>
+      <td class="num">0%</td>
+    </tr>
+<tr class="">
+      <td>Soft / Safety endpoint</td><td>XGBoost</td>
+      <td class="num">3360</td><td class="num">720</td><td class="num">720</td>
+      <td class="num">0.592</td><td class="num">0.594</td>
+      <td class="num">8.31</td><td class="num">7.73</td>
+      <td class="num">10.42</td><td class="num">10.34</td>
+      <td class="num">0.239</td>
+      <td class="num">69%</td>
+    </tr>
+<tr class="">
+      <td>Semi-hard / General shelf life</td><td>LightGBM</td>
+      <td class="num">5040</td><td class="num">1080</td><td class="num">1080</td>
+      <td class="num">0.931</td><td class="num">0.920</td>
+      <td class="num">7.35</td><td class="num">8.00</td>
+      <td class="num">12.82</td><td class="num">13.39</td>
+      <td class="num">0.059</td>
+      <td class="num">0%</td>
+    </tr>
+<tr class="flag-row">
+      <td>Semi-hard / Safety endpoint</td><td>XGBoost</td>
+      <td class="num">2800</td><td class="num">600</td><td class="num">600</td>
+      <td class="num">0.115</td><td class="num">0.317</td>
+      <td class="num">14.81</td><td class="num">13.26</td>
+      <td class="num">17.30</td><td class="num">16.05</td>
+      <td class="num">0.353</td>
+      <td class="num">93%</td>
+    </tr>
+<tr class="">
+      <td>Hard / General shelf life</td><td>LightGBM</td>
+      <td class="num">4200</td><td class="num">900</td><td class="num">900</td>
+      <td class="num">0.916</td><td class="num">0.932</td>
+      <td class="num">8.03</td><td class="num">6.93</td>
+      <td class="num">12.26</td><td class="num">11.30</td>
+      <td class="num">0.076</td>
+      <td class="num">0%</td>
+    </tr>
+<tr class="flag-row">
+      <td>Hard / Safety endpoint</td><td>XGBoost</td>
+      <td class="num">2240</td><td class="num">480</td><td class="num">480</td>
+      <td class="num">0.008</td><td class="num">-0.011</td>
+      <td class="num">17.00</td><td class="num">17.80</td>
+      <td class="num">19.87</td><td class="num">20.98</td>
+      <td class="num">0.038</td>
+      <td class="num">100%</td>
+    </tr></tbody>
+</table>
+
+<h2 id="s4" class="page-break">4. Full results &mdash; all 4 algorithms per specialist</h2>
+<p class="note">&#9733; marks the production model (lowest validation RMSE). All numbers read directly from each specialist&rsquo;s saved <code>metrics.json</code> &mdash; nothing recomputed for this report.</p>
+<h3>Soft / General shelf life</h3>
+    <table class="metrics">
+    <thead><tr>
+      <th>Algorithm</th><th>Train R&sup2;</th><th>Val R&sup2;</th><th>Test R&sup2;</th>
+      <th>Val MAE (d)</th><th>Test MAE (d)</th><th>Val RMSE (d)</th><th>Test RMSE (d)</th>
+      <th>Test MAPE %</th><th>Train&minus;Val gap</th>
+    </tr></thead>
+    <tbody><tr class="">
+          <td>Random Forest</td>
+          <td class="num">0.997</td><td class="num">0.955</td><td class="num">0.956</td>
+          <td class="num">2.84</td><td class="num">2.95</td>
+          <td class="num">5.67</td><td class="num">5.99</td>
+          <td class="num">12.2</td>
+          <td class="num">0.043</td>
+        </tr><tr class="best-row">
+          <td>LightGBM &#9733;</td>
+          <td class="num">0.997</td><td class="num">0.972</td><td class="num">0.971</td>
+          <td class="num">2.39</td><td class="num">2.53</td>
+          <td class="num">4.49</td><td class="num">4.89</td>
+          <td class="num">10.4</td>
+          <td class="num">0.025</td>
+        </tr><tr class="">
+          <td>XGBoost</td>
+          <td class="num">0.999</td><td class="num">0.969</td><td class="num">0.968</td>
+          <td class="num">2.38</td><td class="num">2.55</td>
+          <td class="num">4.65</td><td class="num">5.11</td>
+          <td class="num">10.5</td>
+          <td class="num">0.029</td>
+        </tr><tr class="">
+          <td>EBM</td>
+          <td class="num">0.985</td><td class="num">0.944</td><td class="num">0.944</td>
+          <td class="num">3.89</td><td class="num">3.88</td>
+          <td class="num">6.32</td><td class="num">6.79</td>
+          <td class="num">25.3</td>
+          <td class="num">0.041</td>
+        </tr></tbody>
+    </table>
+<h3>Soft / Safety endpoint</h3>
+    <table class="metrics">
+    <thead><tr>
+      <th>Algorithm</th><th>Train R&sup2;</th><th>Val R&sup2;</th><th>Test R&sup2;</th>
+      <th>Val MAE (d)</th><th>Test MAE (d)</th><th>Val RMSE (d)</th><th>Test RMSE (d)</th>
+      <th>Test MAPE %</th><th>Train&minus;Val gap</th>
+    </tr></thead>
+    <tbody><tr class="">
+          <td>Random Forest</td>
+          <td class="num">0.997</td><td class="num">0.548</td><td class="num">0.572</td>
+          <td class="num">8.62</td><td class="num">7.85</td>
+          <td class="num">10.97</td><td class="num">10.62</td>
+          <td class="num">26.8</td>
+          <td class="num">0.449</td>
+        </tr><tr class="">
+          <td>LightGBM</td>
+          <td class="num">0.876</td><td class="num">0.583</td><td class="num">0.573</td>
+          <td class="num">8.43</td><td class="num">7.85</td>
+          <td class="num">10.54</td><td class="num">10.61</td>
+          <td class="num">29.0</td>
+          <td class="num">0.292</td>
+        </tr><tr class="best-row">
+          <td>XGBoost &#9733;</td>
+          <td class="num">0.832</td><td class="num">0.592</td><td class="num">0.594</td>
+          <td class="num">8.31</td><td class="num">7.73</td>
+          <td class="num">10.42</td><td class="num">10.34</td>
+          <td class="num">27.4</td>
+          <td class="num">0.239</td>
+        </tr><tr class="">
+          <td>EBM</td>
+          <td class="num">0.944</td><td class="num">0.393</td><td class="num">0.360</td>
+          <td class="num">10.10</td><td class="num">10.48</td>
+          <td class="num">12.72</td><td class="num">12.98</td>
+          <td class="num">44.6</td>
+          <td class="num">0.551</td>
+        </tr></tbody>
+    </table>
+<h3>Semi-hard / General shelf life</h3>
+    <table class="metrics">
+    <thead><tr>
+      <th>Algorithm</th><th>Train R&sup2;</th><th>Val R&sup2;</th><th>Test R&sup2;</th>
+      <th>Val MAE (d)</th><th>Test MAE (d)</th><th>Val RMSE (d)</th><th>Test RMSE (d)</th>
+      <th>Test MAPE %</th><th>Train&minus;Val gap</th>
+    </tr></thead>
+    <tbody><tr class="">
+          <td>Random Forest</td>
+          <td class="num">0.995</td><td class="num">0.925</td><td class="num">0.905</td>
+          <td class="num">8.34</td><td class="num">9.22</td>
+          <td class="num">13.42</td><td class="num">14.57</td>
+          <td class="num">12.4</td>
+          <td class="num">0.070</td>
+        </tr><tr class="best-row">
+          <td>LightGBM &#9733;</td>
+          <td class="num">0.990</td><td class="num">0.931</td><td class="num">0.920</td>
+          <td class="num">7.35</td><td class="num">8.00</td>
+          <td class="num">12.82</td><td class="num">13.39</td>
+          <td class="num">10.3</td>
+          <td class="num">0.059</td>
+        </tr><tr class="">
+          <td>XGBoost</td>
+          <td class="num">0.995</td><td class="num">0.930</td><td class="num">0.927</td>
+          <td class="num">7.50</td><td class="num">7.81</td>
+          <td class="num">12.99</td><td class="num">12.74</td>
+          <td class="num">10.0</td>
+          <td class="num">0.065</td>
+        </tr><tr class="">
+          <td>EBM</td>
+          <td class="num">0.983</td><td class="num">0.900</td><td class="num">0.909</td>
+          <td class="num">9.65</td><td class="num">9.13</td>
+          <td class="num">15.49</td><td class="num">14.30</td>
+          <td class="num">13.4</td>
+          <td class="num">0.083</td>
+        </tr></tbody>
+    </table>
+<h3>Semi-hard / Safety endpoint</h3>
+    <table class="metrics">
+    <thead><tr>
+      <th>Algorithm</th><th>Train R&sup2;</th><th>Val R&sup2;</th><th>Test R&sup2;</th>
+      <th>Val MAE (d)</th><th>Test MAE (d)</th><th>Val RMSE (d)</th><th>Test RMSE (d)</th>
+      <th>Test MAPE %</th><th>Train&minus;Val gap</th>
+    </tr></thead>
+    <tbody><tr class="">
+          <td>Random Forest</td>
+          <td class="num">0.997</td><td class="num">0.015</td><td class="num">0.342</td>
+          <td class="num">15.43</td><td class="num">12.93</td>
+          <td class="num">18.26</td><td class="num">15.76</td>
+          <td class="num">26.3</td>
+          <td class="num">0.982</td>
+        </tr><tr class="">
+          <td>LightGBM</td>
+          <td class="num">0.449</td><td class="num">0.089</td><td class="num">0.303</td>
+          <td class="num">15.06</td><td class="num">13.60</td>
+          <td class="num">17.56</td><td class="num">16.21</td>
+          <td class="num">36.8</td>
+          <td class="num">0.360</td>
+        </tr><tr class="best-row">
+          <td>XGBoost &#9733;</td>
+          <td class="num">0.468</td><td class="num">0.115</td><td class="num">0.317</td>
+          <td class="num">14.81</td><td class="num">13.26</td>
+          <td class="num">17.30</td><td class="num">16.05</td>
+          <td class="num">31.4</td>
+          <td class="num">0.353</td>
+        </tr><tr class="">
+          <td>EBM</td>
+          <td class="num">0.936</td><td class="num">-0.280</td><td class="num">-0.127</td>
+          <td class="num">17.00</td><td class="num">17.17</td>
+          <td class="num">20.81</td><td class="num">20.63</td>
+          <td class="num">37.0</td>
+          <td class="num">1.217</td>
+        </tr></tbody>
+    </table>
+<h3>Hard / General shelf life</h3>
+    <table class="metrics">
+    <thead><tr>
+      <th>Algorithm</th><th>Train R&sup2;</th><th>Val R&sup2;</th><th>Test R&sup2;</th>
+      <th>Val MAE (d)</th><th>Test MAE (d)</th><th>Val RMSE (d)</th><th>Test RMSE (d)</th>
+      <th>Test MAPE %</th><th>Train&minus;Val gap</th>
+    </tr></thead>
+    <tbody><tr class="">
+          <td>Random Forest</td>
+          <td class="num">0.994</td><td class="num">0.910</td><td class="num">0.927</td>
+          <td class="num">8.48</td><td class="num">7.82</td>
+          <td class="num">12.68</td><td class="num">11.68</td>
+          <td class="num">9.7</td>
+          <td class="num">0.084</td>
+        </tr><tr class="best-row">
+          <td>LightGBM &#9733;</td>
+          <td class="num">0.991</td><td class="num">0.916</td><td class="num">0.932</td>
+          <td class="num">8.03</td><td class="num">6.93</td>
+          <td class="num">12.26</td><td class="num">11.30</td>
+          <td class="num">8.3</td>
+          <td class="num">0.076</td>
+        </tr><tr class="">
+          <td>XGBoost</td>
+          <td class="num">0.995</td><td class="num">0.911</td><td class="num">0.933</td>
+          <td class="num">8.05</td><td class="num">6.96</td>
+          <td class="num">12.55</td><td class="num">11.26</td>
+          <td class="num">8.4</td>
+          <td class="num">0.083</td>
+        </tr><tr class="">
+          <td>EBM</td>
+          <td class="num">0.977</td><td class="num">0.880</td><td class="num">0.917</td>
+          <td class="num">9.43</td><td class="num">8.31</td>
+          <td class="num">14.58</td><td class="num">12.47</td>
+          <td class="num">10.1</td>
+          <td class="num">0.096</td>
+        </tr></tbody>
+    </table>
+<h3>Hard / Safety endpoint</h3>
+    <table class="metrics">
+    <thead><tr>
+      <th>Algorithm</th><th>Train R&sup2;</th><th>Val R&sup2;</th><th>Test R&sup2;</th>
+      <th>Val MAE (d)</th><th>Test MAE (d)</th><th>Val RMSE (d)</th><th>Test RMSE (d)</th>
+      <th>Test MAPE %</th><th>Train&minus;Val gap</th>
+    </tr></thead>
+    <tbody><tr class="">
+          <td>Random Forest</td>
+          <td class="num">0.996</td><td class="num">-0.131</td><td class="num">-0.097</td>
+          <td class="num">17.96</td><td class="num">18.28</td>
+          <td class="num">21.22</td><td class="num">21.86</td>
+          <td class="num">22.9</td>
+          <td class="num">1.127</td>
+        </tr><tr class="">
+          <td>LightGBM</td>
+          <td class="num">0.036</td><td class="num">-0.003</td><td class="num">-0.024</td>
+          <td class="num">17.14</td><td class="num">17.90</td>
+          <td class="num">19.98</td><td class="num">21.12</td>
+          <td class="num">22.4</td>
+          <td class="num">0.039</td>
+        </tr><tr class="best-row">
+          <td>XGBoost &#9733;</td>
+          <td class="num">0.046</td><td class="num">0.008</td><td class="num">-0.011</td>
+          <td class="num">17.00</td><td class="num">17.80</td>
+          <td class="num">19.87</td><td class="num">20.98</td>
+          <td class="num">22.2</td>
+          <td class="num">0.038</td>
+        </tr><tr class="">
+          <td>EBM</td>
+          <td class="num">0.953</td><td class="num">-0.731</td><td class="num">-0.528</td>
+          <td class="num">20.94</td><td class="num">21.00</td>
+          <td class="num">26.25</td><td class="num">25.79</td>
+          <td class="num">26.4</td>
+          <td class="num">1.683</td>
+        </tr></tbody>
+    </table>
+
+<h2 id="s5" class="page-break">5. The censored-target finding</h2>
+<p>V7 introduces <code>target_is_lower_bound</code>: a flag on rows where the literature source reports "no spoilage/no growth by day N" rather than an exact shelf-life value &mdash; the true value could be materially higher than N. Standard regression treats every target as exact. The proportion of censored targets rises sharply from soft &rarr; semi-hard &rarr; hard safety specialists, and <b>test R&sup2; falls in the same order</b>:</p>
+<table>
+<thead><tr><th>Specialist</th><th>%LB train</th><th>%LB validation</th><th>%LB test</th><th>Test R&sup2;</th></tr></thead>
+<tbody><tr>
+          <td>Soft / General shelf life</td>
+          <td class="num">0%</td><td class="num">0%</td><td class="num">0%</td>
+          <td class="num">0.971</td>
+        </tr>
+<tr>
+          <td>Soft / Safety endpoint</td>
+          <td class="num">73%</td><td class="num">73%</td><td class="num">69%</td>
+          <td class="num">0.594</td>
+        </tr>
+<tr>
+          <td>Semi-hard / General shelf life</td>
+          <td class="num">0%</td><td class="num">0%</td><td class="num">0%</td>
+          <td class="num">0.920</td>
+        </tr>
+<tr>
+          <td>Semi-hard / Safety endpoint</td>
+          <td class="num">95%</td><td class="num">94%</td><td class="num">93%</td>
+          <td class="num">0.317</td>
+        </tr>
+<tr>
+          <td>Hard / General shelf life</td>
+          <td class="num">0%</td><td class="num">0%</td><td class="num">0%</td>
+          <td class="num">0.932</td>
+        </tr>
+<tr>
+          <td>Hard / Safety endpoint</td>
+          <td class="num">100%</td><td class="num">100%</td><td class="num">100%</td>
+          <td class="num">-0.011</td>
+        </tr></tbody>
+</table>
+<div class="callout bad-callout">This is a genuine data-learnability problem, not a preprocessing or wiring bug: a model trained to hit an exact-value loss on a target that is secretly "at least N" for most rows cannot help but be biased/underdetermined. It was <b>not</b> fixed with a correction here, per instruction &mdash; it is reported so the forthcoming independent V7 test set (or a future censoring-aware retrain, e.g. Tobit/survival-style loss) can address it deliberately.</div>
+
+<h2 id="s6">6. Deep dive: the collapsed hard/safety_endpoint specialist</h2>
+<p>Directly inspected (not inferred) by comparing the true vs. predicted training-target standard deviation for each safety specialist&rsquo;s production model:</p>
+<table>
+<thead><tr><th>Specialist</th><th>Model</th><th>True target std (d)</th><th>Predicted std (d)</th><th>Predicted std as % of true</th></tr></thead>
+<tbody><tr>
+  <td>Soft / Safety endpoint</td>
+  <td>XGBoost</td>
+  <td class="num">16.31</td>
+  <td class="num">13.01</td>
+  <td class="num">79.8%</td>
+</tr>
+<tr>
+  <td>Semi-hard / Safety endpoint</td>
+  <td>XGBoost</td>
+  <td class="num">20.07</td>
+  <td class="num">8.96</td>
+  <td class="num">44.6%</td>
+</tr>
+<tr>
+  <td>Hard / Safety endpoint</td>
+  <td>XGBoost</td>
+  <td class="num">21.06</td>
+  <td class="num">0.77</td>
+  <td class="num">3.6%</td>
+</tr></tbody>
+</table>
+<p>Hard/safety&rsquo;s XGBoost model predicts almost the same value (the training mean) for every row, regardless of input &mdash; consistent with its validation-loss early stopping firing after just 2 boosting rounds (see &sect;4). This is the direct cause of its negative test R&sup2;.</p>
+
+<h2 id="s7">7. New V7 feature wiring &mdash; verified, not assumed</h2>
+<p><code>initial_inoculum_log_cfu_g</code> and <code>growth_support</code> are populated only for safety_endpoint rows in the raw data. A generic rule in the training script (not a hardcoded "safety-only" special case) excludes any column that is 100% null within a specialist&rsquo;s own task-filtered training data. Spot-checked directly against the saved schemas:</p>
+<table>
+<thead><tr><th>Category</th><th>General: n features</th><th>General: challenge fields</th><th>Safety: n features</th><th>Safety: challenge fields</th></tr></thead>
+<tbody><tr>
+  <td>Soft</td>
+  <td class="num">28</td>
+  <td><span class="good">correctly absent</span></td>
+  <td class="num">30</td>
+  <td><span class="good">correctly present</span></td>
+</tr>
+<tr>
+  <td>Semi-hard</td>
+  <td class="num">28</td>
+  <td><span class="good">correctly absent</span></td>
+  <td class="num">30</td>
+  <td><span class="good">correctly present</span></td>
+</tr>
+<tr>
+  <td>Hard</td>
+  <td class="num">28</td>
+  <td><span class="good">correctly absent</span></td>
+  <td class="num">30</td>
+  <td><span class="good">correctly present</span></td>
+</tr></tbody>
+</table>
+<p>Live sensitivity check (re-run fresh for this report, not cached): for each safety specialist, one representative row was scored with every <code>growth_support</code> value the specialist was trained on, to confirm the feature actually moves the prediction rather than just existing in the schema:</p>
+<table>
+<thead><tr><th>Specialist</th><th>Baseline prediction</th><th>Predictions by growth_support</th><th>Result</th></tr></thead>
+<tbody><tr class="">
+  <td>Soft / Safety endpoint</td>
+  <td class="num">21.5</td>
+  <td>growth: 21.5d, limited: 39.4d, no_growth: 39.6d</td>
+  <td><span class="good">responsive</span></td>
+</tr>
+<tr class="">
+  <td>Semi-hard / Safety endpoint</td>
+  <td class="num">27.1</td>
+  <td>growth: 27.1d, limited: 61.9d, no_growth: 59.7d</td>
+  <td><span class="good">responsive</span></td>
+</tr>
+<tr class="flag-row">
+  <td>Hard / Safety endpoint</td>
+  <td class="num">82.0</td>
+  <td>limited: 82.0d, no_growth: 82.0d</td>
+  <td><span class="bad">flat (no response)</span></td>
+</tr></tbody>
+</table>
+<p class="note">Soft and semi-hard safety specialists respond measurably to growth_support (confirming the feature is live). Hard/safety&rsquo;s flat response is the same collapsed-model symptom from &sect;6, not a feature-wiring failure specific to growth_support/inoculum &mdash; it doesn&rsquo;t respond to storage temperature either (checked separately).</p>
+
+<h2 id="s8">8. Bug found and fixed during verification: <code>% w/w</code> concentration unit</h2>
+<p>All three V7 files use <code>% w/w</code> as a <b>raw</b> <code>primary_concentration_unit</code> spelling (17,662 rows total). <code>concentration_units.py</code>&rsquo;s conversion table had <code>"%"</code> and <code>"wt %"</code> mapping <i>to</i> canonical <code>% w/w</code>, but no entry for the raw spelling <code>% w/w</code> itself &mdash; <code>to_canonical()</code> would have raised <code>UnrecognizedConcentrationUnit</code> on every one of those rows at prediction time. Verified empirically (module&rsquo;s own methodology): the canonical/raw value ratio for these rows is exactly 1.0 with zero variance across all 17,662 rows. Fixed by adding the verified self-mapped entry and extending the module&rsquo;s <code>--verify</code> check to cover V7 as well as V6. This is a preprocessing correctness fix, not a change to any training or test data.</p>
+
+<h2 id="s9">9. Physical-form support regression (data property, reported not fixed)</h2>
+<p>In V7, <code>physical_form_observed</code> is 0 for every row in all three category files, and <code>physical_form_source</code> is always <code>"literature_supported_typical_form"</code> (never <code>"explicit_matrix_name"</code>, which some V6 rows had). Under the existing, unmodified support-level bands, this means <b>no V7 prediction can reach "Strong" physical-form support</b> &mdash; the best achievable is "Moderate" (confidence &ge; 0.85). This is a real characteristic of the V7 data, surfaced honestly through the existing support-assessment machinery, not a bug and not something this pass changed the bands to hide.</p>
+
+<h2 id="s10">10. No prediction hacks &mdash; confirmed</h2>
+<p>Grepped for multiplier/offset/clip/correction/manual-calibration patterns across every file touched in this work, before and after implementation. No matches other than comments explicitly documenting the absence of such code. No dataset file under <code>data/raw/</code> was modified, regenerated, rebalanced, or relabeled at any point in this work.</p>
+
+<h2 id="s11">11. Recommendations</h2>
+<ol>
+  <li>Do not attempt to "fix" the safety specialists&rsquo; R&sup2; with a correction factor &mdash; the root cause is target censoring, and a correction would hide rather than address it.</li>
+  <li>When the independent V7 external test set is built, consider excluding or separately reporting on rows whose true value is itself a lower bound, since a specialist trained on censored data cannot be fairly scored against an exact-value ground truth using standard R&sup2;/MAE.</li>
+  <li>If safety-endpoint accuracy needs to improve, the highest-leverage next step is a censoring-aware training objective (e.g. Tobit regression or a survival/hazard formulation) for the three safety specialists specifically &mdash; not more data volume or a different off-the-shelf algorithm, since all four algorithms show the same degradation pattern in &sect;4.</li>
+  <li>General-shelf-life specialists need no further work &mdash; all three are strong and show only modest train&minus;validation gaps.</li>
+  <li>Before any live promotion decision, re-run this evaluation against the user&rsquo;s forthcoming independent V7 external test set, not just V7&rsquo;s own held-out split.</li>
+</ol>
+
+<p class="small" style="margin-top:24px;">Report generated from artifacts_v7/*/*/{metrics.json, training_manifest.json, schema.json, predictions.parquet}, produced by train_specialists.py --data-version v7 against the V7 CSVs in data/raw/. Sensitivity and schema-check figures in &sect;6&ndash;7 were computed fresh at report-generation time via SpecialistRegistry(data_version="v7"), not cached. No retraining occurred in the course of generating this report.</p>
+
+</body></html>

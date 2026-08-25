@@ -1,0 +1,38 @@
+﻿=== Shelf-Life Regression — Training (training_data) ===
+
+[1/7] Loading workbook + building leakage-safe splits + detecting schema ...
+  total rows=48240  (0 real_paper_derived, 48240 synthetic)
+  train=33770  validation=7235  test=7235  (split by context_id, seed=42)
+    train: 0 real rows
+    validation: 0 real rows
+    test: 0 real rows
+  numeric=14  categorical=11  binary=3
+
+[2/7] Fitting shared preprocessing for Random Forest / LightGBM / XGBoost ...
+  expanded feature count: 269
+
+[3/7] Random Forest ...
+  val R2=0.906  test R2=0.914  (83.2s)
+  computing Random Forest learning curve ...
+
+[4/7] LightGBM (early stopping on validation) ...
+  val R2=0.919  test R2=0.941  best_iter=1466  (12.2s)
+
+[5/7] XGBoost (early stopping on validation) ...
+  val R2=0.923  test R2=0.944  best_iter=1671  (17.1s)
+
+[6/7] Explainable Boosting Machine ...
+  computing EBM learning curve ...
+  val R2=0.874  test R2=0.899  (141.4s)
+
+[7/7] LSTM (experimental tabular benchmark) ...
+  SKIPPED: SKIP_LSTM=1 set
+
+Saving artifacts ...
+
+Models trained: ['random_forest', 'lightgbm', 'xgboost', 'ebm']
+Best model (by validation RMSE): xgboost
+Total duration: 1587.6s
+Artifacts saved under: C:\Users\lenovo\Desktop\Mcgill-Canada\cheese-shelf-life-modeling\artifacts
+
+=== Training complete. ===

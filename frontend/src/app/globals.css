@@ -1,0 +1,571 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================================================
+   Shelf-Life Studio — design system
+
+   A dense, neutral, product-software system: near-neutral cool greys, hairline
+   1px separation instead of floating cards, compact control heights, tight
+   heading tracking, and shadows reserved for things that genuinely float
+   (popovers, dialogs, toasts). The single chromatic accent is McGill burgundy,
+   used only for primary actions, active state, and focus.
+
+   Everything is driven from tokens below. Components must not hardcode colors,
+   font sizes, or radii — use the tokens or the semantic utilities.
+   ========================================================================== */
+
+@theme inline {
+  /* --- surfaces / text ------------------------------------------------- */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-canvas: var(--canvas);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-elevated: var(--elevated);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-subtle-foreground: var(--subtle-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-grid: var(--chart-grid);
+  --color-chart-axis: var(--chart-axis);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* --- type ------------------------------------------------------------ */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SFMono-Regular", Consolas, monospace;
+  /* Display serif — hero/section headings only. Falls back to a system serif
+     so a slow font load never collapses a headline back to the sans stack. */
+  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
+
+  /* Every step pairs a size with the line-height and tracking it needs — do
+     not mix a size from one step with the leading of another. */
+  --text-display: 4rem;        --text-display--line-height: 1.03; --text-display--letter-spacing: -0.03em;  --text-display--font-weight: 560;
+  --text-h1: 2.5rem;           --text-h1--line-height: 1.08;     --text-h1--letter-spacing: -0.028em; --text-h1--font-weight: 600;
+  --text-h2: 1.75rem;          --text-h2--line-height: 1.18;     --text-h2--letter-spacing: -0.02em;  --text-h2--font-weight: 600;
+  --text-h3: 1.3125rem;        --text-h3--line-height: 1.28;     --text-h3--letter-spacing: -0.014em; --text-h3--font-weight: 590;
+  --text-title: 1.0625rem;     --text-title--line-height: 1.4;   --text-title--letter-spacing: -0.011em; --text-title--font-weight: 590;
+  --text-body: 0.9375rem;      --text-body--line-height: 1.6;    --text-body--letter-spacing: -0.006em;
+  --text-ui: 0.875rem;         --text-ui--line-height: 1.5;      --text-ui--letter-spacing: -0.003em;
+  --text-label: 0.8125rem;     --text-label--line-height: 1.4;   --text-label--font-weight: 500;
+  --text-caption: 0.75rem;     --text-caption--line-height: 1.45; --text-caption--letter-spacing: 0.005em;
+  --text-eyebrow: 0.75rem;     --text-eyebrow--line-height: 1.2; --text-eyebrow--letter-spacing: 0.07em; --text-eyebrow--font-weight: 600;
+
+  /* --- radius ------------------------------------------------------------
+     Softer, more generous rounding across the board — the previous scale
+     (max 16px) read as tight/utilitarian at card scale. */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 9px;
+  --radius-lg: 12px;
+  --radius-xl: 18px;
+  --radius-2xl: 24px;
+
+  /* --- motion ---------------------------------------------------------- */
+  --ease-out-quint: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ---------------------------------------------------------------------------
+   Light — the primary theme. Near-white canvas, pure-white raised surfaces,
+   hairline borders, near-black text.
+   ------------------------------------------------------------------------ */
+:root {
+  --radius: 9px;
+
+  --canvas: #FCFCFC;
+  --background: #FFFFFF;
+  --foreground: #0D0E10;
+
+  --card: #FFFFFF;
+  --card-foreground: #0D0E10;
+  --popover: #FFFFFF;
+  --popover-foreground: #0D0E10;
+  --elevated: #FFFFFF;
+
+  --primary: #7A1B2E;
+  --primary-foreground: #FFFFFF;
+  --primary-hover: #661523;
+
+  --secondary: #F4F4F5;
+  --secondary-foreground: #26282C;
+
+  --muted: #F6F6F7;
+  --muted-foreground: #6B7079;
+  --subtle-foreground: #8F949C;
+
+  --accent: #F4F4F5;
+  --accent-foreground: #0D0E10;
+
+  --destructive: #C0362C;
+  --destructive-foreground: #FFFFFF;
+  --success: #157F52;
+  --success-foreground: #FFFFFF;
+  --warning: #9A6206;
+  --warning-foreground: #FFFFFF;
+  --info: #2E5FA3;
+  --info-foreground: #FFFFFF;
+
+  --border: #E9E9EC;
+  --border-strong: #D6D7DB;
+  --input: #E0E1E5;
+  --ring: #7A1B2E;
+
+  --chart-1: #7A1B2E;
+  --chart-2: #4A6FA5;
+  --chart-3: #157F52;
+  --chart-4: #9A6206;
+  --chart-5: #7C8189;
+  --chart-grid: #EFEFF1;
+  --chart-axis: #9AA0A8;
+
+  --sidebar: #FAFAFB;
+  --sidebar-foreground: #3F444C;
+  --sidebar-primary: #7A1B2E;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #EFEFF1;
+  --sidebar-accent-foreground: #0D0E10;
+  --sidebar-border: #E9E9EC;
+  --sidebar-ring: #7A1B2E;
+
+  /* Reserved for things that actually float. In-page surfaces use borders. */
+  --shadow-xs: 0 1px 2px rgba(13, 14, 16, 0.05);
+  --shadow-sm: 0 1px 3px rgba(13, 14, 16, 0.06), 0 1px 2px rgba(13, 14, 16, 0.04);
+  --shadow-md: 0 4px 12px -2px rgba(13, 14, 16, 0.08), 0 2px 4px -2px rgba(13, 14, 16, 0.05);
+  --shadow-lg: 0 12px 32px -8px rgba(13, 14, 16, 0.14), 0 4px 8px -4px rgba(13, 14, 16, 0.06);
+  --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--ring) 18%, transparent);
+}
+
+/* ---------------------------------------------------------------------------
+   Dark — same structure, inverted roles. Not a naive inversion: borders get
+   lighter rather than darker, and the accent lifts to stay legible on ink.
+   ------------------------------------------------------------------------ */
+.dark {
+  --canvas: #08090A;
+  --background: #08090A;
+  --foreground: #F7F8F8;
+
+  --card: #0E0F11;
+  --card-foreground: #F7F8F8;
+  --popover: #131417;
+  --popover-foreground: #F7F8F8;
+  --elevated: #17191C;
+
+  --primary: #D4576E;
+  --primary-foreground: #FFFFFF;
+  --primary-hover: #E06D82;
+
+  --secondary: #17181B;
+  --secondary-foreground: #E7E9EA;
+
+  --muted: #141518;
+  --muted-foreground: #8A8F98;
+  --subtle-foreground: #62666D;
+
+  --accent: #1C1D21;
+  --accent-foreground: #F7F8F8;
+
+  --destructive: #E5675C;
+  --destructive-foreground: #14100F;
+  --success: #3FAE7F;
+  --success-foreground: #071410;
+  --warning: #D5A44A;
+  --warning-foreground: #151004;
+  --info: #7BA7DE;
+  --info-foreground: #08101A;
+
+  --border: #1F2023;
+  --border-strong: #2B2D31;
+  --input: #26282C;
+  --ring: #D4576E;
+
+  --chart-1: #D4576E;
+  --chart-2: #7BA7DE;
+  --chart-3: #3FAE7F;
+  --chart-4: #D5A44A;
+  --chart-5: #8A9099;
+  --chart-grid: #1C1F22;
+  --chart-axis: #6B7178;
+
+  --sidebar: #0A0B0D;
+  --sidebar-foreground: #A8AEB6;
+  --sidebar-primary: #C9536A;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #1A1C1F;
+  --sidebar-accent-foreground: #F7F8F8;
+  --sidebar-border: #1B1E21;
+  --sidebar-ring: #C9536A;
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.55), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 32px -8px rgba(0, 0, 0, 0.7), 0 4px 8px -4px rgba(0, 0, 0, 0.45);
+  --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--ring) 26%, transparent);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background-color: var(--canvas);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: 1.55;
+    letter-spacing: -0.006em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
+  }
+  /* Headings inherit tight tracking; sizes come from the type utilities. */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 590;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--primary) 20%, transparent);
+  }
+  /* Visible, consistent keyboard focus everywhere — never remove without
+     replacing. Mouse clicks don't trigger it (:focus-visible only). */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: var(--radius-xs);
+  }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--foreground) 16%, transparent);
+    border: 3px solid transparent;
+    background-clip: content-box;
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--foreground) 28%, transparent);
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+}
+
+@layer utilities {
+  .shadow-xs { box-shadow: var(--shadow-xs); }
+  .shadow-sm { box-shadow: var(--shadow-sm); }
+  .shadow-md { box-shadow: var(--shadow-md); }
+  .shadow-lg { box-shadow: var(--shadow-lg); }
+
+  /* --- typography roles -------------------------------------------------
+     Page-level headings (display/h1/h2) run in the Fraunces display serif —
+     used everywhere a heading anchors a whole page or screen, in the app as
+     well as marketing, so the product has one consistent, distinctive
+     heading identity rather than the serif being a marketing-only flourish.
+     h3 and below stay on Inter: at card-header density a serif reads busy,
+     and these appear many-to-a-page. */
+  .type-display {
+    font-family: var(--font-display);
+    font-size: var(--text-display); line-height: 1.02;
+    letter-spacing: -0.022em; font-weight: 520;
+    font-variation-settings: "opsz" 144, "SOFT" 10;
+  }
+  .type-h1 {
+    font-family: var(--font-display);
+    font-size: var(--text-h1); line-height: 1.08;
+    letter-spacing: -0.018em; font-weight: 520;
+    font-variation-settings: "opsz" 144, "SOFT" 10;
+  }
+  .type-h2 {
+    font-family: var(--font-display);
+    font-size: var(--text-h2); line-height: 1.16;
+    letter-spacing: -0.014em; font-weight: 530;
+    font-variation-settings: "opsz" 60, "SOFT" 8;
+  }
+  .type-h3 {
+    font-size: var(--text-h3); line-height: 1.28;
+    letter-spacing: -0.014em; font-weight: 600;
+  }
+  .type-title {
+    font-size: var(--text-title); line-height: 1.4;
+    letter-spacing: -0.011em; font-weight: 590;
+  }
+  .type-body {
+    font-size: var(--text-body); line-height: 1.55; letter-spacing: -0.006em;
+  }
+  .type-ui {
+    font-size: var(--text-ui); line-height: 1.45; letter-spacing: -0.003em;
+  }
+  .type-label {
+    font-size: var(--text-label); line-height: 1.35; font-weight: 500;
+  }
+  .type-caption {
+    font-size: var(--text-caption); line-height: 1.4; letter-spacing: 0.005em;
+  }
+  .type-eyebrow {
+    font-size: var(--text-eyebrow); line-height: 1.2;
+    letter-spacing: 0.08em; font-weight: 590; text-transform: uppercase;
+  }
+  .type-mono {
+    font-family: var(--font-mono);
+    font-size: var(--text-ui);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+
+  .tabular-nums { font-variant-numeric: tabular-nums; }
+
+  /* Metrics and any digits that line up in a column. */
+  .numeral {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    font-feature-settings: "tnum", "cv02";
+  }
+
+  /* --- surfaces --------------------------------------------------------
+     Panels are very slightly translucent over a blur, so the ambient field
+     behind the app tints them as you scroll instead of being masked out by a
+     wall of flat white. The alpha is high (92%) on purpose — enough to register
+     as depth, never enough to affect text contrast. A soft shadow plus a
+     slightly stronger border gives every panel real presence against the
+     now much more visible ambient background, rather than reading as a flat
+     rectangle drawn on top of it. */
+  .surface {
+    position: relative;
+    background: color-mix(in srgb, var(--card) 93%, transparent);
+    backdrop-filter: blur(16px) saturate(120%);
+    -webkit-backdrop-filter: blur(16px) saturate(120%);
+    border: 1px solid color-mix(in srgb, var(--border-strong) 70%, var(--border));
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+  }
+  /* Hairline catching light along the top edge — the detail that makes a
+     panel read as a physical surface rather than a rectangle. */
+  .surface::after {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    background: linear-gradient(
+      to right,
+      transparent,
+      color-mix(in srgb, white 80%, transparent),
+      transparent
+    );
+    opacity: 0.85;
+    pointer-events: none;
+  }
+  .dark .surface::after {
+    background: linear-gradient(
+      to right,
+      transparent,
+      color-mix(in srgb, white 14%, transparent),
+      transparent
+    );
+  }
+
+  /* Interactive surface — only for surfaces that are themselves clickable. */
+  .surface-interactive {
+    background: color-mix(in srgb, var(--card) 93%, transparent);
+    backdrop-filter: blur(16px) saturate(120%);
+    -webkit-backdrop-filter: blur(16px) saturate(120%);
+    border: 1px solid color-mix(in srgb, var(--border-strong) 70%, var(--border));
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    transition: background-color 160ms var(--ease-standard),
+                border-color 160ms var(--ease-standard),
+                box-shadow 200ms var(--ease-out-quint),
+                transform 200ms var(--ease-out-quint);
+  }
+  .surface-interactive:hover {
+    background: color-mix(in srgb, var(--card) 98%, transparent);
+    border-color: var(--primary);
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-3px);
+  }
+
+  /* Hairline dividers that fade at the ends — used to separate page bands
+     without the hard edge a full-width 1px rule creates. */
+  .rule-fade {
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--border) 12%, var(--border) 88%, transparent);
+  }
+
+  /* --- rows ------------------------------------------------------------ */
+  .row-interactive {
+    transition: background-color 120ms var(--ease-standard);
+  }
+  .row-interactive:hover { background: var(--muted); }
+  .row-interactive[data-selected="true"] {
+    background: color-mix(in srgb, var(--primary) 6%, transparent);
+    box-shadow: inset 2px 0 0 0 var(--primary);
+  }
+
+  /* --- display type ----------------------------------------------------
+     Large headings run in Fraunces (the display serif), not Inter — a
+     dedicated display face at this size carries far more character than any
+     sans scaled up, and gives the marketing surface a distinct, editorial
+     identity instead of reading as "the app font, but bigger". Full `opsz`
+     (144) is the true display cut: higher stroke contrast, tighter fit. A
+     touch of `SOFT` rounds the terminals just enough to feel warm rather
+     than severe at this scale. */
+  .type-hero {
+    font-family: var(--font-display);
+    font-size: clamp(3.5rem, 8.5vw, 6.25rem);
+    line-height: 0.98;
+    letter-spacing: -0.015em;
+    font-weight: 500;
+    font-variation-settings: "opsz" 144, "SOFT" 12, "WONK" 0;
+    text-wrap: balance;
+  }
+  .type-section {
+    font-family: var(--font-display);
+    font-size: clamp(2.375rem, 4.8vw, 3.75rem);
+    line-height: 1.04;
+    letter-spacing: -0.012em;
+    font-weight: 500;
+    font-variation-settings: "opsz" 144, "SOFT" 12, "WONK" 0;
+    text-wrap: balance;
+  }
+  .type-lede {
+    font-size: clamp(1.1875rem, 1.9vw, 1.4375rem);
+    line-height: 1.62;
+    letter-spacing: -0.012em;
+    font-weight: 400;
+  }
+
+  /* Text that fades from full to muted across its own width — used once, on
+     the hero, to keep a long headline from reading as a flat block. */
+  .text-gradient-fade {
+    background: linear-gradient(
+      180deg,
+      var(--foreground) 30%,
+      color-mix(in srgb, var(--foreground) 62%, transparent) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* --- marketing helpers ----------------------------------------------- */
+  /* Ambient glow behind the hero. Deliberately low-opacity and very large:
+     it should register as light in the room, not as a coloured shape. */
+  .hero-glow {
+    background:
+      radial-gradient(52% 46% at 50% -4%, color-mix(in srgb, var(--primary) 46%, transparent), transparent 72%),
+      radial-gradient(34% 38% at 22% 4%, color-mix(in srgb, #6E5BFF 22%, transparent), transparent 72%),
+      radial-gradient(34% 38% at 78% 6%, color-mix(in srgb, #C2557A 20%, transparent), transparent 72%);
+    filter: blur(48px);
+  }
+  /* Hairline that catches light along the top edge of a raised surface. */
+  .edge-highlight {
+    position: relative;
+  }
+  .edge-highlight::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      color-mix(in srgb, white 22%, transparent),
+      transparent
+    );
+    pointer-events: none;
+  }
+  /* Faint grid used behind landing sections. Deliberately low contrast; it
+     should register as texture, never as content. */
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, var(--border) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+    background-size: 64px 64px;
+  }
+  .mask-fade-b {
+    -webkit-mask-image: linear-gradient(to bottom, black 55%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 55%, transparent 100%);
+  }
+  .mask-fade-edges {
+    -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+    mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+  }
+}
+
+/* Aurora silhouette morph — border-radius only, deliberately never
+   `transform`. The blobs' position/scale is driven by Framer Motion (scroll
+   parallax + a breathing `animate` loop) on the same elements; a CSS
+   keyframe animation touching `transform` on that same element would win
+   the cascade every frame and silently cancel Framer's motion out. Keeping
+   this layer to `border-radius` means both systems can drive the same
+   element with zero conflict — the shape organically morphs (lava-lamp
+   style, not a static circle) *while* it drifts and parallaxes. Long,
+   offset periods so the fields never visibly loop together. */
+@keyframes blob-morph-a {
+  0%, 100% { border-radius: 42% 58% 63% 37% / 41% 44% 56% 59%; }
+  33%      { border-radius: 63% 37% 41% 59% / 55% 63% 37% 45%; }
+  66%      { border-radius: 37% 63% 55% 45% / 63% 40% 60% 37%; }
+}
+@keyframes blob-morph-b {
+  0%, 100% { border-radius: 55% 45% 38% 62% / 46% 60% 40% 54%; }
+  33%      { border-radius: 38% 62% 57% 43% / 60% 42% 58% 40%; }
+  66%      { border-radius: 60% 40% 46% 54% / 40% 58% 42% 60%; }
+}
+@keyframes blob-morph-c {
+  0%, 100% { border-radius: 60% 40% 44% 56% / 38% 55% 45% 62%; }
+  33%      { border-radius: 44% 56% 60% 40% / 55% 38% 62% 45%; }
+  66%      { border-radius: 40% 60% 38% 62% / 45% 62% 40% 55%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
