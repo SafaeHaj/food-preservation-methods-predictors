@@ -113,6 +113,17 @@ class ProcessingSettings(BaseSettings):
     #: values and the no-model path stays viable.
     CLASSIFY_WITH_LLM: bool = True
 
+    # ── External enrichment ───────────────────────────────────────────────────
+    #: PubChem PUG-REST needs no key. USDA FoodData Central does -- free, but a request
+    #: without one fails at the provider, not silently.
+    USDA_FDC_API_KEY: str = ""
+    PUBCHEM_BASE_URL: str = "https://pubchem.ncbi.nlm.nih.gov/rest/pug"
+    USDA_BASE_URL: str = "https://api.nal.usda.gov/fdc/v1"
+    ENRICHMENT_TIMEOUT_SECONDS: float = 15.0
+    #: A provider outage should not be retried forever; this bounds `attempts` on an
+    #: `ingredient_external_lookups` row stuck at `status="error"`.
+    ENRICHMENT_MAX_ATTEMPTS: int = 3
+
     # ── Dataset ───────────────────────────────────────────────────────────────
     #: On the shared uploads volume: relative, resolved by `storage_subpath` against
     #: STORAGE_DIR so the API and the Celery worker see the same files.

@@ -27,6 +27,7 @@ __all__ = [
     "TREATMENT_TYPES", "UNCLASSIFIED_TREATMENT", "APPLICATION_METHODS",
     "UNSPECIFIED_APPLICATION", "MATRIX_PROFILE_SOURCES", "REGULATORY_STATUSES",
     "EXTERNAL_PROVIDERS", "EXTERNAL_LOOKUP_STATUSES", "ENRICHABLE_CLASSES",
+    "REVIEW_KINDS", "REVIEW_STATUSES",
     "sql_values",
     "EvidenceSpan", "PaperDocument", "SectionDocument", "TableDocument", "FigureDocument",
     "IngredientRecord", "ExperimentIngredientRecord", "IndicatorRecord", "MeasurementRecord",
@@ -87,6 +88,14 @@ EXTERNAL_LOOKUP_STATUSES = ("found", "not_found", "skipped", "error")
 #: CID for the wrong thing -- and are recorded as `skipped` rather than guessed at.
 ENRICHABLE_CLASSES = ("phenol", "organic acid", "mineral")
 
+# What a queued term was being decided when the pipeline could not decide it, and where the
+# curator left it. The pipeline never widens a vocabulary on its own: an unrecognised term
+# falls to its sink so the data still lands, and the term itself is queued for a person to
+# either add to `vocabulary.yaml` or reject. `rejected` is a real answer -- it says "this is
+# not a term", which is what stops the same string being re-queued forever.
+REVIEW_KINDS = ("ingredient", "indicator", "treatment", "application")
+REVIEW_STATUSES = ("pending", "resolved", "rejected")
+
 
 def sql_values(values) -> str:
     """A controlled vocabulary as a SQL literal list, so a CHECK constraint cannot drift
@@ -97,6 +106,17 @@ def sql_values(values) -> str:
 
 
 # ─── Records ──────────────────────────────────────────────────────────────────
+
+def strip_nul(value):
+    """Drop NUL bytes from a string field.
+
+    A PDF parse occasionally yields text carrying ``\\x00``, which PostgreSQL rejects
+    outright -- and because a paper's rows are written in one transaction, a single such
+    byte in one section discards the whole paper. The character carries no meaning in
+    extracted prose, so removing it loses nothing and keeps the paper.
+    """
+    return value.replace("\x00", "") if isinstance(value, str) else value
+
 
 class EvidenceSpan(BaseModel):
     """What supports one extracted field, and how far it sits from the paper's words.
@@ -119,6 +139,9 @@ class EvidenceSpan(BaseModel):
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
     value_is_approximate: bool = False
 
+    _no_nul = field_validator(
+        "source_label", "exact_text", "rationale", mode="before")(strip_nul)
+
     @model_validator(mode="after")
     def _attribution_is_complete(self):
         if self.method != "stated":
@@ -139,6 +162,8 @@ class PaperDocument(BaseModel):
     abstract: str | None = None
     published_year: int | None = None
 
+    _no_nul = field_validator("doi", "title", "abstract", mode="before")(strip_nul)
+
 
 class SectionDocument(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -147,6 +172,9 @@ class SectionDocument(BaseModel):
     embedding: str | None = None
     docling_item_ref: str | None = None
     page_number: int | None = None
+
+    _no_nul = field_validator(
+        "section_title", "content_markdown", "docling_item_ref", mode="before")(strip_nul)
 
 
 class TableDocument(BaseModel):

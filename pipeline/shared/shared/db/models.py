@@ -18,6 +18,7 @@ Supporting:
   Section                     the paper's prose, as Silver segmented it
   Job, ExtractionRun          async work and its audit trail
   AuditEvent                  immutable action log
+  VocabularyReviewQueue       terms the pipeline could not name, awaiting a curator
   ProjectMember               team roles
   DoclingCache, FigureConversionCache     parse/chart-conversion caches, keyed by file hash
   ExtractionAsset, AssetContextLink       the extraction workspace (figures, tables, charts)
@@ -75,8 +76,8 @@ from shared.db.database import Base
 from shared.schemas.science import (
     APPLICATION_METHODS, EVIDENCE_METHODS, EVIDENCE_SOURCE_TYPES, EXTERNAL_LOOKUP_STATUSES,
     EXTERNAL_PROVIDERS, FUNCTIONAL_CLASSES, INDICATOR_TYPES, INGREDIENT_SOURCES,
-    MATRIX_PROFILE_SOURCES, REGULATORY_STATUSES, TREATMENT_TYPES, UNCLASSIFIED_CLASS,
-    UNKNOWN_SOURCE, UNSPECIFIED_APPLICATION, sql_values,
+    MATRIX_PROFILE_SOURCES, REGULATORY_STATUSES, REVIEW_KINDS, REVIEW_STATUSES,
+    TREATMENT_TYPES, UNCLASSIFIED_CLASS, UNKNOWN_SOURCE, UNSPECIFIED_APPLICATION, sql_values,
 )
 
 
@@ -397,6 +398,53 @@ class Ingredient(Base):
             f"source_category IN ({sql_values(INGREDIENT_SOURCES + (UNKNOWN_SOURCE,))})",
             name="ck_ingredients_source",
         ),
+    )
+
+
+class VocabularyReviewQueue(Base):
+    """A term the pipeline could not name, waiting on a person to name it.
+
+    The pipeline never widens its own vocabulary. When a substance is not in
+    `vocabulary.yaml`, or a protocol sentence matches two treatment families at once, the
+    value falls to its sink so the data still lands -- and the term lands here, where a
+    curator either adds it to the vocabulary or rejects it. That is the whole difference
+    between "recorded as unclassified and reviewed" and "silently given a new category".
+
+    Global rather than per project, as `ingredients` and `matrix_profiles` are: what a term
+    means is a fact about the term. `UNIQUE(kind, canonical_key)` is what makes one unknown
+    substance appearing in forty papers a single row with `occurrences = 40` rather than
+    forty rows nobody can triage.
+
+    `raw_text` keeps the paper's own wording, not the canonical key: a curator adding the
+    term to the vocabulary needs to see what was actually written, and `canonical_key`
+    folds away the case and punctuation that distinguish "Nisin A" from "nisin-a".
+    """
+    __tablename__ = "vocabulary_review_queue"
+
+    id                  = Column(Integer, primary_key=True, index=True)
+    kind                = Column(String, nullable=False, index=True)   # see REVIEW_KINDS
+    raw_text            = Column(String, nullable=False)   # as the paper wrote it
+    canonical_key       = Column(String, nullable=False)   # the dedup key
+    status              = Column(String, nullable=False, default="pending",
+                                 server_default="pending", index=True)
+    #: Bumped every time the term is met again. The queue is worked highest-first, so this
+    #: is what puts the term blocking forty papers above the one blocking a single arm.
+    occurrences         = Column(Integer, nullable=False, default=1, server_default="1")
+    first_seen_paper_id = Column(Integer, ForeignKey("papers.id", ondelete="SET NULL"),
+                                 nullable=True)
+    last_seen_at        = Column(DateTime, default=datetime.utcnow)
+    resolved_at         = Column(DateTime, nullable=True)
+    resolved_by         = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"),
+                                 nullable=True)
+    note                = Column(Text, nullable=True)      # why it was resolved or rejected
+    created_at          = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("kind", "canonical_key", name="uq_review_queue_kind_key"),
+        CheckConstraint(f"kind IN ({sql_values(REVIEW_KINDS)})", name="ck_review_queue_kind"),
+        CheckConstraint(f"status IN ({sql_values(REVIEW_STATUSES)})",
+                        name="ck_review_queue_status"),
+        CheckConstraint("occurrences >= 0", name="ck_review_queue_occurrences_non_negative"),
     )
 
 

@@ -32,7 +32,7 @@ from shared.config import get_common_settings
 from shared.error_handlers import install_exception_handlers
 from shared.logging import configure_logging, install_request_id_middleware
 
-from app.api.routes import dataset, ingestion, prediction, science
+from app.api.routes import dataset, ingestion, prediction, science, vocabulary_review
 
 _settings = get_common_settings()
 configure_logging("processing", _settings.LOG_LEVEL)
@@ -50,7 +50,8 @@ install_request_id_middleware(app)
 install_internal_secret_guard(app)
 install_exception_handlers(app)
 
-for router in (dataset.router, ingestion.router, prediction.router, science.router):
+for router in (dataset.router, ingestion.router, prediction.router, science.router,
+               vocabulary_review.router):
     app.include_router(router, prefix="/api")
 
 

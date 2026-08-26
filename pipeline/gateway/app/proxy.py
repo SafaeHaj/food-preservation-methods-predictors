@@ -38,7 +38,10 @@ _common = get_common_settings()
 #: Extraction reads documents; processing owns the science. The scientific reads moved with
 #: the code that produces them, which is why `experiments`, `ingredients`, `indicators` and
 #: `evidence` sit on the processing side.
-PROCESSING_ROOTS = frozenset({"evidence", "reference"})
+#: `vocabulary-review` is a root rather than a project sub-path: what a term means is a
+#: fact about the term, so the queue is corpus-wide like `ingredients` and has no project
+#: in its URL to scope it by.
+PROCESSING_ROOTS = frozenset({"evidence", "reference", "vocabulary-review"})
 EXTRACTION_ROOTS = frozenset({"schema", "chart2table"})
 EXTRACTION_PROJECT_SUBS = frozenset({"papers", "assets"})
 #: `ingestion` rather than `papers/{id}/ingest`: `_target_for` keys on the third segment,

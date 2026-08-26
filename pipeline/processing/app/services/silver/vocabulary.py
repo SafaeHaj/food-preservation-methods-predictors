@@ -51,6 +51,63 @@ UNSPECIFIED_UNIT = "unspecified"
 
 _CFU_UNIT = re.compile(r"\bcfu\b", re.IGNORECASE)
 
+#: A term has to be a plausible *name* before it is worth a curator's attention. These are
+#: what a table or a chart legend puts in a label column that no vocabulary will ever want:
+#: series keys ("A", "CON"), legend colours, bare numbers and day markers, axis furniture.
+#: Filtered at the point a miss is recorded rather than in the vocabulary itself -- adding
+#: them as terms would mean declaring a functional class for "Blue".
+#:
+#: This is deliberately about *shape*, not meaning. A real substance the vocabulary does not
+#: carry still reaches the queue; what does not is a string that could not name anything.
+_MIN_TERM_CHARS = 2
+_LEGEND_WORDS = frozenset({
+    "control", "con", "ck", "nc", "pc", "blank", "untreated", "uncoated", "treated",
+    "blue", "red", "green", "orange", "purple", "yellow", "black", "white", "grey", "gray",
+    "total", "number", "no", "sample", "samples", "group", "groups", "mean", "sd", "se",
+    "day", "days", "time", "storage_time", "week", "weeks", "month", "months",
+    "area", "peak", "volume", "yield", "intensity", "thickness", "composition", "ratio",
+    "max", "min", "median", "average", "range", "concentration", "percentage", "percent",
+    "value", "values", "amount", "level", "levels", "type", "types", "name", "code",
+    "rt", "ki", "mz", "pdi", "zeta", "particle_size", "r_2", "sem", "sd_",
+    # Two-letter series codes a paper defines in its own caption ("SA", "OR", "Ch", "CE").
+    # They name an arm, not a substance, and the expansion lives in prose the vocabulary
+    # never sees. `pH` survives because it is a declared term, matched before this runs.
+    "sa", "or", "ch", "ce", "cs", "cin", "gr", "wr", "owr", "lf", "ht", "hto",
+})
+#: Bare numbers, day markers ("Day 3", "0 d."), percentages, panel labels ("(c)"), duplicated
+#: colour axes ("L*.L*") -- the axis and its furniture, never a quantity's name.
+_NOT_A_NAME = re.compile(
+    r"""^(?:
+        [\W\d_]*                              # pure punctuation/digits: "0", ".1", "△ .1"
+      | (?:day|d|week|w|month|m|time|t)[\s_-]*\d+(?:\.\d+)?   # "Day 3", "d 0"
+      | \d+(?:\.\d+)?\s*(?:%|d|h|hr|hours?|days?|min)?\.?     # "100", "3 %", "0 d."
+      | r\s*2                                 # an R-squared column
+      | [a-z]\*?                              # a single letter, with or without a star
+      | \(?[a-z]\)?\*?                        # a panel label: "(c)", "b)"
+      | (?:[a-z]\*?[\s.]+)+[a-z]\*?           # "L*.L*", "a*.a*" -- one axis, printed twice
+    )$""",
+    re.IGNORECASE | re.VERBOSE,
+)
+
+
+#: Table cells arrive carrying the markdown the converter left on them, and a header split
+#: on "." leaves a dangling bracket. Both are noise around the name, not the name.
+_MARKUP = re.compile(r"[*_`]+|^[\s.)\]]+|[\s.(\[]+$")
+
+
+def names_something(text) -> bool:
+    """Whether a string could be the name of a substance or a quantity at all.
+
+    The queue is only useful if a person can act on every row in it. A legend key or an
+    axis header is not a vocabulary gap -- there is no term to add -- so recording one
+    costs a curator's attention and returns nothing.
+    """
+    text = _MARKUP.sub("", str(text or "").strip()).strip()
+    if len(text) < _MIN_TERM_CHARS or _NOT_A_NAME.match(text):
+        return False
+    key = canonical_key(text)
+    return bool(key) and key not in _LEGEND_WORDS
+
 
 @dataclass(frozen=True)
 class VocabularySource:
@@ -228,8 +285,15 @@ class Vocabulary:
     # ── Ledger ────────────────────────────────────────────────────────────────
 
     def note_unresolved(self, text, kind) -> None:
+        """Record a miss a person could act on.
+
+        `unresolved` is what feeds the review queue, so a label that could not name anything
+        -- a legend key, a colour, a bare day number -- is dropped here rather than filed as
+        a vocabulary gap nobody can close. It is still counted in `discarded` by the caller,
+        so the job report keeps saying what the paper contained and what became of it.
+        """
         text = str(text or "").strip()
-        if text:
+        if text and names_something(text):
             self.unresolved.setdefault(kind, {})[canonical_key(text)] = text
 
     def note_change(self, kind, raw, canonical, **extra) -> None:
@@ -261,18 +325,31 @@ class Vocabulary:
 
     # ── The two decisions ─────────────────────────────────────────────────────
 
-    def normalise_ingredient(self, raw) -> Optional[dict]:
+    def normalise_ingredient(self, raw, dosed: bool = False) -> Optional[dict]:
         """Name, functional class and origin together: one decision, not three.
 
-        An unknown substance returns None and is parked for review rather than guessed at
-        — a class invented for it would be indistinguishable downstream from a real one.
+        `dosed` says the caller read an amount beside this name. That is the evidence that
+        the text is a substance at all, and it decides what a vocabulary miss means:
+
+        * dosed -- the paper stated a dose for it, so it is an additive whose name the
+          vocabulary happens not to carry. It keeps the paper's own wording under the sink
+          classes and is queued for review, exactly as an unknown indicator is. Dropping it
+          would lose a substance the paper explicitly dosed; inventing a class for it would
+          be indistinguishable downstream from a real one.
+        * undosed -- the text is a substance only by inference from where it sat, and the
+          vocabulary is the only thing separating an additive from a footnote, a column
+          header, or a packaging condition. A miss stays a drop.
         """
         text = str(raw or "").strip()
         term = self.resolve(text, "ingredient")
         if term is None:
             self.note_unresolved(text, "ingredient")
-            self.discarded[("ingredient", text)] += 1
-            return None
+            if not dosed:
+                self.discarded[("ingredient", text)] += 1
+                return None
+            self.flag("ingredient", text, "dosed but not in vocabulary; queued for review")
+            return {"name": text, "functional_class": UNCLASSIFIED_CLASS,
+                    "source": UNKNOWN_SOURCE}
         klass = term.functional_class if term.functional_class in FUNCTIONAL_CLASSES else None
         origin = term.source if term.source in INGREDIENT_SOURCES else None
         for field_name, value in (("functional_class", klass), ("source", origin)):

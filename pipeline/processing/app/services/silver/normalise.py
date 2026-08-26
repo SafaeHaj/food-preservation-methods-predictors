@@ -75,6 +75,13 @@ def _dosed_ingredients(dose: Optional[Dose], vocabulary) -> tuple:
 
     The second is the arm's condition: no vocabulary decides it, so a factorial dimension
     nobody thought to seed still separates two arms.
+
+    The stated amount is what separates the two. A part carrying a dose is a substance
+    whatever the vocabulary knows -- "0.5% X" is X at 0.5%, and an unrecognised X is a gap
+    in the vocabulary rather than evidence that X is a packaging condition. Those keep the
+    paper's wording under the sink classes and are queued for review. A part with no amount
+    stays a condition on a miss, because there the vocabulary is the only thing that could
+    have told a substance from a treatment.
     """
     if not (dose and dose.substance):
         return [], []
@@ -83,7 +90,8 @@ def _dosed_ingredients(dose: Optional[Dose], vocabulary) -> tuple:
         part = part.strip(" -_,")
         if not part:
             continue
-        resolved = vocabulary.normalise_ingredient(part) if vocabulary else None
+        resolved = (vocabulary.normalise_ingredient(part, dosed=dose.amount is not None)
+                    if vocabulary else None)
         if resolved:
             found.append({**resolved, "amount": dose.amount, "unit": dose.unit})
         else:
@@ -270,10 +278,19 @@ class Measurement:
     ingredients: list = field(default_factory=list)
 
 
-def _assign_roles(observation, lexicon, indicator_columns, strategies) -> tuple:
-    """Which label names the quantity and which names the arm."""
+def _assign_roles(observation, lexicon, indicator_columns, strategies, vocabulary=None) -> tuple:
+    """Which label names the quantity and which names the arm.
+
+    A row-label column that is neither a known arm nor a declared indicator column is
+    treated as an arm qualifier on the first sighting -- there is no vocabulary entry that
+    could tell it apart from an indicator name the vocabulary simply lacks. A second such
+    label competing for the same slot is genuine ambiguity, not a tie either guess resolves:
+    picking one silently would discard the other's information with no trace. That case is
+    flagged for a curator instead of guessed.
+    """
     column = observation.get("column_label")
     indicator_label = treatment_label = None
+    unclaimed = []
     if column:
         head, tail = split_indicator_and_treatment(column, lexicon)
         if tail is not None:
@@ -295,6 +312,16 @@ def _assign_roles(observation, lexicon, indicator_columns, strategies) -> tuple:
         elif treatment_label is None:
             treatment_label = value
             strategies.add("row labels qualify the arm")
+        else:
+            unclaimed.append(value)
+    if unclaimed and vocabulary is not None:
+        vocabulary.flag(
+            "treatment",
+            " / ".join([treatment_label, *unclaimed]) if treatment_label else " / ".join(unclaimed),
+            "row labels competing for the same arm — none is a known arm and one already "
+            "claimed the slot, so the rest were dropped rather than guessed",
+        )
+        strategies.add(f"{len(unclaimed)} competing row label(s) flagged for review")
     return indicator_label, treatment_label
 
 
@@ -342,7 +369,7 @@ def interpret_asset(asset, lexicon, vocabulary, *, caption_name=None, claimed=()
 
     for observation in observations:
         indicator_label, treatment_label = _assign_roles(
-            observation, lexicon, indicator_columns, strategies)
+            observation, lexicon, indicator_columns, strategies, vocabulary)
         if indicator_label is None and caption_name:
             indicator_label = caption_name
             strategies.add("indicator inferred from nearby text" if from_context
@@ -418,9 +445,10 @@ def _proportion_unit(header, vocabulary) -> Optional[str]:
 def ingredients_from_reference(asset, vocabulary) -> list:
     """A composition table's rows are substances, so they belong in `ingredients`.
 
-    Only rows the vocabulary can name survive. The column group prefix
-    ("TEO.Concentration") is kept as the preparation; `source` is the biological origin and
-    comes from the vocabulary, never from the table.
+    Only rows the vocabulary can name survive: a row here is a substance by inference from
+    the table's shape, and a miss is as likely to be a footnote as an additive. The column
+    group prefix ("TEO.Concentration") is kept as the preparation; `source` is the biological
+    origin and comes from the vocabulary, never from the table.
     """
     headers = [str(name) for name in asset.get("headers", [])]
     rows = asset.get("rows") or []

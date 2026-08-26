@@ -14,10 +14,14 @@ from __future__ import annotations
 import json
 from typing import Optional
 
-from shared.schemas.science import GoldBundle, UNCLASSIFIED_CLASS, UNKNOWN_SOURCE
+from shared.schemas.science import (
+    GoldBundle, UNCLASSIFIED_CLASS, UNCLASSIFIED_TREATMENT, UNKNOWN_SOURCE,
+    UNSPECIFIED_APPLICATION,
+)
 from shared.science.gate import canonical_key, parse_dosed_label
 
 from app.services.gold.evidence import searchable
+from app.services.silver import classify
 from app.services.silver.vocabulary import (
     UNRESOLVED_INDICATOR, UNSPECIFIED_UNIT, build_vocabulary,
 )
@@ -143,6 +147,37 @@ def _check_indicators(record, key, vocabulary):
                 "indicator not listed on this arm")
 
 
+def _check_protocol_vocabulary(record, key):
+    """The two sinks the protocol stage can leave behind.
+
+    Both mean what an unclassified ingredient means: the pipeline met something its
+    vocabulary does not cover and refused to invent a member for it. Reported here so all
+    four sinks appear in one list, and queued for review beside them.
+
+    Only a sentence the classifier read *ambiguously* is a finding. A paper that simply
+    never said how an additive was applied is not a vocabulary gap -- no pattern could fix
+    it, and `application_method`'s sink is also its column default, so flagging absence
+    would fire on most links in the corpus and mean nothing. Ambiguity is the case where a
+    person has something to decide.
+    """
+    if record.treatment_type == UNCLASSIFIED_TREATMENT:
+        yield _violation(
+            "treatment_needs_a_type", "experiments", key,
+            "fell to the catch-all — add a pattern to vocabulary.yaml, or a treatment type")
+    if record.treatment_description is None:
+        return
+    matched = classify.classify_application(record.treatment_description).matched
+    if len(matched) < 2:
+        return
+    for link in record.experiment_ingredients:
+        if link.application_method == UNSPECIFIED_APPLICATION:
+            yield _violation(
+                "application_needs_a_method", "experiment_ingredients",
+                f"{key}/{link.ingredient_name}",
+                f"the protocol reads as any of {', '.join(matched)} — the classifier will "
+                "not rank them, so it needs a person or a sharper pattern")
+
+
 def _check_group_count(bundle):
     """The gate finds arms in the tables, the methods say how many groups the study
     defined, and neither side sees the difference alone: a phantom arm from a misread
@@ -170,6 +205,7 @@ def validate(bundle: GoldBundle, index: Optional[dict] = None, vocabulary=None) 
                + (", ".join(sorted(item.ingredient_name for item in record.ingredients))
                   or "control"))
         violations += list(_check_treatment(record, key, substances))
+        violations += list(_check_protocol_vocabulary(record, key))
         violations += list(_check_attribution(record, key, index))
         violations += list(_check_ingredients(record, key, vocabulary))
         violations += list(_check_indicators(record, key, vocabulary))

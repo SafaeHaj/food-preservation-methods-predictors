@@ -24,8 +24,8 @@ from shared.db.models import Base
 from shared.schemas.science import (
     APPLICATION_METHODS, EVIDENCE_METHODS, EVIDENCE_SOURCE_TYPES, EXTERNAL_LOOKUP_STATUSES,
     EXTERNAL_PROVIDERS, FUNCTIONAL_CLASSES, INDICATOR_TYPES, INGREDIENT_SOURCES,
-    MATRIX_PROFILE_SOURCES, REGULATORY_STATUSES, TREATMENT_TYPES, UNCLASSIFIED_CLASS,
-    UNKNOWN_SOURCE, sql_values,
+    MATRIX_PROFILE_SOURCES, REGULATORY_STATUSES, REVIEW_KINDS, REVIEW_STATUSES,
+    TREATMENT_TYPES, UNCLASSIFIED_CLASS, UNKNOWN_SOURCE, sql_values,
 )
 
 VERSIONS_DIR = Path(__file__).resolve().parents[1] / "alembic" / "versions"
@@ -44,6 +44,8 @@ VOCABULARIES = {
     "regulatory_statuses": REGULATORY_STATUSES,
     "external_providers": EXTERNAL_PROVIDERS,
     "external_lookup_statuses": EXTERNAL_LOOKUP_STATUSES,
+    "review_kinds": REVIEW_KINDS,
+    "review_statuses": REVIEW_STATUSES,
 }
 
 #: constraint name -> (table, the values its IN (...) list must hold)
@@ -66,6 +68,8 @@ DERIVED_CONSTRAINTS = {
                                   VOCABULARIES["external_lookup_statuses"]),
     "ck_molecular_features_source": ("ingredient_molecular_features",
                                      VOCABULARIES["external_providers"]),
+    "ck_review_queue_kind": ("vocabulary_review_queue", VOCABULARIES["review_kinds"]),
+    "ck_review_queue_status": ("vocabulary_review_queue", VOCABULARIES["review_statuses"]),
 }
 
 

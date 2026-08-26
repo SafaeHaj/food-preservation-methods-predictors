@@ -29,7 +29,9 @@ from sqlalchemy.orm import Session
 from shared.db.models import Paper
 from shared.uow import JobProgressReporter
 
-from app.services import document_writer, evidence_writer, science_writer, timings
+from app.services import (
+    document_writer, evidence_writer, review_queue, science_writer, timings,
+)
 from app.services.gold import build as gold_build
 from app.services.gold import validate as gold_validate
 from app.services.gold.evidence import reference_text_index
@@ -83,6 +85,22 @@ def run(db: Session, paper: Paper, job_id: int, progress: JobProgressReporter) -
         if violations:
             logger.info("Paper %s: %d semantic violations", paper.id, len(violations))
 
+        # Both stages' unnameable terms, parked for a curator. Silver's are the substances
+        # and quantities no vocabulary entry matched, plus anything flagged as ambiguous
+        # rather than simply missing (e.g. two row labels competing for one arm slot);
+        # Gold's are the protocol sentences whose keywords matched two treatment families at
+        # once. Neither stage writes here itself.
+        queued = review_queue.drain(
+            db,
+            [(kind, text)
+             for kind in ("ingredient", "indicator")
+             for text in reading["vocabulary_review"]["unresolved"].get(kind, ())]
+            + [(flag["kind"], flag["value"])
+               for flag in reading["vocabulary_review"].get("flags", ())]
+            + [tuple(term) for term in llm_summary.get("review_terms", ())],
+            paper.id,
+        )
+
         progress.update(progress=PROGRESS_DOCUMENT, step="Saving the document and its sections")
         sections = document_writer.write(db, paper, bundle)
 
@@ -108,6 +126,7 @@ def run(db: Session, paper: Paper, job_id: int, progress: JobProgressReporter) -
         "experimental_groups": bundle.experimental_groups,
         "violations": violations,
         "vocabulary_review": reading["vocabulary_review"],
+        "review_queued": queued,
         "vocabulary_version": vocabulary_version(),
         "unit_report": package.get("unit_report", {}),
         "classification_report": classify.report(

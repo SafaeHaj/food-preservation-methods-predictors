@@ -64,7 +64,8 @@ terms:
     unit: log CFU/g
     threshold: 7.0
     indicator_type: microbial
-    aliases: [pbc, psy, psychrotrophic count, psychrotrophs]
+    aliases: [pbc, psy, psychrotrophic count, psychrotrophs, psychrotrophic bacteria,
+              psychrotrophic bacteria count, psychrophilic count, psychrotrophic aerobic count]
 
   - name: Lactic acid bacteria count
     kind: indicator
@@ -102,7 +103,15 @@ terms:
     kind: indicator
     unit: log CFU/g
     indicator_type: microbial
-    aliases: [s aureus, s aureus counts, staphylococcus aureus counts]
+    aliases: [s aureus, s aureus counts, staphylococcus aureus counts, staphylococcus,
+              staphylococcus spp, staph aureus]
+
+  - name: Listeria monocytogenes count
+    kind: indicator
+    unit: log CFU/g
+    indicator_type: microbial
+    aliases: [listeria, listeria monocytogenes, l monocytogenes, listeria counts,
+              listeria monocytogenes counts, l monocytogenes counts]
 
   - name: Pseudomonas count
     kind: indicator
@@ -197,13 +206,14 @@ terms:
     kind: ingredient
     functional_class: essential oil
     source: plant
-    aliases: [oregano eo, organo eo, oregano oil, oregano extract, origanum vulgare oil]
+    aliases: [oregano eo, organo eo, oregano oil, oregano extract, origanum vulgare oil,
+              oregano]
 
   - name: Clove essential oil
     kind: ingredient
     functional_class: essential oil
     source: plant
-    aliases: [clove eo, clove oil, clove extract]
+    aliases: [clove eo, clove oil, clove extract, clove, cloves, clove bud oil]
 
   - name: Zataria multiflora essential oil
     kind: ingredient
@@ -448,7 +458,8 @@ terms:
     kind: ingredient
     functional_class: phenol
     source: plant
-    aliases: [grape seed, activin, grape and blueberry]
+    aliases: [grape seed, activin, grape and blueberry, gse, grape seed oil,
+              grape seed powder]
 
   - name: Grape pomace extract
     kind: ingredient
@@ -685,6 +696,68 @@ terms:
     functional_class: mineral
     source: mineral
     aliases: [clo2]
+
+  - name: Cinnamon essential oil
+    kind: ingredient
+    functional_class: essential oil
+    source: plant
+    aliases: [cinnamon eo, cinnamon oil, cinnamon, cinnamon stick, cinnamon bark oil,
+              cinnamomum extract, cinnamon extract]
+
+  - name: Pomegranate peel extract
+    kind: ingredient
+    functional_class: phenol
+    source: plant
+    aliases: [pomegranate peel, pomegranate extract, pomegranate rind extract,
+              punica granatum extract]
+
+  - name: Tocopherol
+    kind: ingredient
+    functional_class: phenol
+    source: plant
+    aliases: [alpha tocopherol, a tocopherol, vitamin e, mixed tocopherols, tocopherols]
+
+  - name: Honey
+    kind: ingredient
+    functional_class: carbohydrate
+    source: plant
+    aliases: [natural honey, raw honey]
+
+# ── Proximate composition ────────────────────────────────────────────────────
+# Reported as a matrix's make-up rather than tracked over storage. They are indicators
+# because a paper prints them as measured quantities with a unit; nothing sets a spoilage
+# threshold on them, so none carries one.
+
+  - name: Moisture content
+    kind: indicator
+    unit: "%"
+    indicator_type: chemical
+    aliases: [moisture, moisture percentage, water content]
+
+  - name: Fat content
+    kind: indicator
+    unit: "%"
+    indicator_type: chemical
+    aliases: [fat, crude fat, total fat, lipid content, ether extract]
+
+  - name: Protein content
+    kind: indicator
+    unit: "%"
+    indicator_type: chemical
+    aliases: [protein, crude protein, total protein]
+
+  - name: Ash content
+    kind: indicator
+    unit: "%"
+    indicator_type: chemical
+    aliases: [ash, crude ash, total ash]
+
+  - name: DPPH radical scavenging activity
+    kind: indicator
+    unit: "%"
+    indicator_type: chemical
+    aliases: [dpph, dpph scavenging activity, dpph radical scavenging, radical scavenging activity,
+              dpph inhibition, antioxidant activity]
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Recognition rules for the two closed protocol vocabularies.

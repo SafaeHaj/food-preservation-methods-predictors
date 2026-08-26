@@ -23,7 +23,9 @@ from shared.db.models import (
     Experiment, ExperimentIngredient, Indicator, Ingredient, MatrixProfile, Measurement,
     TreatmentProfile,
 )
-from shared.schemas.science import ExperimentRecord, GoldBundle
+from shared.schemas.science import (
+    ExperimentRecord, GoldBundle, UNCLASSIFIED_CLASS, UNKNOWN_SOURCE,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -63,13 +65,26 @@ _COMPOSITION = (
 
 def _get_or_create_ingredient(db: Session, record) -> tuple[Ingredient, bool]:
     """Global, not per project: the substance is the same one in every project, and the
-    molecular features hanging off it describe it rather than any team's use of it."""
+    molecular features hanging off it describe it rather than any team's use of it.
+
+    Fill-never-overwrite on the two classified fields, the same rule `_get_or_create_matrix`
+    applies to composition. Keyed on the name alone, an ingredient first met before its
+    vocabulary entry existed would otherwise sit on `unclassified` forever: adding the term
+    fixes every later paper and none of the rows already written. A real class is never
+    replaced by another real class -- only a sink is filled.
+    """
     ingredient = (
         db.query(Ingredient)
         .filter(Ingredient.ingredient_name == record.ingredient_name)
         .first()
     )
     if ingredient:
+        if (ingredient.functional_class == UNCLASSIFIED_CLASS
+                and record.functional_class != UNCLASSIFIED_CLASS):
+            ingredient.functional_class = record.functional_class
+        if (ingredient.source_category == UNKNOWN_SOURCE
+                and record.source_category != UNKNOWN_SOURCE):
+            ingredient.source_category = record.source_category
         return ingredient, False
     ingredient = Ingredient(
         ingredient_name=record.ingredient_name,
